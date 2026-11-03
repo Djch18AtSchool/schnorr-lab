@@ -46,7 +46,7 @@ Coincide con la Tabla 5 del escrito: lo que el escrito declara funcional para es
 | `demo.py` | R11 | ✅ Opciones 1, 2, 4 y 7 | Menú completo |
 | `api/app.py`, `http_client.py` | R11 | ✅ Registro, compromiso, respuesta y auditoría | Endpoint no interactivo |
 
-Resultado de `pytest`: **128 pruebas aprobadas y 13 pendientes para el informe final**.
+Resultado de `pytest`: **131 pruebas aprobadas y 14 pendientes para el informe final**.
 
 ## El protocolo en una pantalla
 
@@ -73,7 +73,7 @@ Con `uvicorn api.app:app --reload` y el grupo por defecto (`toy`, p = 23), en ht
 
 1. `POST /demo/client` con `{"user_id": "cliente01", "x": "7"}` → devuelve `y = "8"`. Es solo una ayuda para Swagger: está separado del banco y no queda en la auditoría.
 2. `POST /register` con `{"user_id": "cliente01", "y": "8"}`.
-3. Con r = 5, el compromiso es t = 4⁵ mod 23 = 12: `POST /login/commit` con `{"user_id": "cliente01", "t": "12"}` → el banco responde `session_id` y un reto `c` aleatorio.
+3. Con r = 5, el compromiso es t = 4⁵ mod 23 = 12: `POST /login/commit` con `{"user_id": "cliente01", "t": "12"}` → el banco responde `session_id` y un reto `c` aleatorio. Si se pide otro reto sin responder este, la sesión pendiente se descarta y cuenta como intento fallido.
 4. Calcular s = (5 + 7·c) mod 11 con la tabla y enviar `POST /login/respond` con `{"session_id": "...", "s": "..."}`.
 
    | c | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
@@ -91,7 +91,7 @@ Para otro tamaño de p: `SCHNORR_GROUP=safe-512 uvicorn api.app:app`. Todos los 
 | `POST /login/commit` | `{user_id, t}` | `{session_id, c}`; 400 si t está fuera del subgrupo; 404 si el usuario no existe; 423 si está bloqueado |
 | `POST /login/respond` | `{session_id, s}` | `{accepted, reason, transcript, details, attempts_left}` |
 | `GET /bank/users` | — | `{user_id: y}` |
-| `GET /audit/log` | — | Cuerpos recibidos por el banco, en orden |
+| `GET /audit/log` | — | Cuerpos recibidos por el banco, en orden, incluidos los rechazados por mal formados (`valid: false`) |
 | `POST /demo/client` | `{user_id, x?}` | x e y de un cliente de prueba (solo demostración) |
 
 ## Arquitectura
@@ -136,11 +136,11 @@ schnorr_lab/
 │   ├── nonce_reuse.py  extract_secret, FaultyClient
 │   ├── simulator.py    simulate, enumerate_real, enumerate_simulated
 │   ├── impostor.py     impostor_rate
-│   ├── replay.py       run                                   (esqueleto)
+│   ├── replay.py       replay_experiment                     (esqueleto)
 │   ├── bsgs.py         bsgs                                  (esqueleto)
-│   └── stolen_db.py    run                                   (esqueleto)
+│   └── stolen_db.py    stolen_db_experiment                  (esqueleto)
 ├── benchmark/
-│   └── latency.py      measure_auth, run, plot               (esqueleto)
+│   └── latency.py      measure_auth, measure, plot           (esqueleto)
 ├── api/
 │   ├── app.py          API HTTP del banco (FastAPI)
 │   └── schemas.py      esquemas de petición y respuesta
@@ -163,7 +163,7 @@ schnorr_lab/
 | ¿t en el subgrupo? / Banco elige c | `protocol/bank.py` → `Bank.challenge` |
 | Cliente calcula s | `protocol/client.py` → `Client.respond` |
 | ¿Prueba válida? | `protocol/bank.py` → `Bank.verify`, con `modular.mod_pow` y `modular.mod_inverse` |
-| Sumar intento / ¿Menos de 3 fallos? / Bloquear | `protocol/bank.py` → `Bank._fail`, `Bank.is_locked` |
+| Sumar intento / ¿Menos de 3 fallos? / Bloquear | `protocol/bank.py` → `Bank._fail`, `Bank._abandon_pending_session`, `Bank.is_locked` |
 
 ### Objetos y estructuras discretas en el código
 
@@ -173,8 +173,8 @@ schnorr_lab/
 | Enteros modulares y congruencias | `mod_pow`, `mod_inverse` y la comparación g^s ≡ t·y^c en `Bank.verify` |
 | Transcripción (t, c, s) | `Transcript`, inmutable (`dataclass(frozen=True)`) |
 | Registro de usuarios: id → y | `Bank._users: dict[str, int]` |
-| Sesiones e intentos | `Bank._sessions: dict[str, (id, t, c)]`, de un solo uso; `Bank._failures: dict[str, int]` |
-| Conjunto de pruebas usadas | `Bank._used_proofs: set[(id, t, s)]` (lo usará Fiat-Shamir) |
+| Sesiones e intentos | `Bank._sessions: dict[str, (id, t, c)]`, de un solo uso; `Bank._open_sessions: dict[str, str]` (a lo sumo una sesión pendiente por usuario); `Bank._failures: dict[str, int]` |
+| Conjunto de pruebas usadas | `Bank._used_proofs: set[(t, s)]` (lo usará Fiat-Shamir) |
 
 ## Pruebas y trazabilidad (Tabla 7 del escrito)
 
@@ -199,7 +199,9 @@ Cada prueba lleva `@pytest.mark.req("Rn")`. Al terminar, `pytest` imprime cada p
 - **Rango de r.** El cliente toma r ∈ [1, q − 1], como dice la Tabla 1. Por eso, con p = 23 el cliente real produce q·(q − 1) = **110** transcripciones distintas. El simulador recorre los q² pares (c, s) y descarta t = 1, que un cliente honesto nunca envía. Así obtiene exactamente las mismas 110, sin conocer x. Con r = 0 se tendría t = 1 y s = c·x, lo que delataría x.
 - **Primo seguro.** `validate_params` exige p = 2q + 1, como pide R1. Los grupos de Schnorr del informe final (q mucho menor que p) se validarán con `require_safe_prime=False`.
 - **«x no viaja» con p = 23.** `http_client.py` siempre verifica que solo viajen los campos públicos `user_id, y, t, session_id, s`. Que el *valor* de x no aparezca es concluyente con q grande. Con q = 11, un t o un s puede coincidir con x por azar (probabilidad ≈ 1/q), así que eso se informa como nota y no como fuga. La prueba automática de R11 usa `safe-256`.
-- **Impostor.** Para medir la probabilidad por intento (1/q), el experimento desactiva el bloqueo. Con el bloqueo a los 3 fallos, la probabilidad de entrar es a lo sumo 1 − (1 − 1/q)³.
+- **Intentos abandonados.** Cada usuario tiene a lo sumo una sesión pendiente. Pedir un reto nuevo sin responder el anterior descarta esa sesión y la cuenta como intento fallido. Sin esta regla, un impostor podría abrir retos sin responderlos hasta que saliera el c que adivinó, sin que nunca se le contara un fallo.
+- **Impostor.** Para medir la probabilidad por intento (1/q), el experimento desactiva el bloqueo. Con el bloqueo a los 3 fallos y la regla anterior, la probabilidad de entrar es a lo sumo 1 − (1 − 1/q)³.
+- **Auditoría completa.** `/audit/log` guarda también los cuerpos que el banco rechazó por mal formados (por ejemplo, uno que trajera un campo `x`). La respuesta 422 explica el motivo en español sin repetir la entrada.
 
 ## Convenciones del código
 

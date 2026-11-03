@@ -1,7 +1,9 @@
 """Objetos inmutables del protocolo: transcripción (t, c, s) y resultado de una verificación."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
+from types import MappingProxyType
 
 
 class Reason(StrEnum):
@@ -42,5 +44,9 @@ class VerifyResult:
     accepted: bool
     reason: Reason
     transcript: Transcript | None = None
-    details: dict[str, int] = field(default_factory=dict)
+    details: Mapping[str, int] = field(default_factory=dict)
     attempts_left: int | None = None
+
+    def __post_init__(self) -> None:
+        # Copia de solo lectura: el resultado es inmutable aunque se construya con un dict.
+        object.__setattr__(self, "details", MappingProxyType(dict(self.details)))

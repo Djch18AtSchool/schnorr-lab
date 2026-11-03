@@ -5,7 +5,8 @@ En lugar de esperar el reto del banco, el cliente lo calcula con una función ha
     c = SHA-256(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q,
 donde m es la fecha y hora del intento. Incluir p, g, y el identificador sigue el RFC 8235
 (Hao, 2017). Contra la repetición de una prueba vieja, el banco exige |ahora − m| ≤ Δ y
-guarda las pruebas usadas (id, t, s) en Bank._used_proofs.
+guarda los pares (t, s) ya usados en Bank._used_proofs. Como c depende del identificador,
+el par (t, s) basta para reconocer una prueba repetida.
 """
 
 from dataclasses import dataclass
@@ -55,8 +56,8 @@ def verify_nizk(
 ) -> VerifyResult:
     """Verifica una prueba no interactiva. Cubre R8.
 
-    Con protect=True: rechaza |now − m| > window y (id, t, s) ya usada; recalcula c con
-    hash_challenge y aplica los pasos 3 a 8 de Bank.verify; si acepta, registra (id, t, s).
+    Con protect=True: rechaza |now − m| > window y un par (t, s) ya usado; recalcula c con
+    hash_challenge y aplica los pasos 3 a 8 de Bank.verify; si acepta, registra (t, s).
     Con protect=False: sin m, sin ventana y sin registro (modo vulnerable, para attacks/replay.py).
     """
     raise NotImplementedError(PENDING_MESSAGE)

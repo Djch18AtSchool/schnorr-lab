@@ -62,7 +62,7 @@ def mod_pow(base: int, exp: int, mod: int, trace: list[str] | None = None) -> in
 def euclid_steps(a: int, b: int) -> tuple[int, int, int, tuple[EuclidStep, ...]]:
     """Algoritmo Extendido de Euclides iterativo, conservando cada división (definiciones 3 y 4).
 
-    Devuelve (d, u, v, pasos) con d = mcd(a, b) y u·a + v·b = d.
+    Devuelve (d, u, v, pasos) con d = mcd(a, b) y u·a + v·b = d. Cubre R5.
     """
     prev_r, r = a, b
     prev_u, u = 1, 0

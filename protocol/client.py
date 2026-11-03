@@ -25,9 +25,10 @@ class Client:
         x: int | None = None,
         trace: list[str] | None = None,
     ) -> None:
-        """x al azar en [1, q − 1] con secrets si no se da (solo el ejemplo didáctico fija x = 7).
+        """Crea el par de claves: x al azar en [1, q − 1] con secrets e y = g^x mod p. Cubre R2 y R3.
 
-        Si trace no es None, agrega los pasos de mod_pow usados para calcular y = g^x mod p.
+        Solo el ejemplo didáctico fija x (x = 7). Nodo «Cliente elige x y calcula y» de la
+        Figura 1. Si trace no es None, agrega los pasos de mod_pow usados para calcular y.
         """
         if x is not None and not 1 <= x <= gp.q - 1:
             raise ValueError("x debe cumplir 1 ≤ x ≤ q − 1.")
@@ -71,7 +72,7 @@ class Client:
         return mod_pow(self._gp.g, self._r, self._gp.p, trace)
 
     def respond(self, c: int) -> int:
-        """Respuesta s = (r + c·x) mod q. Borra r después de usarlo (un solo uso).
+        """Respuesta s = (r + c·x) mod q; borra r después de usarlo (un solo uso). Cubre R3 y R6.
 
         Un segundo respond sin commit lanza RuntimeError: así el cliente honesto nunca
         reutiliza r, que permitiría despejar x (ver attacks/nonce_reuse.py).

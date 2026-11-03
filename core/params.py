@@ -83,7 +83,7 @@ def validate_params(gp: GroupParams, require_safe_prime: bool = True) -> list[st
 def in_subgroup(u: int, gp: GroupParams) -> bool:
     """True si 1 <= u < p y u^q ≡ 1 (mod p): u pertenece al subgrupo generado por g (definición 7).
 
-    Se usa para validar y y t antes de verificar (R9).
+    Se usa para validar y y t antes de verificar. Cubre R1 y R9.
     """
     return 1 <= u < gp.p and mod_pow(u, gp.q, gp.p) == 1
 
@@ -213,7 +213,7 @@ def get_group(name: str, cache_path: Path = GROUPS_FILE) -> GroupParams:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Genera (o confirma) los primos seguros pedidos y los guarda en core/groups.json."""
+    """Genera (o confirma) los primos seguros pedidos y los guarda en core/groups.json. Cubre R1 y R7."""
     parser = argparse.ArgumentParser(description="Genera primos seguros y los guarda en core/groups.json.")
     parser.add_argument("--generate", nargs="+", type=int, choices=SAFE_GROUP_BITS, required=True)
     args = parser.parse_args(argv)

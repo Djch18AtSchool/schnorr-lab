@@ -31,7 +31,7 @@ def simulate(gp: GroupParams, y: int, c: int, s: int) -> int:
 
 
 def simulate_random(gp: GroupParams, y: int) -> Transcript:
-    """Una transcripción simulada al azar con la misma distribución que la del cliente real."""
+    """Una transcripción simulada al azar con la misma distribución que la del cliente real. Cubre R10."""
     while True:
         c, s = secrets.randbelow(gp.q), secrets.randbelow(gp.q)
         t = simulate(gp, y, c, s)
@@ -46,7 +46,7 @@ def _check_small(gp: GroupParams) -> None:
 
 
 def enumerate_real(gp: GroupParams, x: int) -> Counter[Transcript]:
-    """Todas las transcripciones del cliente honesto: r ∈ [1, q − 1] y c ∈ [0, q − 1]."""
+    """Todas las transcripciones del cliente honesto: r ∈ [1, q − 1] y c ∈ [0, q − 1]. Cubre R10."""
     _check_small(gp)
     client = Client("real", gp, x=x)
     transcripts: Counter[Transcript] = Counter()
@@ -58,7 +58,7 @@ def enumerate_real(gp: GroupParams, x: int) -> Counter[Transcript]:
 
 
 def enumerate_simulated(gp: GroupParams, y: int) -> Counter[Transcript]:
-    """Todas las transcripciones del simulador, que solo conoce y: (c, s) ∈ Z_q², sin t = 1."""
+    """Todas las transcripciones del simulador, que solo conoce y: (c, s) ∈ Z_q², sin t = 1. Cubre R10."""
     _check_small(gp)
     transcripts: Counter[Transcript] = Counter()
     for c in range(gp.q):
@@ -80,7 +80,7 @@ def _bank_accepts_all(gp: GroupParams, y: int, transcripts: Counter[Transcript])
 
 
 def run(gp: GroupParams = TOY_GROUP, verbose: bool = False) -> dict:
-    """Compara las distribuciones real y simulada y verifica las simuladas con el banco."""
+    """Compara las distribuciones real y simulada y verifica las simuladas con el banco. Cubre R10."""
     x = TOY_EXAMPLE["x"] if gp == TOY_GROUP else random_exponent(gp.q)
     y = mod_pow(gp.g, x, gp.p)
     real, simulated = enumerate_real(gp, x), enumerate_simulated(gp, y)

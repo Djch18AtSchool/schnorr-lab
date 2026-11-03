@@ -19,7 +19,7 @@ PENDING_FINAL = pytest.mark.xfail(
 @pytest.mark.req("R10")
 @PENDING_FINAL
 def test_repeticion_se_acepta_sin_proteccion_y_se_rechaza_con_proteccion():
-    result = replay.run()
+    result = replay.replay_experiment()
     assert result["accepted_without_protection"]
     assert not result["accepted_with_protection"]
 
@@ -36,7 +36,7 @@ def test_bsgs_encuentra_x_7_con_m_4():
 @pytest.mark.slow
 @PENDING_FINAL
 def test_tiempo_de_bsgs_crece_como_raiz_de_q():
-    rows = stolen_db.run(bits=[16, 20, 24])
+    rows = stolen_db.stolen_db_experiment(bits=[16, 20, 24])
     assert all(row["x_found"] == row["x_real"] for row in rows)
 
 

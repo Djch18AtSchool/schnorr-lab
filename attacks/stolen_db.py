@@ -12,10 +12,15 @@ RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 DEFAULT_BITS = (16, 20, 24, 28, 32, 36, 40)
 
 
-def run(bits: list[int] | None = None, verbose: bool = False) -> list[dict]:
+def stolen_db_experiment(bits: list[int] | None = None, verbose: bool = False) -> list[dict]:
     """Una fila por tamaño de q: bits, x real, x encontrada, operaciones y segundos. Cubre R10.
 
     Los grupos se generan al vuelo; guarda results/bsgs.csv y la gráfica en escala
     logarítmica results/bsgs.png. Hipótesis: el tiempo crece como √q.
     """
     raise NotImplementedError(PENDING_MESSAGE)
+
+
+def run(bits: list[int] | None = None, verbose: bool = False) -> list[dict]:
+    """Punto de entrada del menú (opción 4): ejecuta stolen_db_experiment. Cubre R10."""
+    return stolen_db_experiment(bits, verbose)

@@ -10,7 +10,7 @@ efecto de k. El nivel de seguridad de cada tamaño sigue la definición 10 (Bark
 
 from pathlib import Path
 
-from core.params import GroupParams
+from protocol import GroupParams
 
 PENDING_MESSAGE = "Disponible en el informe final: medición de latencia"
 DEFAULT_REPS = 31
@@ -24,7 +24,7 @@ def measure_auth(gp: GroupParams, reps: int = DEFAULT_REPS) -> float:
     raise NotImplementedError(PENDING_MESSAGE)
 
 
-def run(groups: list[str] | None = None, reps: int = DEFAULT_REPS) -> list[dict]:
+def measure(groups: list[str] | None = None, reps: int = DEFAULT_REPS) -> list[dict]:
     """Una fila por grupo: name, bits_p, bits_q, mediana, razón con el anterior y predicciones. Cubre R7.
 
     Guarda results/latency.csv.
@@ -33,5 +33,5 @@ def run(groups: list[str] | None = None, reps: int = DEFAULT_REPS) -> list[dict]
 
 
 def plot(rows: list[dict]) -> None:
-    """results/latency.png: tiempo frente a bits de p, primos seguros y grupos de Schnorr, ejes log."""
+    """results/latency.png: tiempo frente a bits de p (primos seguros y grupos de Schnorr), ejes log. Cubre R7."""
     raise NotImplementedError(PENDING_MESSAGE)
