@@ -54,6 +54,15 @@ def test_opciones_en_esqueleto_avisan_en_lugar_de_fallar(capsys, option):
 
 
 @pytest.mark.req("R11")
+def test_opcion_4_ejecuta_el_laboratorio_de_ataques(capsys):
+    assert demo.main(["--option", "4"]) == 0
+    out = capsys.readouterr().out
+    assert "mod 11 = 7" in out                       # x recuperada por reutilización de r
+    assert "¿Misma distribución? sí" in out
+    assert "[Impostor]" in out and "Disponible en el informe final" in out
+
+
+@pytest.mark.req("R11")
 def test_menu_interactivo_termina_con_la_opcion_0(capsys, monkeypatch):
     answers = iter(["9", "1", "0"])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(answers))

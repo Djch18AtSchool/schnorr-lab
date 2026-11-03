@@ -13,6 +13,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
+from attacks import impostor, nonce_reuse, simulator
 from protocol import TOY_GROUP, GroupParams, get_group, validate_params
 from protocol.bank import Bank
 from protocol.client import Client
@@ -190,6 +191,15 @@ def option_pending(name: str) -> Callable[[bool], None]:
     return run
 
 
+def option_attacks(_verbose: bool) -> None:
+    """Opción 4: ejecuta los ataques funcionales con p = 23 e informa los pendientes."""
+    for attack in (nonce_reuse, simulator, impostor):
+        attack.run(verbose=True)
+        print()
+    for name in ("Repetición de pruebas (Fiat-Shamir)", "Base de datos robada (BSGS)"):
+        print(f"[{name}] {PENDING}.")
+
+
 def option_tests(_verbose: bool) -> None:
     """Opción 7: ejecuta pytest (sin las pruebas lentas) e imprime la tabla de trazabilidad."""
     completed = subprocess.run([sys.executable, "-m", "pytest", "-m", "not slow"], cwd=ROOT, check=False)
@@ -199,7 +209,7 @@ def option_tests(_verbose: bool) -> None:
 OPTIONS: dict[str, Callable[[bool], None]] = {
     "1": option_example,
     "3": option_pending("Variante no interactiva (Fiat-Shamir)"),
-    "4": option_pending("Laboratorio de ataques"),
+    "4": option_attacks,
     "5": option_pending("Medición de latencia"),
     "6": option_pending("BSGS"),
     "7": option_tests,
