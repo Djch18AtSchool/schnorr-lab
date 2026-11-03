@@ -14,6 +14,7 @@ import argparse
 import json
 import secrets
 from dataclasses import dataclass
+from typing import Any
 
 import httpx
 
@@ -66,15 +67,16 @@ def _post(http: httpx.Client, path: str, body: dict[str, str], show: bool) -> ht
     return response
 
 
-def _expect(response: httpx.Response, code: int) -> dict:
+def _expect(response: httpx.Response, code: int, kind: type = dict) -> Any:
+    """Cuerpo de la respuesta si el código y el tipo son los esperados; si no, ApiError."""
     body = _body_of(response)
-    if response.status_code != code or not isinstance(body, dict):
+    if response.status_code != code or not isinstance(body, kind):
         raise ApiError(f"respuesta inesperada {response.status_code} en {response.request.url.path}: {body}")
     return body
 
 
 def fetch_group(http: httpx.Client, show: bool = True) -> GroupParams:
-    """Lee /params y valida (p, q, g) antes de usarlos: no se confía en datos externos."""
+    """Lee /params y valida (p, q, g) antes de usarlos: no se confía en datos externos. Cubre R1 y R11."""
     response = http.get("/params")
     _show("← GET /params", _body_of(response), show)
     data = _expect(response, 200)
@@ -111,7 +113,7 @@ def _register(http: httpx.Client, gp: GroupParams, user_id: str, show: bool) -> 
 
 
 def find_secret_leaks(x: int, gp: GroupParams, bodies: list[dict]) -> tuple[list[str], list[str]]:
-    """Devuelve (fugas, notas): campos no públicos o el valor de x dentro de algún cuerpo."""
+    """Devuelve (fugas, notas): campos no públicos o el valor de x dentro de algún cuerpo. Cubre R11."""
     secret = str(x)
     conclusive = gp.q.bit_length() >= MIN_Q_BITS_FOR_VALUE_CHECK
     leaks: list[str] = []
@@ -120,38 +122,56 @@ def find_secret_leaks(x: int, gp: GroupParams, bodies: list[dict]) -> tuple[list
         for key, value in body.items():
             if key not in PUBLIC_FIELDS:
                 leaks.append(f"campo no público «{key}» en {body}")
-            elif value == secret and conclusive:
+            elif str(value) == secret and conclusive:
                 leaks.append(f"el valor de x aparece en el campo «{key}»")
-            elif value == secret:
+            elif str(value) == secret:
                 notes.append(f"«{key}» = {value} coincide numéricamente con x; con q = {gp.q} ocurre "
                              f"con probabilidad ≈ 1/q y es el valor público {key}, no x")
     return leaks, notes
 
 
-def login_over_http(http: httpx.Client, user_id: str = DEFAULT_USER, show: bool = True) -> LoginReport:
-    """Registro e inicio de sesión completos por HTTP, y comprobación de que x no viajó."""
-    gp = fetch_group(http, show)
-    client, sent = _register(http, gp, user_id, show)
-
+def _login(http: httpx.Client, client: Client, show: bool) -> tuple[list[dict], dict]:
+    """Compromiso, reto y respuesta. Devuelve los cuerpos enviados y la decisión del banco."""
     commit_body = {"user_id": client.user_id, "t": str(client.commit())}
     commit = _expect(_post(http, "/login/commit", commit_body, show), 200)
-    respond_body = {"session_id": str(commit["session_id"]), "s": str(client.respond(int(commit["c"])))}
+    try:
+        respond_body = {"session_id": str(commit["session_id"]), "s": str(client.respond(int(commit["c"])))}
+    except (KeyError, TypeError, ValueError) as error:
+        raise ApiError(f"el banco envió un reto inválido: {commit}") from error
     verdict = _expect(_post(http, "/login/respond", respond_body, show), 200)
-    sent += [commit_body, respond_body]
+    return [commit_body, respond_body], verdict
 
-    audit = http.get("/audit/log").json()
-    audit_bodies = [entry["body"] for entry in audit]
-    leaks, notes = find_secret_leaks(client.x, gp, [*sent, *audit_bodies])
-    if any(body not in audit_bodies for body in sent):
+
+def _own_audit_bodies(http: httpx.Client, sent: list[dict]) -> list[dict]:
+    """Entradas de /audit/log de este cliente (mismos user_id o session_id que lo enviado)."""
+    entries = _expect(http.get("/audit/log"), 200, list)
+    ids = {(key, body[key]) for body in sent for key in ("user_id", "session_id") if key in body}
+    bodies = [entry.get("body") for entry in entries if isinstance(entry, dict)]
+    return [body for body in bodies
+            if isinstance(body, dict) and any(body.get(key) == value for key, value in ids)]
+
+
+def login_over_http(http: httpx.Client, user_id: str = DEFAULT_USER, show: bool = True) -> LoginReport:
+    """Registro e inicio de sesión completos por HTTP, y comprobación de que x no viajó. Cubre R11."""
+    gp = fetch_group(http, show)
+    client, register_bodies = _register(http, gp, user_id, show)
+    login_bodies, verdict = _login(http, client, show)
+    sent = [*register_bodies, *login_bodies]
+
+    audit = _own_audit_bodies(http, sent)
+    unseen = [body for body in audit if body not in sent]   # lo enviado ya se revisa una vez
+    leaks, notes = find_secret_leaks(client.x, gp, [*sent, *unseen])
+    if any(body not in audit for body in sent):
         leaks.append("/audit/log no contiene todos los cuerpos enviados: la auditoría no es confiable")
-    return LoginReport(client.user_id, client.x, bool(verdict["accepted"]), str(verdict["reason"]),
+    return LoginReport(client.user_id, client.x, verdict.get("accepted") is True, str(verdict.get("reason")),
                        tuple(sent), len(audit), tuple(leaks), tuple(notes))
 
 
 def print_verdict(report: LoginReport) -> None:
+    """Resumen final: fugas encontradas (si las hay), notas y decisión del banco. Cubre R11."""
     print("\n=== Comprobación: ¿viajó x? ===")
     print(f"x local (solo existe en este proceso): {report.x}")
-    print(f"Cuerpos enviados: {len(report.sent)}; entradas revisadas en /audit/log: {report.audit_entries}")
+    print(f"Cuerpos enviados: {len(report.sent)}; entradas propias en /audit/log: {report.audit_entries}")
     for leak in report.leaks:
         print(f"✘ FUGA: {leak}")
     if not report.leaks:
@@ -166,6 +186,7 @@ def print_verdict(report: LoginReport) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Punto de entrada de la línea de comandos. Cubre R11."""
     parser = argparse.ArgumentParser(description="Inicia sesión por HTTP mostrando lo que viaja.")
     parser.add_argument("--base", default=DEFAULT_BASE, help=f"URL de la API (por defecto {DEFAULT_BASE})")
     parser.add_argument("--user", default=DEFAULT_USER, help=f"identificador del cliente (por defecto {DEFAULT_USER})")

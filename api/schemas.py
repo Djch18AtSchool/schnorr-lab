@@ -4,7 +4,7 @@ Todos los enteros del protocolo viajan como cadenas decimales («"y": "8"»), po
 (y la página de Swagger) pierde precisión por encima de 2⁵³. Un número JSON se rechaza con 422.
 """
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -76,7 +76,8 @@ class ErrorResponse(BaseModel):
 
 class AuditEntry(BaseModel):
     endpoint: str
-    body: dict[str, str]
+    valid: bool = Field(description="False si el cuerpo se rechazó por mal formado (422)")
+    body: dict[str, Any] = Field(description="Cuerpo tal como llegó al banco")
 
 
 class DemoClientResponse(BaseModel):

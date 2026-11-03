@@ -156,6 +156,25 @@ def test_entradas_mal_formadas_devuelven_422(api, body):
 
 
 @pytest.mark.req("R11")
+def test_cuerpo_rechazado_queda_en_la_auditoria_y_la_respuesta_no_repite_la_entrada(api):
+    leaky = {"user_id": "filtrador", "y": "8", "x": "7"}
+    response = api.post("/register", json=leaky)
+    assert response.status_code == 422
+    assert response.json() == {"reason": "Cuerpo inválido: x: campo no permitido (solo viajan valores públicos)"}
+    assert api.get("/audit/log").json() == [{"endpoint": "/register", "valid": False, "body": leaky}]
+    leaks, _ = http_client.find_secret_leaks(x=7, gp=TOY_GROUP, bodies=[leaky])
+    assert leaks  # el campo «x» se detecta aunque el banco lo haya rechazado
+
+
+@pytest.mark.req("R11")
+def test_cuerpo_que_no_es_json_tambien_se_audita(api):
+    response = api.post("/login/respond", content=b"{roto", headers={"content-type": "application/json"})
+    assert response.status_code == 422 and "JSON" in response.json()["reason"]
+    entry = api.get("/audit/log").json()[0]
+    assert entry["valid"] is False and entry["body"] == {"_cuerpo_no_json": "{roto"}
+
+
+@pytest.mark.req("R11")
 def test_cliente_de_demostracion_devuelve_x_pero_no_entra_al_banco_ni_a_la_auditoria(api):
     response = api.post("/demo/client", json={"user_id": USER, "x": "7"})
     assert response.status_code == 201
