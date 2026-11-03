@@ -150,7 +150,10 @@ def test_rechaza_t_fuera_del_subgrupo(t):
 
 
 @pytest.mark.req("R9")
-@pytest.mark.parametrize(("y", "reason"), [(1, Reason.Y_IS_ONE), (5, Reason.Y_NOT_IN_SUBGROUP), (23, Reason.Y_NOT_IN_SUBGROUP)])
+@pytest.mark.parametrize(
+    ("y", "reason"),
+    [(1, Reason.Y_IS_ONE), (5, Reason.Y_NOT_IN_SUBGROUP), (23, Reason.Y_NOT_IN_SUBGROUP)],
+)
 def test_rechaza_claves_publicas_invalidas(y, reason):
     result = Bank(TOY_GROUP).register(USER_ID, y)
     assert not result.accepted and result.reason == reason

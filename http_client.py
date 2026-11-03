@@ -88,17 +88,22 @@ def fetch_group(http: httpx.Client, show: bool = True) -> GroupParams:
     return gp
 
 
+def _register_body(client: Client) -> dict[str, str]:
+    user_id, y = client.register_payload()
+    return {"user_id": user_id, "y": str(y)}
+
+
 def _register(http: httpx.Client, gp: GroupParams, user_id: str, show: bool) -> tuple[Client, list[dict]]:
     """Registra al cliente; si el id ya existe en el servidor, usa uno con sufijo aleatorio."""
     client = Client(user_id, gp)
-    body = dict(zip(("user_id", "y"), map(str, client.register_payload())))
+    body = _register_body(client)
     response = _post(http, "/register", body, show)
     sent = [body]
     if response.status_code == 400 and _body_of(response) == {"reason": Reason.USER_EXISTS}:
         client = Client(f"{user_id}-{secrets.token_hex(2)}", gp)
         if show:
             print(f"(«{user_id}» ya estaba registrado; se usa «{client.user_id}»)")
-        body = dict(zip(("user_id", "y"), map(str, client.register_payload())))
+        body = _register_body(client)
         response = _post(http, "/register", body, show)
         sent.append(body)
     _expect(response, 201)
