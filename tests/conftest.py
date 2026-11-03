@@ -51,6 +51,8 @@ def _summary_line(req: str, results: list[str]) -> str:
     passed = results.count("passed")
     pending = results.count("xfailed")
     others = len(results) - passed - pending
+    if passed == others == 0:
+        return f"{req:<4} {pending} pendiente(s) para el informe final"
     text = f"{req:<4} {passed}/{len(results) - pending} aprobadas"
     if pending:
         text += f", {pending} pendiente(s) para el informe final"
