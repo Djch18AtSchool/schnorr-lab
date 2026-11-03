@@ -47,6 +47,8 @@ def test_la_vista_de_usuarios_no_permite_modificar_el_banco():
 
 @pytest.mark.req("R3")
 def test_r_y_c_no_se_repiten_en_1000_inicios_de_sesion():
+    # Tabla 7 pide q de 256 bits. En safe-256, q = (p − 1)/2 tiene 255 bits, así que se usa
+    # safe-512 (q de 511 bits): el criterio se cumple con holgura.
     gp = get_group("safe-512")
     assert gp.q.bit_length() >= 256
     bank, client = registrar(gp)
@@ -122,8 +124,14 @@ def test_quien_no_conoce_x_es_rechazado_con_reto_distinto_al_adivinado():
 
 # ------------------------------------------------------- R7: distintos tamaños de p
 
+PENDING_2048 = pytest.mark.xfail(raises=NotImplementedError, strict=True,
+                                 reason="Grupo RFC 3526 de 2048 bits: disponible en el informe final")
+
+
 @pytest.mark.req("R7")
-@pytest.mark.parametrize("name", ["toy", "safe-256", "safe-512", "safe-1024"])
+@pytest.mark.parametrize(
+    "name", ["toy", "safe-256", "safe-512", "safe-1024", pytest.param("rfc-2048", marks=PENDING_2048)]
+)
 def test_autenticacion_honesta_con_cada_tamano_de_p(name):
     bank, client = registrar(get_group(name))
     assert all(login(bank, client).accepted for _ in range(3))
@@ -180,13 +188,22 @@ def test_bloquea_al_tercer_fallo_y_rechaza_el_cuarto_intento_aunque_sea_valido()
 
 
 @pytest.mark.req("R9")
-def test_sesion_abierta_antes_del_bloqueo_tambien_se_rechaza():
+def test_un_reto_nuevo_descarta_la_sesion_pendiente_y_cuenta_un_fallo():
     bank, client = registrar(TOY_GROUP, x=7)
-    honest_session = _open_session(bank, client)
-    for _ in range(3):
-        bank.verify(_open_session(bank, client), 5)
-    result = bank.verify(honest_session, 4)  # (12, 3, 4) es válida, pero la cuenta está bloqueada
-    assert not result.accepted and result.reason == Reason.ACCOUNT_LOCKED
+    abandoned = _open_session(bank, client)
+    current = _open_session(bank, client)
+    assert bank.attempts_left(USER_ID) == 2
+    assert bank.verify(abandoned, 4).reason == Reason.INVALID_SESSION
+    assert bank.verify(current, 4).accepted
+
+
+@pytest.mark.req("R9")
+def test_abandonar_retos_para_esperar_el_adivinado_no_evita_el_bloqueo():
+    # Ataque: abrir retos sin responder hasta que salga el c que el impostor adivinó.
+    bank, client = registrar(TOY_GROUP, x=7)
+    outcomes = [bank.challenge(USER_ID, client.commit()) for _ in range(4)]
+    assert all(isinstance(o, tuple) for o in outcomes[:3])
+    assert isinstance(outcomes[3], VerifyResult) and outcomes[3].reason == Reason.ACCOUNT_LOCKED
 
 
 @pytest.mark.req("R9")

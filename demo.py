@@ -82,7 +82,7 @@ def _print_example_verification(gp: GroupParams, y: int, result: VerifyResult) -
 
 
 def option_example(verbose: bool) -> None:
-    """Opción 1: reproduce la transcripción del escrito con p = 23, x = 7, r = 5 y c = 3."""
+    """Opción 1: reproduce la transcripción del escrito con p = 23, x = 7, r = 5 y c = 3. Cubre R11."""
     gp = TOY_GROUP
     y_steps, t_steps, verify_steps = (_new_trace(verbose) for _ in range(3))
     valid = CHECK if not validate_params(gp) else CROSS
@@ -136,21 +136,22 @@ def _load_group(name: str) -> GroupParams | None:
 
 
 def _show_lockout(bank: Bank, client: Client) -> None:
-    """Envía max_attempts respuestas alteradas y luego una correcta, para mostrar R9."""
+    """Envía max_attempts respuestas alteradas y luego intenta entrar con la clave correcta. Cubre R9."""
     print()
-    _say("[Bloqueo]", f"Se envían {bank.max_attempts} respuestas falsas y después una correcta:")
+    _say("[Bloqueo]", f"Se envían {bank.max_attempts} respuestas falsas y después se intenta con la clave correcta:")
     for attempt in range(1, bank.max_attempts + 1):
         session_id, c = bank.challenge(USER_ID, client.commit())
         forged_s = (client.respond(c) + 1) % bank.gp.q
         result = bank.verify(session_id, forged_s)
         print(f"{INDENT}Intento {attempt}: s alterado → {result.reason} (quedan {result.attempts_left})")
     final = bank.challenge(USER_ID, client.commit())
-    reason = final.reason if isinstance(final, VerifyResult) else "aceptado (no debería ocurrir)"
-    print(f"{INDENT}Intento {bank.max_attempts + 1} (respuesta correcta): {reason}")
+    reason = final.reason if isinstance(final, VerifyResult) else "reto entregado (no debería ocurrir)"
+    print(f"{INDENT}Intento {bank.max_attempts + 1} (con la clave correcta): el banco ni siquiera "
+          f"entrega un reto → {reason}")
 
 
 def option_interactive(verbose: bool, group_name: str | None = None) -> None:
-    """Opción 2: autenticación completa con x, r y c aleatorios en el grupo elegido."""
+    """Opción 2: autenticación con x, r y c aleatorios en el grupo elegido. Cubre R3, R7, R9 y R11."""
     gp = _load_group(group_name or _ask_group())
     if gp is None:
         return
@@ -186,13 +187,15 @@ def option_interactive(verbose: bool, group_name: str | None = None) -> None:
 # ---------------------------------------------------------------- resto de opciones
 
 def option_pending(name: str) -> Callable[[bool], None]:
+    """Opción en esqueleto: avisa «Disponible en el informe final» en lugar de fallar. Cubre R11."""
     def run(_verbose: bool) -> None:
+        """Imprime el aviso de la opción pendiente. Cubre R11."""
         print(f"{name}: {PENDING}.")
     return run
 
 
 def option_attacks(_verbose: bool) -> None:
-    """Opción 4: ejecuta los ataques funcionales con p = 23 e informa los pendientes."""
+    """Opción 4: ejecuta los ataques funcionales con p = 23 e informa los pendientes. Cubre R10 y R11."""
     for attack in (nonce_reuse, simulator, impostor):
         attack.run(verbose=True)
         print()
@@ -201,7 +204,7 @@ def option_attacks(_verbose: bool) -> None:
 
 
 def option_tests(_verbose: bool) -> None:
-    """Opción 7: ejecuta pytest (sin las pruebas lentas) e imprime la tabla de trazabilidad."""
+    """Opción 7: ejecuta pytest (sin las pruebas lentas) e imprime la trazabilidad. Cubre R11."""
     completed = subprocess.run([sys.executable, "-m", "pytest", "-m", "not slow"], cwd=ROOT, check=False)
     print(f"pytest terminó con código {completed.returncode}.")
 
@@ -217,7 +220,7 @@ OPTIONS: dict[str, Callable[[bool], None]] = {
 
 
 def run_option(option: str, verbose: bool, group: str | None) -> bool:
-    """Ejecuta una opción; devuelve False si la opción no existe."""
+    """Ejecuta una opción; devuelve False si la opción no existe. Cubre R11."""
     if option == "2":
         option_interactive(verbose, group)
         return True
@@ -245,6 +248,7 @@ def _menu_loop(verbose: bool, group: str | None) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Punto de entrada: menú interactivo o una sola opción con --option. Cubre R11."""
     parser = argparse.ArgumentParser(description="Schnorr Lab: autenticación sin contraseñas con Schnorr.")
     parser.add_argument("--option", choices=[key for key, _ in MENU], help="ejecuta una opción y sale")
     parser.add_argument("--verbose", action="store_true", help="imprime cada paso con sus números")

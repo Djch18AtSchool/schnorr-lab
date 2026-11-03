@@ -17,13 +17,15 @@ TOY_EXAMPLE = {"x": 7, "r": 5, "c1": 3, "c2": 5}  # con p = 23: s₁ = 4, s₂ =
 
 
 class FaultyClient(Client):
-    """Cliente defectuoso: no borra r después de responder y lo reutiliza en el siguiente compromiso."""
+    """Cliente defectuoso: no borra r y lo reutiliza en el siguiente compromiso. Cubre R10."""
 
     def commit(self, r: int | None = None, trace: list[str] | None = None) -> int:
+        """Reutiliza el r anterior si no se borró (el defecto que se ataca). Cubre R10."""
         reused = self._r if r is None else r
         return super().commit(r=reused, trace=trace)
 
     def respond(self, c: int) -> int:
+        """Responde igual que Client.respond, pero conserva r para el próximo intento. Cubre R10."""
         kept = self._r
         s = super().respond(c)
         self._r = kept  # el error: r sigue disponible para el próximo intento
@@ -37,16 +39,28 @@ def extract_secret(gp: GroupParams, c1: int, s1: int, c2: int, s2: int) -> int:
     return (s1 - s2) * mod_inverse(c1 - c2, gp.q) % gp.q
 
 
-def _second_challenge(bank: Bank, t: int, first_c: int, fixed_c: int | None) -> tuple[str, int]:
-    """Pide retos hasta obtener uno distinto del primero (con q grande ocurre a la primera)."""
+def _login(bank: Bank, victim: FaultyClient, fixed_c: int | None) -> tuple[int, int, bool]:
+    """Un inicio de sesión completo de la víctima: devuelve (c, s, aceptado)."""
+    session_id, c = bank.challenge(VICTIM_ID, victim.commit(), c=fixed_c)
+    s = victim.respond(c)
+    return c, s, bank.verify(session_id, s).accepted
+
+
+def _login_with_new_challenge(bank: Bank, victim: FaultyClient, first_c: int,
+                              fixed_c: int | None) -> tuple[int, int, bool]:
+    """Repite inicios de sesión completos hasta que el banco elija un reto distinto del primero.
+
+    Con q grande ocurre a la primera. No se abandonan sesiones, porque cada una abandonada
+    cuenta como intento fallido y podría bloquear a la víctima.
+    """
     while True:
-        session_id, c = bank.challenge(VICTIM_ID, t, c=fixed_c)
+        c, s, accepted = _login(bank, victim, fixed_c)
         if c != first_c:
-            return session_id, c
+            return c, s, accepted
 
 
 def run(gp: GroupParams = TOY_GROUP, verbose: bool = False) -> dict:
-    """Dos inicios de sesión válidos con el mismo r y extracción de x a partir de lo público.
+    """Dos inicios de sesión válidos con el mismo r y extracción de x a partir de lo público. Cubre R10.
 
     Con el grupo de ejemplo usa r = 5 y retos 3 y 5 (s = 4 y 7 → x = 7); con otros grupos,
     valores aleatorios.
@@ -56,19 +70,14 @@ def run(gp: GroupParams = TOY_GROUP, verbose: bool = False) -> dict:
     victim = FaultyClient(VICTIM_ID, gp, x=example["x"])
     bank.register(*victim.register_payload())
 
-    t = victim.commit(r=example["r"])
-    session_1, c1 = bank.challenge(VICTIM_ID, t, c=example["c1"])
-    s1 = victim.respond(c1)
-    first = bank.verify(session_1, s1)
-
-    session_2, c2 = _second_challenge(bank, victim.commit(), c1, example["c2"])
-    s2 = victim.respond(c2)
-    second = bank.verify(session_2, s2)
+    t = victim.commit(r=example["r"])  # el FaultyClient repetirá este r (y este t) siempre
+    c1, s1, first_accepted = _login(bank, victim, example["c1"])
+    c2, s2, second_accepted = _login_with_new_challenge(bank, victim, c1, example["c2"])
 
     x_extracted = extract_secret(gp, c1, s1, c2, s2)
     result = {
         "t": t, "c1": c1, "s1": s1, "c2": c2, "s2": s2,
-        "both_accepted": first.accepted and second.accepted,
+        "both_accepted": first_accepted and second_accepted,
         "x_real": victim.x, "x_extracted": x_extracted, "recovered": x_extracted == victim.x,
     }
     if verbose:

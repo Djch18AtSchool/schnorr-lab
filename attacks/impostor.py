@@ -3,6 +3,11 @@
 El impostor adivina el reto c' antes de comprometerse: elige s al azar y envía
 t = g^s·(y^c')^-1, que es válido solo si el banco elige c = c'. Como el banco toma c con
 secrets en [0, q − 1], eso ocurre con probabilidad 1/q (9.09 % con q = 11).
+
+Esperar el reto adivinado abriendo varios retos y dejando sin responder los demás no sirve:
+el banco admite una sola sesión pendiente por usuario y cada sesión abandonada cuenta como
+intento fallido, así que con el bloqueo a los 3 fallos la probabilidad de entrar es a lo sumo
+1 − (1 − 1/q)³.
 """
 
 import secrets
@@ -39,7 +44,7 @@ def impostor_rate(gp: GroupParams, trials: int) -> float:
 
 
 def run(gp: GroupParams = TOY_GROUP, verbose: bool = False, trials: int = DEFAULT_TRIALS) -> dict:
-    """Tasa observada frente a 1/q y probabilidad de éxito antes del bloqueo (tres intentos)."""
+    """Tasa observada frente a 1/q y probabilidad de éxito antes del bloqueo (tres intentos). Cubre R10."""
     rate = impostor_rate(gp, trials)
     expected = 1 / gp.q
     result = {

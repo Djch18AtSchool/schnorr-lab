@@ -1,10 +1,15 @@
 """Banco (verificador) del protocolo de Schnorr: vive en el servidor (R2, R3, R6, R9).
 
 Estado del banco (estructuras discretas de la sección «Objetos y estructuras discretas»):
-    _users:       dict[str, int]                  id → y, y nada más
-    _sessions:    dict[str, tuple[str, int, int]] session_id → (id, t, c), un solo uso
-    _failures:    dict[str, int]                  id → fallos consecutivos
-    _used_proofs: set[tuple[str, int, int]]       (id, t, s) ya usadas, para Fiat-Shamir (R8)
+    _users:         dict[str, int]                  id → y, y nada más
+    _sessions:      dict[str, tuple[str, int, int]] session_id → (id, t, c), un solo uso
+    _open_sessions: dict[str, str]                  id → session_id pendiente (a lo sumo una)
+    _failures:      dict[str, int]                  id → intentos fallidos consecutivos
+    _used_proofs:   set[tuple[int, int]]            pares (t, s) ya usados, para Fiat-Shamir (R8)
+
+Un intento abandonado también es un intento fallido: si el usuario pide un reto nuevo con una
+sesión pendiente, esa sesión se descarta y suma un fallo. Sin esta regla, un impostor podría
+abrir retos sin responderlos hasta que saliera el c que adivinó, sin acumular fallos.
 """
 
 import re
@@ -30,8 +35,9 @@ class Bank:
         self._max_attempts = max_attempts
         self._users: dict[str, int] = {}
         self._sessions: dict[str, tuple[str, int, int]] = {}
+        self._open_sessions: dict[str, str] = {}
         self._failures: dict[str, int] = {}
-        self._used_proofs: set[tuple[str, int, int]] = set()  # lo usará protocol/fiat_shamir.py
+        self._used_proofs: set[tuple[int, int]] = set()  # lo usará protocol/fiat_shamir.py
 
     @property
     def gp(self) -> GroupParams:
@@ -47,9 +53,11 @@ class Bank:
         return dict(self._users)
 
     def is_locked(self, user_id: str) -> bool:
+        """True si el usuario acumuló max_attempts fallos (nodo «Bloquear» de la Figura 1). Cubre R9."""
         return self._failures.get(user_id, 0) >= self._max_attempts
 
     def attempts_left(self, user_id: str) -> int:
+        """Intentos que le quedan al usuario antes del bloqueo. Cubre R9."""
         return max(0, self._max_attempts - self._failures.get(user_id, 0))
 
     def register(self, user_id: str, y: int) -> VerifyResult:
@@ -68,12 +76,15 @@ class Bank:
     def challenge(self, user_id: str, t: int, c: int | None = None) -> tuple[str, int] | VerifyResult:
         """Recibe el compromiso t y devuelve (session_id, c). Cubre R3 y R9.
 
-        Rechaza usuario inexistente o bloqueado. Si t no está en el subgrupo, suma un fallo
-        y devuelve un VerifyResult rechazado. Si todo va bien, elige c con secrets.randbelow(q)
-        (o usa el dado, solo para el ejemplo didáctico) y crea una sesión de un solo uso.
+        Rechaza usuario inexistente. Si el usuario tenía una sesión pendiente, la descarta y
+        suma un fallo (intento abandonado). Rechaza usuario bloqueado. Si t no está en el
+        subgrupo, suma un fallo y devuelve un VerifyResult rechazado. Si todo va bien, elige
+        c con secrets.randbelow(q) (o usa el dado, solo para el ejemplo didáctico) y crea una
+        sesión de un solo uso.
         """
         if user_id not in self._users:
             return VerifyResult(False, Reason.USER_NOT_FOUND)
+        self._abandon_pending_session(user_id)
         if self.is_locked(user_id):
             return VerifyResult(False, Reason.ACCOUNT_LOCKED, attempts_left=0)
         if not in_subgroup(t, self._gp):
@@ -83,6 +94,7 @@ class Bank:
         c_value = secrets.randbelow(self._gp.q) if c is None else c
         session_id = secrets.token_hex(SESSION_ID_BYTES)
         self._sessions[session_id] = (user_id, t, c_value)
+        self._open_sessions[user_id] = session_id
         return session_id, c_value
 
     def verify(self, session_id: str, s: int, trace: list[str] | None = None) -> VerifyResult:
@@ -98,6 +110,7 @@ class Bank:
         if session is None:
             return VerifyResult(False, Reason.INVALID_SESSION)
         user_id, t, c = session
+        self._open_sessions.pop(user_id, None)
         if self.is_locked(user_id):
             return VerifyResult(False, Reason.ACCOUNT_LOCKED, attempts_left=0)
         transcript = Transcript(t=t, c=c, s=s)
@@ -131,9 +144,18 @@ class Bank:
         transcript: Transcript | None = None,
         details: dict[str, int] | None = None,
     ) -> VerifyResult:
-        """Suma un fallo al usuario; al llegar a max_attempts queda bloqueado (R9)."""
-        self._failures[user_id] = self._failures.get(user_id, 0) + 1
+        """Suma un fallo al usuario y devuelve el rechazo; al llegar a max_attempts queda bloqueado (R9)."""
+        self._count_failure(user_id)
         return VerifyResult(False, reason, transcript, details or {}, self.attempts_left(user_id))
+
+    def _count_failure(self, user_id: str) -> None:
+        self._failures[user_id] = self._failures.get(user_id, 0) + 1
+
+    def _abandon_pending_session(self, user_id: str) -> None:
+        """Descarta la sesión pendiente del usuario, si la hay, y la cuenta como intento fallido."""
+        session_id = self._open_sessions.pop(user_id, None)
+        if session_id is not None and self._sessions.pop(session_id, None) is not None:
+            self._count_failure(user_id)
 
 
 def _indent(lines: list[str]) -> list[str]:
