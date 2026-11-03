@@ -1,0 +1,178 @@
+$ python -m pytest
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.13, pytest-9.2.0, pluggy-1.7.0
+rootdir: schnorr_lab
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.16.0
+collected 145 items
+
+tests/test_api.py .......................                                [ 15%]
+tests/test_attacks.py ..............                                     [ 25%]
+tests/test_demo.py ..........                                            [ 32%]
+tests/test_fiat_shamir.py xxxxx                                          [ 35%]
+tests/test_modular.py ........................                           [ 52%]
+tests/test_params.py .........................xxxx                       [ 72%]
+tests/test_pending.py xxxx                                               [ 75%]
+tests/test_protocol.py .................x..................              [100%]
+=============== Trazabilidad: requerimiento → prueba → resultado ===============
+
+R1   test_exige_p_igual_a_2q_mas_1_salvo_que_se_indique_lo_contrario passed
+R1   test_generador_exige_que_q_divida_a_p_menos_1                  passed
+R1   test_generador_se_obtiene_como_h_al_cuadrado_en_un_primo_seguro passed
+R1   test_get_group_devuelve_el_ejemplo_y_rechaza_nombres_desconocidos passed
+R1   test_get_group_genera_y_guarda_si_falta_en_el_archivo          passed
+R1   test_get_group_rechaza_un_archivo_mal_formado                  passed
+R1   test_get_group_rechaza_un_grupo_alterado_en_el_archivo         passed
+R1   test_grupo_de_ejemplo_23_11_4_es_valido                        passed
+R1   test_parametros_incorrectos_se_rechazan[21-10-4]               passed
+R1   test_parametros_incorrectos_se_rechazan[23-11-1]               passed
+R1   test_parametros_incorrectos_se_rechazan[23-11-23]              passed
+R1   test_parametros_incorrectos_se_rechazan[23-11-5]               passed
+R1   test_parametros_incorrectos_se_rechazan[23-7-4]                passed
+R1   test_parametros_incorrectos_se_rechazan[24-11-4]               passed
+R1   test_pertenencia_al_subgrupo_de_orden_q                        passed
+R1   test_primo_seguro_rechaza_tamanos_demasiado_pequenos           passed
+R1   test_primos_seguros_pequenos_son_validos[128]                  passed
+R1   test_primos_seguros_pequenos_son_validos[16]                   passed
+R1   test_primos_seguros_pequenos_son_validos[32]                   passed
+R1   test_primos_seguros_pequenos_son_validos[5]                    passed
+R1   test_primos_seguros_pequenos_son_validos[64]                   passed
+R1   test_validacion_explica_cada_falla_en_espanol                  passed
+R2   test_el_banco_nunca_contiene_x_ni_despues_de_iniciar_sesion    passed
+R2   test_la_vista_de_usuarios_no_permite_modificar_el_banco        passed
+R2   test_registro_guarda_solo_id_y_clave_publica                   passed
+R3   test_cliente_rechaza_x_fuera_de_rango[-1]                      passed
+R3   test_cliente_rechaza_x_fuera_de_rango[0]                       passed
+R3   test_cliente_rechaza_x_fuera_de_rango[11]                      passed
+R3   test_el_cliente_borra_r_despues_de_responder                   passed
+R3   test_r_y_c_no_se_repiten_en_1000_inicios_de_sesion             passed
+R3   test_x_aleatoria_queda_en_el_rango_1_a_q_menos_1               passed
+R4   test_mod_pow_coincide_con_pow_en_1000_casos_aleatorios         passed
+R4   test_mod_pow_rechaza_exponente_negativo_o_modulo_menor_que_2[-1-23] passed
+R4   test_mod_pow_rechaza_exponente_negativo_o_modulo_menor_que_2[3--5] passed
+R4   test_mod_pow_rechaza_exponente_negativo_o_modulo_menor_que_2[3-0] passed
+R4   test_mod_pow_rechaza_exponente_negativo_o_modulo_menor_que_2[3-1] passed
+R4   test_mod_pow_reduce_bases_negativas_como_pow                   passed
+R4   test_mod_pow_traza_un_paso_por_bit_del_exponente               passed
+R4   test_mod_pow_valores_de_referencia_del_escrito[4-11-23-1]      passed
+R4   test_mod_pow_valores_de_referencia_del_escrito[4-5-23-12]      passed
+R4   test_mod_pow_valores_de_referencia_del_escrito[4-7-23-8]       passed
+R4   test_mod_pow_valores_de_referencia_del_escrito[5-0-23-1]       passed
+R4   test_mod_pow_valores_de_referencia_del_escrito[8-3-23-6]       passed
+R5   test_extended_gcd_cumple_identidad_de_bezout_en_casos_aleatorios passed
+R5   test_extended_gcd_ejemplo_del_escrito                          passed
+R5   test_mod_inverse_coincide_con_sympy_en_1000_casos_aleatorios   passed
+R5   test_mod_inverse_lanza_error_si_no_existe_inverso[0-23]        passed
+R5   test_mod_inverse_lanza_error_si_no_existe_inverso[23-23]       passed
+R5   test_mod_inverse_lanza_error_si_no_existe_inverso[3-1]         passed
+R5   test_mod_inverse_lanza_error_si_no_existe_inverso[4-22]        passed
+R5   test_mod_inverse_traza_divisiones_y_despeje                    passed
+R5   test_mod_inverse_valores_de_referencia[-2-11-5]                passed
+R5   test_mod_inverse_valores_de_referencia[18-23-9]                passed
+R5   test_mod_inverse_valores_de_referencia[6-23-4]                 passed
+R5   test_mod_inverse_valores_de_referencia[9-11-5]                 passed
+R6   test_completitud_todo_cliente_honesto_es_aceptado              passed
+R6   test_ejemplo_del_escrito_12_3_4_es_aceptado                    passed
+R6   test_quien_no_conoce_x_es_rechazado_con_reto_distinto_al_adivinado passed
+R6   test_respuesta_falsa_s_5_es_rechazada                          passed
+R7   test_autenticacion_honesta_con_cada_tamano_de_p[rfc-2048]      xfailed
+R7   test_autenticacion_honesta_con_cada_tamano_de_p[safe-1024]     passed
+R7   test_autenticacion_honesta_con_cada_tamano_de_p[safe-256]      passed
+R7   test_autenticacion_honesta_con_cada_tamano_de_p[safe-512]      passed
+R7   test_autenticacion_honesta_con_cada_tamano_de_p[toy]           passed
+R7   test_grupos_rfc_y_de_schnorr_son_validos[rfc-2048]             xfailed
+R7   test_grupos_rfc_y_de_schnorr_son_validos[rfc-3072]             xfailed
+R7   test_grupos_rfc_y_de_schnorr_son_validos[schnorr-2048]         xfailed
+R7   test_grupos_rfc_y_de_schnorr_son_validos[schnorr-3072]         xfailed
+R7   test_grupos_seguros_del_repositorio_son_validos[safe-1024]     passed
+R7   test_grupos_seguros_del_repositorio_son_validos[safe-256]      passed
+R7   test_grupos_seguros_del_repositorio_son_validos[safe-512]      passed
+R7   test_latencia_mide_una_autenticacion_completa                  xfailed
+R8   test_prueba_con_m_fuera_de_la_ventana_es_rechazada             xfailed
+R8   test_prueba_no_interactiva_valida_es_aceptada                  xfailed
+R8   test_prueba_repetida_es_rechazada                              xfailed
+R8   test_reto_hash_es_deterministico_y_menor_que_q                 xfailed
+R8   test_sin_proteccion_la_misma_prueba_se_acepta_dos_veces        xfailed
+R9   test_abandonar_retos_para_esperar_el_adivinado_no_evita_el_bloqueo passed
+R9   test_banco_rechaza_reto_fijo_fuera_de_rango                    passed
+R9   test_bloquea_al_tercer_fallo_y_rechaza_el_cuarto_intento_aunque_sea_valido passed
+R9   test_cada_sesion_se_usa_una_sola_vez                           passed
+R9   test_rechaza_claves_publicas_invalidas[y=1]                    passed
+R9   test_rechaza_claves_publicas_invalidas[y=23]                   passed
+R9   test_rechaza_claves_publicas_invalidas[y=5]                    passed
+R9   test_rechaza_registro_repetido_e_identificadores_invalidos     passed
+R9   test_rechaza_s_fuera_de_rango[-1]                              passed
+R9   test_rechaza_s_fuera_de_rango[100]                             passed
+R9   test_rechaza_s_fuera_de_rango[11]                              passed
+R9   test_rechaza_t_fuera_del_subgrupo[-4]                          passed
+R9   test_rechaza_t_fuera_del_subgrupo[0]                           passed
+R9   test_rechaza_t_fuera_del_subgrupo[23]                          passed
+R9   test_rechaza_t_fuera_del_subgrupo[5]                           passed
+R9   test_reto_para_usuario_inexistente_se_rechaza                  passed
+R9   test_un_acceso_exitoso_reinicia_el_contador_de_fallos          passed
+R9   test_un_reto_nuevo_descarta_la_sesion_pendiente_y_cuenta_un_fallo passed
+R10  test_bsgs_encuentra_x_7_con_m_4                                xfailed
+R10  test_cliente_defectuoso_repite_el_compromiso                   passed
+R10  test_enumeracion_se_niega_con_q_mayor_que_2_a_la_12            passed
+R10  test_extraccion_con_formula_del_escrito                        passed
+R10  test_extraccion_exige_retos_distintos                          passed
+R10  test_impostor_no_gana_con_q_grande                             passed
+R10  test_impostor_reporta_la_probabilidad_antes_del_bloqueo        passed
+R10  test_repeticion_se_acepta_sin_proteccion_y_se_rechaza_con_proteccion xfailed
+R10  test_reutilizar_r_permite_recuperar_x_7                        passed
+R10  test_reutilizar_r_tambien_rompe_un_grupo_grande                passed
+R10  test_run_del_simulador_resume_la_comparacion                   passed
+R10  test_simulador_ejemplo_c_2_s_9_da_t_2                          passed
+R10  test_simulador_no_genera_t_igual_a_1                           passed
+R10  test_tasa_del_impostor_se_acerca_a_1_entre_q                   passed
+R10  test_tiempo_de_bsgs_crece_como_raiz_de_q                       xfailed
+R10  test_transcripciones_reales_y_simuladas_tienen_la_misma_distribucion passed
+R10  test_transcripciones_simuladas_cumplen_la_verificacion_del_banco passed
+R11  test_banco_solo_guarda_y                                       passed
+R11  test_cliente_de_demostracion_devuelve_x_pero_no_entra_al_banco_ni_a_la_auditoria passed
+R11  test_cliente_http_con_grupo_de_ejemplo_no_envia_campos_secretos passed
+R11  test_cliente_http_informa_si_la_api_no_esta_disponible         passed
+R11  test_cliente_http_inicia_sesion_y_x_no_aparece_en_ningun_mensaje passed
+R11  test_cliente_http_usa_otro_id_si_el_usuario_ya_existe          passed
+R11  test_compromiso_rechaza_usuario_inexistente_t_invalido_y_cuenta_bloqueada passed
+R11  test_cuerpo_que_no_es_json_tambien_se_audita                   passed
+R11  test_cuerpo_rechazado_queda_en_la_auditoria_y_la_respuesta_no_repite_la_entrada passed
+R11  test_detector_marca_campos_no_publicos_y_valores_de_x_con_q_grande passed
+R11  test_detector_solo_anota_coincidencias_con_q_pequeno           passed
+R11  test_entradas_mal_formadas_devuelven_422[body0]                passed
+R11  test_entradas_mal_formadas_devuelven_422[body1]                passed
+R11  test_entradas_mal_formadas_devuelven_422[body2]                passed
+R11  test_entradas_mal_formadas_devuelven_422[body3]                passed
+R11  test_flujo_completo_con_el_ejemplo_del_escrito                 passed
+R11  test_grupo_desconocido_en_la_variable_de_entorno_falla_al_iniciar passed
+R11  test_menu_interactivo_termina_con_la_opcion_0                  passed
+R11  test_opcion_1_reproduce_exactamente_la_transcripcion_del_escrito passed
+R11  test_opcion_1_verbose_muestra_pasos_de_mod_pow_y_euclides      passed
+R11  test_opcion_2_autentica_y_muestra_el_bloqueo[safe-256]         passed
+R11  test_opcion_2_autentica_y_muestra_el_bloqueo[toy]              passed
+R11  test_opcion_2_informa_grupos_pendientes_sin_fallar             passed
+R11  test_opcion_4_ejecuta_el_laboratorio_de_ataques                passed
+R11  test_opciones_en_esqueleto_avisan_en_lugar_de_fallar[3]        passed
+R11  test_opciones_en_esqueleto_avisan_en_lugar_de_fallar[5]        passed
+R11  test_opciones_en_esqueleto_avisan_en_lugar_de_fallar[6]        passed
+R11  test_params_muestra_el_grupo_de_ejemplo_como_cadenas           passed
+R11  test_registro_invalido_devuelve_400_con_motivo[1]              passed
+R11  test_registro_invalido_devuelve_400_con_motivo[5]              passed
+R11  test_registro_repetido_devuelve_400                            passed
+R11  test_respuesta_fuera_de_rango_y_sesion_reutilizada             passed
+R11  test_veredicto_no_afirma_ausencia_de_x_si_hubo_coincidencias   passed
+=============== Resumen por requerimiento (Tabla 7 del escrito) ================
+R1   22/22 aprobadas
+R2   3/3 aprobadas
+R3   6/6 aprobadas
+R4   12/12 aprobadas
+R5   12/12 aprobadas
+R6   4/4 aprobadas
+R7   7/7 aprobadas, 6 pendiente(s) para el informe final
+R8   5 pendiente(s) para el informe final
+R9   18/18 aprobadas
+R10  14/14 aprobadas, 3 pendiente(s) para el informe final
+R11  33/33 aprobadas
+======================= 131 passed, 14 xfailed in 6.46s ========================

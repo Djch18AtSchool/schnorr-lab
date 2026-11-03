@@ -1,0 +1,15 @@
+$ python demo.py --option 2 --group safe-512
+
+[Parámetros]    safe-512: p de 512 bits, q de 511 bits, g = 4   (válido ✔)
+[Registro]      x = 31785791…016872 (510 bits) (secreta, no sale del cliente)  →  y = 30211535…689791 (510 bits)
+[Compromiso]    r al azar con secrets  →  t = g^r mod p = 14910811…845108 (509 bits)
+[Reto]          c = 89757186…704762 (505 bits) (elegido por el banco con secrets)
+[Respuesta]     s = r + c·x mod q = 67969973…116388 (508 bits)
+[Verificación]  g^s = 37559390…098488 (511 bits)   |   t·y^c = 37559390…098488 (511 bits)   ✔
+>>> ACCESO CONCEDIDO
+
+[Bloqueo]       Se envían 3 respuestas falsas y después se intenta con la clave correcta:
+                Intento 1: s alterado → La congruencia no se cumple (quedan 2)
+                Intento 2: s alterado → La congruencia no se cumple (quedan 1)
+                Intento 3: s alterado → La congruencia no se cumple (quedan 0)
+                Intento 4 (con la clave correcta): el banco ni siquiera entrega un reto → Cuenta bloqueada

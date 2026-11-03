@@ -1,0 +1,62 @@
+$ python http_client.py --base http://127.0.0.1:8771
+
+← GET /params
+{
+  "name": "toy-23",
+  "p": "23",
+  "q": "11",
+  "g": "4",
+  "bits": 5
+}
+→ POST /register
+{
+  "user_id": "cliente01",
+  "y": "13"
+}
+← 201
+{
+  "user_id": "cliente01",
+  "stored": {
+    "y": "13"
+  }
+}
+→ POST /login/commit
+{
+  "user_id": "cliente01",
+  "t": "12"
+}
+← 200
+{
+  "session_id": "c91649d203de72c2",
+  "c": "8"
+}
+→ POST /login/respond
+{
+  "session_id": "c91649d203de72c2",
+  "s": "0"
+}
+← 200
+{
+  "accepted": true,
+  "reason": "Acceso concedido",
+  "transcript": {
+    "t": "12",
+    "c": "8",
+    "s": "0"
+  },
+  "details": {
+    "gs": "1",
+    "yc": "2",
+    "tyc": "1",
+    "yc_inv": "12",
+    "t_rec": "12"
+  },
+  "attempts_left": 3
+}
+
+=== Comprobación: ¿viajó x? ===
+x local (solo existe en este proceso): 9
+Cuerpos enviados: 3; entradas propias en /audit/log: 3
+✔ Solo viajaron campos públicos: user_id, y, t, session_id, s
+✔ El valor de x no aparece en ningún cuerpo enviado ni en /audit/log
+>>> ACCESO CONCEDIDO

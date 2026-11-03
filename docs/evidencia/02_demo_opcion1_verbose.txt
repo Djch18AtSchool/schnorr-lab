@@ -1,0 +1,31 @@
+$ python demo.py --verbose --option 1
+
+[Parámetros]    p = 23   q = 11   g = 4        (g^q ≡ 1 mod p ✔)
+[Registro]      x = 7 (secreta)  →  y = 4^7 mod 23 = 8   (el banco guarda solo y)
+                  · bit 0 = 1   base = 4   acumulador = 4
+                  · bit 1 = 1   base = 16   acumulador = 18
+                  · bit 2 = 1   base = 3   acumulador = 8
+[Compromiso]    r = 5  →  t = 4^5 mod 23 = 12
+                  · bit 0 = 1   base = 4   acumulador = 4
+                  · bit 1 = 0   base = 16   acumulador = 4
+                  · bit 2 = 1   base = 3   acumulador = 12
+[Reto]          c = 3
+[Respuesta]     s = 5 + 3·7 mod 11 = 4
+                  · 5 + 21 = 26 ≡ 4 (mod 11)
+[Verificación]  g^s = 4^4 mod 23 = 3   |   t·y^c = 12·8^3 mod 23 = 3
+                (y^c)^-1 = 6^-1 = 4 (Euclides extendido) → g^s·(y^c)^-1 = 12 = t ✔
+                  · g^s = 4^4 mod 23:
+                  ·     bit 0 = 0   base = 4   acumulador = 1
+                  ·     bit 1 = 0   base = 16   acumulador = 1
+                  ·     bit 2 = 1   base = 3   acumulador = 3
+                  · y^c = 8^3 mod 23:
+                  ·     bit 0 = 1   base = 8   acumulador = 8
+                  ·     bit 1 = 1   base = 18   acumulador = 6
+                  · (y^c)^-1 = 6^-1 mod 23 (Euclides extendido):
+                  ·     23 = 3·6 + 5
+                  ·     6 = 1·5 + 1
+                  ·     5 = 5·1 + 0
+                  ·     Despeje: 5 = −3·6 + 1·23
+                  ·     Despeje: 1 = 4·6 − 1·23
+                  ·     ⇒ 6^-1 ≡ 4 (mod 23)
+>>> ACCESO CONCEDIDO

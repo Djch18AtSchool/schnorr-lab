@@ -1,0 +1,25 @@
+$ python api_example.py http://127.0.0.1:8772
+
+→ POST /demo/client  {"user_id": "cliente01", "x": "7"}
+← 201  {"warning": "Solo para demostración: este cliente vive en el servidor y por eso devuelve x. En el modelo real x nunca sale del dispositivo del usuario (use http_client.py).", "user_id": "cliente01", "x": "7", "y": "8"}
+
+→ POST /register  {"user_id": "cliente01", "y": "8"}
+← 201  {"user_id": "cliente01", "stored": {"y": "8"}}
+
+→ POST /login/commit  {"user_id": "cliente01", "t": "12"}
+← 200  {"session_id": "297af861ff743b2b", "c": "7"}
+
+   (con c = 7: s = (5 + 7·7) mod 11 = 10)
+
+→ POST /login/respond  {"session_id": "297af861ff743b2b", "s": "10"}
+← 200  {"accepted": true, "reason": "Acceso concedido", "transcript": {"t": "12", "c": "7", "s": "10"}, "details": {"gs": "6", "yc": "12", "tyc": "6", "yc_inv": "2", "t_rec": "12"}, "attempts_left": 3}
+
+→ POST /register (cuerpo con un campo x)  {"user_id": "cliente01", "y": "8", "x": "7"}
+← 422  {"reason": "Cuerpo inválido: x: campo no permitido (solo viajan valores públicos)"}
+
+→ GET /bank/users
+← 200  {"cliente01": "8"}
+
+→ GET /audit/log
+← 200  [{"endpoint": "/register", "valid": true, "body": {"user_id": "cliente01", "y": "8"}}, {"endpoint": "/login/commit", "valid": true, "body": {"user_id": "cliente01", "t": "12"}}, {"endpoint": "/login/respond", "valid": true, "body": {"session_id": "297af861ff743b2b", "s": "10"}}, {"endpoint": "/register", "valid": false, "body": {"user_id": "cliente01", "y": "8", "x": "7"}}]
+

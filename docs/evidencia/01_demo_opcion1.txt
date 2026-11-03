@@ -1,0 +1,10 @@
+$ python demo.py --option 1
+
+[Parámetros]    p = 23   q = 11   g = 4        (g^q ≡ 1 mod p ✔)
+[Registro]      x = 7 (secreta)  →  y = 4^7 mod 23 = 8   (el banco guarda solo y)
+[Compromiso]    r = 5  →  t = 4^5 mod 23 = 12
+[Reto]          c = 3
+[Respuesta]     s = 5 + 3·7 mod 11 = 4
+[Verificación]  g^s = 4^4 mod 23 = 3   |   t·y^c = 12·8^3 mod 23 = 3
+                (y^c)^-1 = 6^-1 = 4 (Euclides extendido) → g^s·(y^c)^-1 = 12 = t ✔
+>>> ACCESO CONCEDIDO

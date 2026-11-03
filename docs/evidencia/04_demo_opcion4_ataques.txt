@@ -1,0 +1,19 @@
+$ python demo.py --option 4
+
+[Reutilización de r] La víctima usa el mismo r en dos inicios de sesión (t = 12).
+    Sesión 1: c₁ = 3, s₁ = 4
+    Sesión 2: c₂ = 5, s₂ = 7   (¿el banco aceptó ambas? sí)
+    x = (s₁ − s₂)·(c₁ − c₂)^-1 mod q = (4 − 7)·(3 − 5)^-1 mod 11 = 7
+    ¿Coincide con la x real? sí: por eso el cliente borra r después de responder.
+
+[Simulador] Sin conocer x: elige c = 2, s = 9 y despeja t = g^s·(y^c)^-1 = 2.
+    Transcripciones reales: 110; simuladas: 110; cada una aparece 1 vez.
+    ¿Misma distribución? sí. ¿El banco acepta todas las simuladas? sí.
+    Conclusión: lo que ve el banco puede fabricarse sin x, así que no revela nada de x.
+
+[Impostor] 100000 intentos sin conocer x, adivinando el reto (q = 11).
+    Tasa observada: 9.06%; teórica 1/q: 9.09%; diferencia: 0.03 puntos.
+    Con el bloqueo a los 3 fallos, la probabilidad de entrar es a lo sumo 24.87%; con q de 256 bits es despreciable.
+
+[Repetición de pruebas (Fiat-Shamir)] Disponible en el informe final.
+[Base de datos robada (BSGS)] Disponible en el informe final.
