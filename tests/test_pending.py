@@ -17,7 +17,6 @@ PENDING_FINAL = pytest.mark.xfail(
 
 
 @pytest.mark.req("R10")
-@PENDING_FINAL
 def test_repeticion_se_acepta_sin_proteccion_y_se_rechaza_con_proteccion():
     result = replay.replay_experiment()
     assert result["accepted_without_protection"]
