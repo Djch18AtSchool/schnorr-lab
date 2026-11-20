@@ -1,7 +1,7 @@
 [project]
 name = "schnorr-lab"
-version = "0.2.0"            # 0.2 = segundo avance
-description = "Protocolo de identificación de Schnorr implementado desde cero, con laboratorio de ataques y API HTTP."
+version = "0.3.0"            # 0.3 = entrega final
+description = "Laboratorio de autenticación sin contraseñas: protocolo de Schnorr desde cero, banco y app del celular en vivo, ataques y mediciones."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["sympy", "matplotlib", "fastapi", "uvicorn", "httpx"]
@@ -16,11 +16,12 @@ build-backend = "setuptools.build_meta"
 
 # Distribución plana: se declaran los paquetes para que `pip install -e ".[dev]"` funcione.
 [tool.setuptools]
-packages = ["core", "protocol", "attacks", "benchmark", "api"]
-py-modules = ["demo", "http_client"]
+packages = ["core", "protocol", "attacks", "benchmark", "api", "infra", "mechanisms", "mechanisms.zkp", "client_app"]
+py-modules = ["demo", "http_client", "lab"]
 
 [tool.setuptools.package-data]
 core = ["groups.json"]
+client_app = ["static/*.html", "static/*.css", "static/js/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
