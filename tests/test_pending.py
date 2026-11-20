@@ -25,7 +25,6 @@ def test_repeticion_se_acepta_sin_proteccion_y_se_rechaza_con_proteccion():
 
 
 @pytest.mark.req("R10")
-@PENDING_FINAL
 def test_bsgs_encuentra_x_7_con_m_4():
     x, operations = bsgs(g=4, y=8, p=23, q=11)
     assert x == 7
