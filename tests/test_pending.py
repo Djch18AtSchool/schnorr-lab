@@ -32,10 +32,8 @@ def test_bsgs_encuentra_x_7_con_m_4():
 
 
 @pytest.mark.req("R10")
-@pytest.mark.slow
-@PENDING_FINAL
-def test_tiempo_de_bsgs_crece_como_raiz_de_q():
-    rows = stolen_db.stolen_db_experiment(bits=[16, 20, 24])
+def test_tiempo_de_bsgs_crece_como_raiz_de_q(tmp_path):
+    rows = stolen_db.stolen_db_experiment(bits=[16, 20, 24], results_dir=tmp_path)
     assert all(row["x_found"] == row["x_real"] for row in rows)
 
 
