@@ -15,3 +15,6 @@ results/*
 .vscode/
 .idea/
 .DS_Store
+
+# Copias de trabajo aisladas de los agentes
+.claude/

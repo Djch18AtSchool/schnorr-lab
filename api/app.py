@@ -1,231 +1,147 @@
-"""API HTTP del banco: el protocolo de Schnorr entre cliente y servidor separados (R11).
+"""API HTTP del banco: monta los mecanismos de autenticación registrados (R11).
 
 Ejecutar desde la raíz:  uvicorn api.app:app --reload   y abrir http://127.0.0.1:8000/docs
-El grupo se elige con la variable de entorno SCHNORR_GROUP (por defecto «toy», p = 23).
-Hay un único Bank en memoria por proceso; reiniciar el servidor borra usuarios y sesiones.
+- SCHNORR_GROUP: grupo del ZKP (por defecto «toy», p = 23).
+- BANK_CORS_ORIGINS: orígenes de la interfaz que pueden leer las vistas del laboratorio
+  (por defecto la app del celular en http://127.0.0.1:8001).
+Cada mecanismo aporta sus rutas (/zkp/...); este módulo agrega lo común: qué guarda el banco,
+la auditoría de cuerpos recibidos, los eventos en tiempo real y el reinicio del laboratorio.
 """
 
 import os
-import threading
-from collections import deque
+from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, FastAPI, Request, status
+from fastapi import APIRouter, Depends, FastAPI, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
 
-from api.schemas import (
-    AuditEntry,
-    CommitRequest,
-    CommitResponse,
-    DemoClientRequest,
-    DemoClientResponse,
-    ErrorResponse,
-    ParamsResponse,
-    RegisterRequest,
-    RegisterResponse,
-    RespondRequest,
-    VerifyResponse,
-)
-from protocol import GroupParams, get_group
-from protocol.bank import Bank
-from protocol.client import Client
-from protocol.transcript import Reason, VerifyResult
+from api.schemas import AuditEntryOut, EventOut, ResetRequest
+from api.validation import validation_handler
+from infra.events import CORRELATION_HEADER, current_correlation_id
+from infra.server_context import ServerContext
+from infra.sse import sse_response
+from mechanisms.base import ServerMechanism
+from mechanisms.common import ErrorResponse, error_response
+from mechanisms.registry import create_servers
 
 GROUP_ENV_VAR = "SCHNORR_GROUP"
 DEFAULT_GROUP = "toy"
-MAX_AUDIT_ENTRIES = 10_000
-VALIDATION_ERROR_STATUS = 422          # cuerpo mal formado (Unprocessable Content)
-MAX_RAW_BODY_CHARS = 2_000
-AUDITED_PATHS = frozenset({"/register", "/login/commit", "/login/respond"})
-RAW_BODY_KEY = "_cuerpo_no_json"
-DEMO_WARNING = ("Solo para demostración: este cliente vive en el servidor y por eso devuelve x. "
-                "En el modelo real x nunca sale del dispositivo del usuario (use http_client.py).")
-COMMIT_ERROR_STATUS = {
-    Reason.USER_NOT_FOUND: status.HTTP_404_NOT_FOUND,
-    Reason.ACCOUNT_LOCKED: status.HTTP_423_LOCKED,
-}
-VALIDATION_MESSAGES = {
-    "missing": "falta el campo",
-    "extra_forbidden": "campo no permitido (solo viajan valores públicos)",
-    "string_type": "debe ser una cadena (los enteros viajan como cadenas decimales)",
-    "string_pattern_mismatch": "formato inválido",
-    "json_invalid": "el cuerpo no es un JSON válido",
-    "model_attributes_type": "el cuerpo debe ser un objeto JSON",
-}
+GROUP_SETTING = "zkp_group"
+CORS_ENV_VAR = "BANK_CORS_ORIGINS"
+DEFAULT_CORS_ORIGINS = "http://127.0.0.1:8001,http://localhost:8001"
+MAX_EVENTS_PAGE = 5_000
+PENDING_MESSAGE = "Disponible en el informe final"
 
 
-class LabState:
-    """Estado del proceso: el banco y la bitácora de auditoría de todo lo que recibió."""
+class BankState:
+    """Estado del proceso del banco: el contexto compartido y la parte del banco de cada mecanismo."""
 
-    def __init__(self, gp: GroupParams) -> None:
-        self.bank = Bank(gp)
-        self.audit: deque[AuditEntry] = deque(maxlen=MAX_AUDIT_ENTRIES)
-        self.lock = threading.Lock()   # Bank no es seguro entre hilos; FastAPI usa varios
+    def __init__(self, ctx: ServerContext, servers: dict[str, ServerMechanism]) -> None:
+        self.ctx = ctx
+        self.servers = servers
 
-    def record(self, endpoint: str, body: dict[str, Any], valid: bool = True) -> None:
-        """Agrega un cuerpo recibido a la bitácora de auditoría. Cubre R11."""
-        self.audit.append(AuditEntry(endpoint=endpoint, valid=valid, body=body))
-
-
-def get_state(request: Request) -> LabState:
-    """Dependencia de FastAPI: el estado del proceso (banco y auditoría). Cubre R11."""
-    return request.app.state.lab
+    def audited_paths(self) -> list[tuple[str, str]]:
+        """Pares (ruta, mecanismo) cuyos cuerpos se auditan. Cubre R11."""
+        return [(path, mechanism_id) for mechanism_id, server in self.servers.items()
+                for path in server.audited_paths]
 
 
-State = Annotated[LabState, Depends(get_state)]
-router = APIRouter()
+def get_state(request: Request) -> BankState:
+    """Dependencia de FastAPI: el estado del banco. Cubre R11."""
+    return request.app.state.bank
 
 
-def _error(code: int, reason: str) -> JSONResponse:
-    return JSONResponse(status_code=code, content={"reason": str(reason)})
+State = Annotated[BankState, Depends(get_state)]
+router = APIRouter(tags=["laboratorio"])
 
 
-def _verify_response(result: VerifyResult) -> VerifyResponse:
-    transcript = result.transcript
-    return VerifyResponse(
-        accepted=result.accepted,
-        reason=str(result.reason),
-        transcript=None if transcript is None else {"t": str(transcript.t), "c": str(transcript.c),
-                                                    "s": str(transcript.s)},
-        details={key: str(value) for key, value in result.details.items()},
-        attempts_left=result.attempts_left,
-    )
+@router.get("/mechanisms", summary="Mecanismos de autenticación disponibles")
+def list_mechanisms(state: State) -> list[dict[str, Any]]:
+    """Cada mecanismo con sus flujos, pasos y la configuración actual del banco. Cubre R11."""
+    return [{**server.info.to_json(), "server": server.describe()} for server in state.servers.values()]
 
 
-@router.get("/params", response_model=ParamsResponse, tags=["parámetros"],
-            summary="Parámetros públicos (p, q, g)")
-def read_params(state: State) -> ParamsResponse:
-    """Devuelve el grupo que usa el banco; los enteros van como cadenas decimales. Cubre R1 y R11."""
-    gp = state.bank.gp
-    return ParamsResponse(name=gp.name, p=str(gp.p), q=str(gp.q), g=str(gp.g), bits=gp.bits)
+@router.get("/bank/users", summary="Lo que guarda el banco de cada usuario, por mecanismo")
+def bank_users(state: State) -> dict[str, dict[str, dict[str, str]]]:
+    """Con el ZKP, solo la clave pública y de cada cliente, nunca x. Cubre R2 y R11."""
+    return {mechanism_id: server.stored_credentials() for mechanism_id, server in state.servers.items()}
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=RegisterResponse,
-             responses={400: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
-             tags=["banco"], summary="Registrar un cliente")
-def register(body: RegisterRequest, state: State) -> RegisterResponse | JSONResponse:
-    """El cliente envía solo su clave pública y. Cubre R2, R9 y R11.
+@router.get("/audit/log", response_model=list[AuditEntryOut], summary="Todos los cuerpos recibidos, en orden")
+def audit_log(state: State) -> list[AuditEntryOut]:
+    """Incluye los cuerpos rechazados por mal formados (valid = false): permite comprobar que x nunca llegó.
 
-    Se rechaza un id repetido, y = 1 o y fuera del subgrupo de orden q.
+    Cubre R11.
     """
-    with state.lock:
-        state.record("/register", body.model_dump())
-        result = state.bank.register(body.user_id, int(body.y))
-        stored = state.bank.users.get(body.user_id)
-    if not result.accepted or stored is None:
-        return _error(status.HTTP_400_BAD_REQUEST, result.reason)
-    return RegisterResponse(user_id=body.user_id, stored={"y": str(stored)})
+    return [AuditEntryOut(**vars(entry)) for entry in state.ctx.audit_entries()]
 
 
-@router.post("/login/commit", response_model=CommitResponse, tags=["banco"],
-             responses={400: {"model": ErrorResponse}, 404: {"model": ErrorResponse},
-                        422: {"model": ErrorResponse}, 423: {"model": ErrorResponse}},
-             summary="Paso 1: enviar el compromiso t y recibir el reto c")
-def login_commit(body: CommitRequest, state: State) -> CommitResponse | JSONResponse:
-    """El banco valida t (debe estar en el subgrupo de orden q) y responde con un reto c aleatorio.
-
-    Cada usuario tiene a lo sumo una sesión pendiente: pedir otro reto sin responder el anterior
-    cuenta como intento fallido. Cubre R3, R9 y R11.
-    """
-    with state.lock:
-        state.record("/login/commit", body.model_dump())
-        outcome = state.bank.challenge(body.user_id, int(body.t))
-    if isinstance(outcome, VerifyResult):
-        return _error(COMMIT_ERROR_STATUS.get(outcome.reason, status.HTTP_400_BAD_REQUEST), outcome.reason)
-    session_id, c = outcome
-    return CommitResponse(session_id=session_id, c=str(c))
+@router.get("/events", response_model=list[EventOut], summary="Eventos del banco desde un identificador")
+def list_events(state: State, since: int = 0, limit: int = Query(500, ge=1, le=MAX_EVENTS_PAGE)) -> list[EventOut]:
+    """Lo que el banco recibió y decidió, en orden (para consultar sin conexión en vivo). Cubre R11."""
+    return [EventOut(**event.to_json()) for event in state.ctx.events.since(since, limit)]
 
 
-@router.post("/login/respond", response_model=VerifyResponse, tags=["banco"],
-             responses={422: {"model": ErrorResponse}},
-             summary="Paso 2: enviar la respuesta s y recibir la decisión")
-def login_respond(body: RespondRequest, state: State) -> VerifyResponse:
-    """El banco comprueba g^s ≡ t·y^c (mod p) y t ≡ g^s·(y^c)^-1 (mod p); la sesión se consume.
-
-    Cubre R6, R9 y R11.
-    """
-    with state.lock:
-        state.record("/login/respond", body.model_dump())
-        result = state.bank.verify(body.session_id, int(body.s))
-    return _verify_response(result)
+@router.get("/events/stream", summary="Eventos del banco en tiempo real (Server-Sent Events)")
+def stream_events(state: State, request: Request, since: int = 0) -> StreamingResponse:
+    """Flujo text/event-stream que la interfaz escucha para mostrar el banco en vivo. Cubre R11."""
+    return sse_response(state.ctx.events, request, since)
 
 
-@router.get("/bank/users", response_model=dict[str, str], tags=["auditoría"],
-            summary="Lo que guarda el banco: id → y")
-def bank_users(state: State) -> dict[str, str]:
-    """Muestra que el banco guarda solo la clave pública y de cada cliente, nunca x. Cubre R2 y R11."""
-    with state.lock:
-        return {user_id: str(y) for user_id, y in state.bank.users.items()}
-
-
-@router.get("/audit/log", response_model=list[AuditEntry], tags=["auditoría"],
-            summary="Todos los cuerpos recibidos por el banco, en orden")
-def audit_log(state: State) -> list[AuditEntry]:
-    """Bitácora de /register, /login/commit y /login/respond, incluidos los cuerpos rechazados
-    por mal formados (valid = false): permite comprobar que x nunca llegó. Cubre R11.
-    """
-    with state.lock:
-        return list(state.audit)
-
-
-@router.post("/demo/client", status_code=status.HTTP_201_CREATED, response_model=DemoClientResponse,
-             responses={400: {"model": ErrorResponse}}, tags=["demostración"],
-             summary="Crear un cliente de prueba (solo para Swagger)")
-def demo_client(body: DemoClientRequest, state: State) -> DemoClientResponse | JSONResponse:
-    """Calcula un par de claves en el servidor y devuelve x e y para poder probar con clics. Cubre R11.
-
-    Está separado del banco: no registra al cliente ni aparece en /audit/log.
-    """
+@router.post("/lab/reset", summary="Reiniciar el banco (solo laboratorio)", response_model=None,
+             responses={400: {"model": ErrorResponse}})
+def reset_lab(body: ResetRequest, state: State) -> list[dict[str, Any]] | JSONResponse:
+    """Borra usuarios, sesiones y auditoría; opcionalmente cambia el grupo del ZKP. Cubre R7 y R11."""
+    settings = {GROUP_SETTING: body.group} if body.group else {}
     try:
-        client = Client(body.user_id, state.bank.gp, x=None if body.x is None else int(body.x))
+        for server in state.servers.values():
+            server.reset(settings)
+    except NotImplementedError as error:
+        return error_response(status.HTTP_400_BAD_REQUEST, f"{PENDING_MESSAGE}: {error}")
     except ValueError as error:
-        return _error(status.HTTP_400_BAD_REQUEST, str(error))
-    return DemoClientResponse(warning=DEMO_WARNING, user_id=client.user_id, x=str(client.x), y=str(client.y))
+        return error_response(status.HTTP_400_BAD_REQUEST, str(error))
+    state.ctx.clear_audit()
+    state.ctx.events.publish("sistema", "log", f"Banco reiniciado{f' con el grupo {body.group}' if body.group else ''}")
+    return list_mechanisms(state)
 
 
-def _audit_body(raw: object) -> dict[str, Any]:
-    """Cuerpo recibido tal cual; si no era un objeto JSON, se guarda como texto recortado."""
-    if isinstance(raw, dict):
-        return {str(key): value for key, value in raw.items()}
-    text = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw)
-    return {RAW_BODY_KEY: text[:MAX_RAW_BODY_CHARS]}
+async def correlation_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """Copia X-Correlation-Id de la petición a los eventos que el banco publique al atenderla. Cubre R11."""
+    token = current_correlation_id.set(request.headers.get(CORRELATION_HEADER))
+    try:
+        return await call_next(request)
+    finally:
+        current_correlation_id.reset(token)
 
 
-def _describe(error: dict[str, Any]) -> str:
-    field = ".".join(str(part) for part in error.get("loc", ())[1:] if isinstance(part, str)) or "cuerpo"
-    return f"{field}: {VALIDATION_MESSAGES.get(error.get('type', ''), 'valor inválido')}"
+def _cors_origins(configured: str | None) -> list[str]:
+    raw = configured if configured is not None else os.environ.get(CORS_ENV_VAR, DEFAULT_CORS_ORIGINS)
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
-async def on_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
-    """422 en español sin repetir la entrada; si el destino es el banco, el cuerpo queda auditado.
-
-    Cubre R9 y R11.
-    """
-    if request.url.path in AUDITED_PATHS:
-        state = get_state(request)
-        with state.lock:
-            state.record(request.url.path, _audit_body(exc.body), valid=False)
-    reason = "Cuerpo inválido: " + "; ".join(_describe(error) for error in exc.errors())
-    return _error(VALIDATION_ERROR_STATUS, reason)
-
-
-def create_app(group_name: str | None = None) -> FastAPI:
-    """Construye la aplicación con un banco nuevo en el grupo indicado (o el de SCHNORR_GROUP). Cubre R11."""
-    name = group_name or os.environ.get(GROUP_ENV_VAR, DEFAULT_GROUP)
-    gp = get_group(name)
+def create_app(group_name: str | None = None, cors_origins: str | None = None) -> FastAPI:
+    """Construye el banco con todos los mecanismos registrados; el ZKP usa el grupo indicado. Cubre R11."""
+    ctx = ServerContext()
+    servers = create_servers(ctx, {GROUP_SETTING: group_name or os.environ.get(GROUP_ENV_VAR, DEFAULT_GROUP)})
+    state = BankState(ctx, servers)
     app = FastAPI(
         title="Schnorr Lab · API del banco",
-        version="0.2.0",
+        version="0.3.0",
         description=(
-            "Autenticación sin contraseñas con el protocolo de identificación de Schnorr. "
-            f"Grupo actual: **{gp.name}** (p de {gp.bits} bits).\n\n"
-            "Flujo: `POST /register` con y → `POST /login/commit` con t (devuelve c) → "
-            "`POST /login/respond` con s. Todos los enteros viajan como cadenas decimales."
+            "Banco del laboratorio de autenticación sin contraseñas. Cada mecanismo tiene sus rutas; "
+            "el ZKP de Schnorr está en `/zkp`: `POST /zkp/register` con y → `POST /zkp/login/commit` con t "
+            "(devuelve c) → `POST /zkp/login/respond` con s. Todos los enteros viajan como cadenas decimales."
         ),
     )
-    app.state.lab = LabState(gp)
-    app.add_exception_handler(RequestValidationError, on_validation_error)
+    app.state.bank = state
+    app.add_exception_handler(RequestValidationError, validation_handler(ctx, state.audited_paths))
+    app.middleware("http")(correlation_middleware)
+    app.add_middleware(CORSMiddleware, allow_origins=_cors_origins(cors_origins), allow_methods=["GET", "POST"],
+                       allow_headers=["Content-Type", CORRELATION_HEADER, "Last-Event-ID"])
+    for server in servers.values():
+        app.include_router(server.router())
     app.include_router(router)
     return app
 

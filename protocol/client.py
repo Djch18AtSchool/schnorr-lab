@@ -56,6 +56,11 @@ class Client:
         """Clave pública y = g^x mod p, calculada con mod_pow (definición 11)."""
         return self._y
 
+    @property
+    def pending_r(self) -> int | None:
+        """r del compromiso pendiente (None si no hay). Solo para mostrarlo en la pantalla del celular."""
+        return self._r
+
     def register_payload(self) -> tuple[str, int]:
         """(user_id, y): lo único que sale del cliente al registrarse. Cubre R2."""
         return self._user_id, self._y

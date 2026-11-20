@@ -76,14 +76,14 @@ def _expect(response: httpx.Response, code: int, kind: type = dict) -> Any:
 
 
 def fetch_group(http: httpx.Client, show: bool = True) -> GroupParams:
-    """Lee /params y valida (p, q, g) antes de usarlos: no se confía en datos externos. Cubre R1 y R11."""
-    response = http.get("/params")
+    """Lee /zkp/params y valida (p, q, g) antes de usarlos: no se confía en datos externos. Cubre R1 y R11."""
+    response = http.get("/zkp/params")
     _show("← GET /params", _body_of(response), show)
     data = _expect(response, 200)
     try:
         gp = GroupParams(p=int(data["p"]), q=int(data["q"]), g=int(data["g"]), name=str(data["name"]))
     except (KeyError, TypeError, ValueError) as error:
-        raise ApiError(f"/params devolvió datos mal formados: {data}") from error
+        raise ApiError(f"/zkp/params devolvió datos mal formados: {data}") from error
     failures = validate_params(gp, require_safe_prime=not gp.name.startswith("schnorr"))
     if failures:
         raise ApiError(f"el servidor publicó parámetros inválidos: {'; '.join(failures)}")
@@ -99,14 +99,14 @@ def _register(http: httpx.Client, gp: GroupParams, user_id: str, show: bool) -> 
     """Registra al cliente; si el id ya existe en el servidor, usa uno con sufijo aleatorio."""
     client = Client(user_id, gp)
     body = _register_body(client)
-    response = _post(http, "/register", body, show)
+    response = _post(http, "/zkp/register", body, show)
     sent = [body]
     if response.status_code == 400 and _body_of(response) == {"reason": Reason.USER_EXISTS}:
         client = Client(f"{user_id}-{secrets.token_hex(2)}", gp)
         if show:
             print(f"(«{user_id}» ya estaba registrado; se usa «{client.user_id}»)")
         body = _register_body(client)
-        response = _post(http, "/register", body, show)
+        response = _post(http, "/zkp/register", body, show)
         sent.append(body)
     _expect(response, 201)
     return client, sent
@@ -133,12 +133,12 @@ def find_secret_leaks(x: int, gp: GroupParams, bodies: list[dict]) -> tuple[list
 def _login(http: httpx.Client, client: Client, show: bool) -> tuple[list[dict], dict]:
     """Compromiso, reto y respuesta. Devuelve los cuerpos enviados y la decisión del banco."""
     commit_body = {"user_id": client.user_id, "t": str(client.commit())}
-    commit = _expect(_post(http, "/login/commit", commit_body, show), 200)
+    commit = _expect(_post(http, "/zkp/login/commit", commit_body, show), 200)
     try:
         respond_body = {"session_id": str(commit["session_id"]), "s": str(client.respond(int(commit["c"])))}
     except (KeyError, TypeError, ValueError) as error:
         raise ApiError(f"el banco envió un reto inválido: {commit}") from error
-    verdict = _expect(_post(http, "/login/respond", respond_body, show), 200)
+    verdict = _expect(_post(http, "/zkp/login/respond", respond_body, show), 200)
     return [commit_body, respond_body], verdict
 
 
