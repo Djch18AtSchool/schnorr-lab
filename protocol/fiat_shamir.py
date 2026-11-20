@@ -45,7 +45,7 @@ class NizkProof:
 
 
 def current_timestamp() -> int:
-    """Marca de tiempo m en segundos enteros (variable m de la Tabla 1). Cubre R8."""
+    """Marca de tiempo m en segundos enteros (variable m de la Tabla 1, definición 14). Cubre R8."""
     return int(time.time())
 
 

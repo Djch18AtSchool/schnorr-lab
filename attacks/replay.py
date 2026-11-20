@@ -83,7 +83,7 @@ def replay_experiment(gp: GroupParams = TOY_GROUP, verbose: bool = False) -> dic
 
 
 def run(gp: GroupParams = TOY_GROUP, verbose: bool = False) -> dict:
-    """Punto de entrada del menú (opción 4): ejecuta replay_experiment. Cubre R10."""
+    """Punto de entrada del menú (opción 4): ejecuta replay_experiment (definición 14). Cubre R10."""
     return replay_experiment(gp, verbose)
 
 

@@ -151,11 +151,11 @@ class Bank:
         return self._decide(user_id, Transcript(t=t, c=c, s=s), trace)
 
     def is_proof_used(self, t: int, s: int) -> bool:
-        """True si el par (t, s) ya se aceptó antes (conjunto de pruebas usadas). Cubre R8."""
+        """True si el par (t, s) ya se aceptó antes (conjunto de pruebas usadas, definición 14). Cubre R8."""
         return (t, s) in self._used_proofs
 
     def record_proof(self, t: int, s: int) -> None:
-        """Agrega el par (t, s) al conjunto de pruebas usadas, para rechazar su repetición. Cubre R8."""
+        """Agrega (t, s) al conjunto de pruebas usadas (definición 14) para rechazar su repetición. Cubre R8."""
         self._used_proofs.add((t, s))
 
     def _decide(self, user_id: str, transcript: Transcript, trace: list[str] | None) -> VerifyResult:
