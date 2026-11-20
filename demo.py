@@ -8,15 +8,18 @@ Uso:
 """
 
 import argparse
+import json
 import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from attacks import impostor, nonce_reuse, simulator
+from attacks import bsgs, impostor, nonce_reuse, replay, simulator
+from benchmark.latency import format_table
 from protocol import TOY_GROUP, GroupParams, get_group, validate_params
 from protocol.bank import Bank
 from protocol.client import Client
+from protocol.fiat_shamir import DEFAULT_WINDOW_SECONDS, current_timestamp, hash_challenge, prove, verify_nizk
 from protocol.transcript import VerifyResult
 
 ROOT = Path(__file__).resolve().parent
@@ -28,7 +31,7 @@ EXAMPLE_X, EXAMPLE_R, EXAMPLE_C = 7, 5, 3      # transcripción del escrito
 MAX_TRACE_BITS = 64                            # con p más grande la traza bit a bit es ilegible
 MAX_PLAIN_DIGITS = 20
 AVAILABLE_GROUPS = ("toy", "safe-256", "safe-512", "safe-1024")
-PENDING = "Disponible en el informe final"
+LATENCY_RESULTS = ROOT / "results" / "latency.json"
 MENU = (
     ("1", "Ejemplo paso a paso con p = 23 (transcripción del escrito)"),
     ("2", "Autenticación interactiva (elegir grupo) y bloqueo por intentos"),
@@ -186,21 +189,63 @@ def option_interactive(verbose: bool, group_name: str | None = None) -> None:
 
 # ---------------------------------------------------------------- resto de opciones
 
-def option_pending(name: str) -> Callable[[bool], None]:
-    """Opción en esqueleto: avisa «Disponible en el informe final» en lugar de fallar. Cubre R11."""
-    def run(_verbose: bool) -> None:
-        """Imprime el aviso de la opción pendiente. Cubre R11."""
-        print(f"{name}: {PENDING}.")
-    return run
+def option_latency(_verbose: bool) -> None:
+    """Opción 5: latencia medida según los bits de p y su comparación con k³ y k^2.585. Cubre R7.
+
+    Muestra los resultados ya generados (results/latency.json); para volver a medir se ejecuta
+    python -m benchmark.latency (tarda menos de un minuto).
+    """
+    if not LATENCY_RESULTS.is_file():
+        print(f"Todavía no hay mediciones: ejecute «python -m benchmark.latency» ({LATENCY_RESULTS.name}).")
+        return
+    data = json.loads(LATENCY_RESULTS.read_text(encoding="utf-8"))
+    print(f"Latencia de una autenticación completa (mediana de {data['rows'][0]['reps']} repeticiones, "
+          f"Python {data['python']}). Razón = tiempo / tiempo del tamaño anterior.")
+    for line in format_table(data["rows"]):
+        print(line)
+    print("Predicción del escrito al duplicar k: k³ → 8; con Karatsuba (k^2.585) → ≈ 6. "
+          "Gráficas en results/latency.png y results/backends.png.")
+
+
+def option_bsgs(verbose: bool, group_name: str | None = None) -> None:
+    """Opción 6: el atacante roba y y recupera x con paso de bebé, paso de gigante. Cubre R10."""
+    gp = TOY_GROUP if group_name is None else _load_group(group_name)
+    if gp is None:
+        return
+    try:
+        bsgs.run(gp, verbose=True)
+    except ValueError as error:
+        print(error)
+
+
+def option_fiat_shamir(verbose: bool, group_name: str | None = None) -> None:
+    """Opción 3: inicio de sesión no interactivo (Fiat-Shamir) y qué pasa al repetir la prueba. Cubre R8 y R11."""
+    gp = TOY_GROUP if group_name is None else _load_group(group_name)
+    if gp is None:
+        return
+    bank, client = Bank(gp), Client(USER_ID, gp, x=EXAMPLE_X if gp == TOY_GROUP else None)
+    bank.register(*client.register_payload())
+    now = current_timestamp()
+    proof = prove(client, m=now)
+    c = hash_challenge(gp, client.y, proof.t, USER_ID, now)
+    _say("[Parámetros]", f"{gp.name}: p de {gp.bits} bits   y = {_fmt(client.y, verbose)}")
+    _say("[Compromiso]", f"t = g^r mod p = {_fmt(proof.t, verbose)}   m = {now} (hora del intento)")
+    _say("[Reto local]", f"c = H(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q = {_fmt(c, verbose)}   (sin esperar al banco)")
+    _say("[Respuesta]", f"s = (r + c·x) mod q = {_fmt(proof.s, verbose)}   → se envía (id, t, s, m)")
+    result = verify_nizk(bank, proof, now=now)
+    _say("[Verificación]", f"el banco recalcula c y comprueba g^s ≡ t·y^c (mod p) → {result.reason}")
+    _say("[Repetición]", f"la misma prueba otra vez → {verify_nizk(bank, proof, now=now + 1).reason}")
+    age = DEFAULT_WINDOW_SECONDS + 1
+    stale = verify_nizk(bank, prove(client, m=now - age), now=now)
+    _say("[m vieja]", f"prueba con m de hace {age} s → {stale.reason}")
+    _print_outcome(result)
 
 
 def option_attacks(_verbose: bool) -> None:
     """Opción 4: ejecuta los ataques funcionales con p = 23 e informa los pendientes. Cubre R10 y R11."""
-    for attack in (nonce_reuse, simulator, impostor):
+    for attack in (nonce_reuse, simulator, impostor, replay, bsgs):
         attack.run(verbose=True)
         print()
-    for name in ("Repetición de pruebas (Fiat-Shamir)", "Base de datos robada (BSGS)"):
-        print(f"[{name}] {PENDING}.")
 
 
 def option_tests(_verbose: bool) -> None:
@@ -211,10 +256,8 @@ def option_tests(_verbose: bool) -> None:
 
 OPTIONS: dict[str, Callable[[bool], None]] = {
     "1": option_example,
-    "3": option_pending("Variante no interactiva (Fiat-Shamir)"),
     "4": option_attacks,
-    "5": option_pending("Medición de latencia"),
-    "6": option_pending("BSGS"),
+    "5": option_latency,
     "7": option_tests,
 }
 
@@ -223,6 +266,12 @@ def run_option(option: str, verbose: bool, group: str | None) -> bool:
     """Ejecuta una opción; devuelve False si la opción no existe. Cubre R11."""
     if option == "2":
         option_interactive(verbose, group)
+        return True
+    if option == "3":
+        option_fiat_shamir(verbose, group)
+        return True
+    if option == "6":
+        option_bsgs(verbose, group)
         return True
     handler = OPTIONS.get(option)
     if handler is None:

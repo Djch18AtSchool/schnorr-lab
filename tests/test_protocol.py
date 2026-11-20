@@ -124,13 +124,9 @@ def test_quien_no_conoce_x_es_rechazado_con_reto_distinto_al_adivinado():
 
 # ------------------------------------------------------- R7: distintos tamaños de p
 
-PENDING_2048 = pytest.mark.xfail(raises=NotImplementedError, strict=True,
-                                 reason="Grupo RFC 3526 de 2048 bits: disponible en el informe final")
-
-
 @pytest.mark.req("R7")
 @pytest.mark.parametrize(
-    "name", ["toy", "safe-256", "safe-512", "safe-1024", pytest.param("rfc-2048", marks=PENDING_2048)]
+    "name", ["toy", "safe-256", "safe-512", "safe-1024", "rfc-2048", "rfc-3072", "schnorr-2048", "schnorr-3072"]
 )
 def test_autenticacion_honesta_con_cada_tamano_de_p(name):
     bank, client = registrar(get_group(name))

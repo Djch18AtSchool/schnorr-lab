@@ -18,22 +18,22 @@ def api() -> TestClient:
 
 
 def _register(api: TestClient, y: str = "8", user_id: str = USER) -> httpx.Response:
-    return api.post("/register", json={"user_id": user_id, "y": y})
+    return api.post("/zkp/register", json={"user_id": user_id, "y": y})
 
 
 def _commit(api: TestClient, t: str = "12", user_id: str = USER) -> httpx.Response:
-    return api.post("/login/commit", json={"user_id": user_id, "t": t})
+    return api.post("/zkp/login/commit", json={"user_id": user_id, "t": t})
 
 
 def _respond(api: TestClient, session_id: str, s: str) -> httpx.Response:
-    return api.post("/login/respond", json={"session_id": session_id, "s": s})
+    return api.post("/zkp/login/respond", json={"session_id": session_id, "s": s})
 
 
 # ------------------------------------------------------------------ flujo completo
 
 @pytest.mark.req("R11")
 def test_params_muestra_el_grupo_de_ejemplo_como_cadenas(api):
-    assert api.get("/params").json() == {"name": "toy-23", "p": "23", "q": "11", "g": "4", "bits": 5}
+    assert api.get("/zkp/params").json() == {"name": "toy-23", "p": "23", "q": "11", "g": "4", "bits": 5}
 
 
 @pytest.mark.req("R11")
@@ -52,7 +52,7 @@ def test_flujo_completo_con_el_ejemplo_del_escrito(api):
 @pytest.mark.req("R11")
 def test_banco_solo_guarda_y(api):
     _register(api)
-    assert api.get("/bank/users").json() == {USER: "8"}
+    assert api.get("/bank/users").json() == {"zkp": {USER: {"y": "8"}}}
 
 
 @pytest.mark.req("R11")
@@ -62,7 +62,8 @@ def test_cliente_http_inicia_sesion_y_x_no_aparece_en_ningun_mensaje():
     assert report.accepted
     assert not report.leaks
     audit = api.get("/audit/log").json()
-    assert [entry["endpoint"] for entry in audit] == ["/register", "/login/commit", "/login/respond"]
+    assert [entry["endpoint"] for entry in audit] == ["/zkp/register", "/zkp/login/commit", "/zkp/login/respond"]
+    assert {entry["mechanism"] for entry in audit} == {"zkp"}
     assert all(str(report.x) not in entry["body"].values() for entry in audit)
 
 
@@ -152,23 +153,24 @@ def test_respuesta_fuera_de_rango_y_sesion_reutilizada(api):
 @pytest.mark.parametrize("body", [{"user_id": USER, "y": 8}, {"user_id": USER, "y": "ocho"},
                                   {"user_id": "con espacio", "y": "8"}, {"user_id": USER}])
 def test_entradas_mal_formadas_devuelven_422(api, body):
-    assert api.post("/register", json=body).status_code == 422
+    assert api.post("/zkp/register", json=body).status_code == 422
 
 
 @pytest.mark.req("R11")
 def test_cuerpo_rechazado_queda_en_la_auditoria_y_la_respuesta_no_repite_la_entrada(api):
     leaky = {"user_id": "filtrador", "y": "8", "x": "7"}
-    response = api.post("/register", json=leaky)
+    response = api.post("/zkp/register", json=leaky)
     assert response.status_code == 422
     assert response.json() == {"reason": "Cuerpo inválido: x: campo no permitido (solo viajan valores públicos)"}
-    assert api.get("/audit/log").json() == [{"endpoint": "/register", "valid": False, "body": leaky}]
+    assert api.get("/audit/log").json() == [{"endpoint": "/zkp/register", "mechanism": "zkp", "valid": False,
+                                         "body": leaky}]
     leaks, _ = http_client.find_secret_leaks(x=7, gp=TOY_GROUP, bodies=[leaky])
     assert leaks  # el campo «x» se detecta aunque el banco lo haya rechazado
 
 
 @pytest.mark.req("R11")
 def test_cuerpo_que_no_es_json_tambien_se_audita(api):
-    response = api.post("/login/respond", content=b"{roto", headers={"content-type": "application/json"})
+    response = api.post("/zkp/login/respond", content=b"{roto", headers={"content-type": "application/json"})
     assert response.status_code == 422 and "JSON" in response.json()["reason"]
     entry = api.get("/audit/log").json()[0]
     assert entry["valid"] is False and entry["body"] == {"_cuerpo_no_json": "{roto"}
@@ -176,10 +178,10 @@ def test_cuerpo_que_no_es_json_tambien_se_audita(api):
 
 @pytest.mark.req("R11")
 def test_cliente_de_demostracion_devuelve_x_pero_no_entra_al_banco_ni_a_la_auditoria(api):
-    response = api.post("/demo/client", json={"user_id": USER, "x": "7"})
+    response = api.post("/zkp/demo/client", json={"user_id": USER, "x": "7"})
     assert response.status_code == 201
     assert response.json()["x"] == "7" and response.json()["y"] == "8"
-    assert api.get("/bank/users").json() == {}
+    assert api.get("/bank/users").json() == {"zkp": {}}
     assert api.get("/audit/log").json() == []
 
 

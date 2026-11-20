@@ -1,7 +1,7 @@
-"""Contratos de los módulos que el escrito deja para el informe final (R7 y R10).
+"""Contratos que el segundo avance fijó para el informe final (R7 y R10).
 
-Repetición de pruebas, BSGS, base de datos robada y latencia. Igual que en
-test_fiat_shamir.py, se marcan xfail estricto mientras sean esqueletos.
+Repetición de pruebas, BSGS, base de datos robada y latencia. Se escribieron como xfail
+estricto cuando esos módulos eran esqueletos; hoy pasan y quedan como pruebas de aceptación.
 """
 
 import pytest
@@ -11,13 +11,8 @@ from attacks.bsgs import bsgs
 from benchmark import latency
 from core.params import TOY_GROUP
 
-PENDING_FINAL = pytest.mark.xfail(
-    raises=NotImplementedError, strict=True, reason="Esqueleto: disponible en el informe final"
-)
-
 
 @pytest.mark.req("R10")
-@PENDING_FINAL
 def test_repeticion_se_acepta_sin_proteccion_y_se_rechaza_con_proteccion():
     result = replay.replay_experiment()
     assert result["accepted_without_protection"]
@@ -25,7 +20,6 @@ def test_repeticion_se_acepta_sin_proteccion_y_se_rechaza_con_proteccion():
 
 
 @pytest.mark.req("R10")
-@PENDING_FINAL
 def test_bsgs_encuentra_x_7_con_m_4():
     x, operations = bsgs(g=4, y=8, p=23, q=11)
     assert x == 7
@@ -33,14 +27,11 @@ def test_bsgs_encuentra_x_7_con_m_4():
 
 
 @pytest.mark.req("R10")
-@pytest.mark.slow
-@PENDING_FINAL
-def test_tiempo_de_bsgs_crece_como_raiz_de_q():
-    rows = stolen_db.stolen_db_experiment(bits=[16, 20, 24])
+def test_tiempo_de_bsgs_crece_como_raiz_de_q(tmp_path):
+    rows = stolen_db.stolen_db_experiment(bits=[16, 20, 24], results_dir=tmp_path)
     assert all(row["x_found"] == row["x_real"] for row in rows)
 
 
 @pytest.mark.req("R7")
-@PENDING_FINAL
 def test_latencia_mide_una_autenticacion_completa():
     assert latency.measure_auth(TOY_GROUP, reps=3) > 0

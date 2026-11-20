@@ -2,154 +2,137 @@
 
 [![tests](https://github.com/Djch18AtSchool/schnorr-lab/actions/workflows/tests.yml/badge.svg)](https://github.com/Djch18AtSchool/schnorr-lab/actions/workflows/tests.yml)
 
-Implementación en Python, desde cero, del **protocolo de identificación de Schnorr** para que el cliente de una aplicación bancaria inicie sesión **sin enviar ni guardar su clave secreta** en el servidor. El proyecto incluye un laboratorio de ataques controlados y una API HTTP para probar el protocolo con cliente y servidor separados.
+Laboratorio de **autenticación bancaria sin contraseñas** con una prueba de conocimiento cero: el **protocolo de identificación de Schnorr**, implementado desde cero en Python. El cliente demuestra al banco que conoce una clave secreta *x* sin enviarla nunca; el banco guarda solo la clave pública *y = g<sup>x</sup> mod p*.
+
+El entregable es el propio sistema funcionando en tiempo real. Una app bancaria simulada en el celular y un banco corren como procesos separados. La interfaz permite recorrer cada paso del protocolo, ver qué viaja por la red y qué guarda el banco, lanzar ataques en vivo y consultar las mediciones del laboratorio.
 
 > Proyecto del curso **Matemática Discreta 2** (FUN-03), Universidad CENFOTEC, C3-2026. Docente: Rebeca Paola Chaves Morales.
 > Integrantes: Maximiliano Badilla Cerdas, Braden Lee Knuter Cordoba, Dylan Josue Chaves Hernández y Dylan Gabriel Piña Moya.
 >
 > Es un **modelo educativo**: implementa la matemática discreta que sustenta la autenticación. No debe usarse en producción; un sistema real usa bibliotecas criptográficas auditadas.
 
-## Revisión en cuatro comandos
-
-```bash
-python demo.py --verbose --option 1     # ejemplo p = 23, paso a paso
-pytest                                  # pruebas + tabla de trazabilidad
-uvicorn api.app:app --reload            # API: abrir http://127.0.0.1:8000/docs
-python http_client.py                   # inicio de sesión por HTTP, mostrando lo que viaja
-```
-
-`http_client.py` necesita la API corriendo en otra terminal. Las salidas de estos comandos están guardadas en [`docs/evidencia/`](docs/evidencia/).
-
-## Instalación
+## Cómo ejecutarlo
 
 Requiere **Python 3.12**. Desde la raíz del repositorio:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"            # o: pip install sympy matplotlib fastapi uvicorn httpx pytest
+pip install -e ".[dev,bench]"      # bench agrega gmpy2, solo para comparar implementaciones
 ```
 
-## Estado del segundo avance
+| Comando | Qué hace |
+| --- | --- |
+| `python lab.py` | Arranca el banco (puerto 8000) y la app del celular (8001). Abrir **http://127.0.0.1:8001** |
+| `pytest` | 275 pruebas y la tabla de trazabilidad requerimiento → prueba → resultado |
+| `python demo.py --verbose --option 1` | El ejemplo del escrito (p = 23) paso a paso en la consola |
+| `python -m benchmark.latency` | Vuelve a medir la latencia según los bits de p (unos 30 s) |
 
-Coincide con la Tabla 5 del escrito: lo que el escrito declara funcional para este avance funciona y tiene pruebas. Lo que queda para el informe final está en esqueleto, con firmas, docstrings y `NotImplementedError`. Sus pruebas ya están escritas como contrato y aparecen como *pendientes* (`xfailed`) en la tabla de trazabilidad.
+Otras formas de usarlo: `uvicorn api.app:app` levanta solo el banco (Swagger en http://127.0.0.1:8000/docs); `python http_client.py` inicia sesión por HTTP mostrando lo que viaja; `python lab.py --group rfc-2048` arranca con un grupo de 2048 bits.
 
-| Componente | Requerimientos | Segundo avance | Informe final |
+## Qué se ve en la demostración
+
+- **Celular (izquierda):** la app del banco. Se crea una cuenta y se inicia sesión con el ZKP interactivo o con la variante no interactiva (Fiat-Shamir). Con «Paso a paso», cada cálculo y cada mensaje se ejecuta cuando se pide, para explicarlo.
+- **Flujo:** diagrama de secuencia celular ↔ red ↔ banco que se anima con cada paso. Para el paso elegido muestra la explicación, la fórmula, los valores (incluida la traza bit a bit de la exponenciación con p pequeño), el mensaje HTTP y lo que hizo el banco al recibirlo.
+- **Red:** cada mensaje tal como viajó. Una verificación automática confirma que solo viajaron campos públicos (`user_id, y, t, session_id, s, m`).
+- **Banco:** lo que guarda (solo *y*), los parámetros públicos, la auditoría de todo cuerpo recibido (también los rechazados) y, aparte, lo que guarda el celular.
+- **Laboratorio:** ataques en vivo contra el banco que está corriendo (repetir mensajes capturados, robar la base de datos, suplantar sin *x*) y los experimentos de `attacks/`.
+- **Resultados:** gráficas y tablas de latencia y de BSGS, generadas de antemano.
+- **Consola:** los eventos del celular, el banco y el atacante en tiempo real.
+- **Swagger:** la API del banco; lo que entre por ahí también aparece en la auditoría y en la consola.
+
+El selector de grupo en la barra superior reinicia el laboratorio con otro tamaño de p (de p = 23 hasta 3072 bits) para mostrar en vivo cómo cambia la latencia.
+
+## Estado: todos los requerimientos implementados
+
+| ID | Requerimiento (Tabla 4 del escrito) | Dónde | Pruebas |
 | --- | --- | --- | --- |
-| `core/modular.py` | R4, R5 | ✅ Funcional, verificado contra `pow` y SymPy | — |
-| `core/params.py` | R1, R7 | ✅ Grupo de ejemplo, validación y primos seguros de 256, 512 y 1024 bits (en `core/groups.json`) | Grupos RFC 3526 y de Schnorr |
-| `protocol/` (Client, Bank, Transcript) | R2, R3, R6, R9 | ✅ Funcional, con control de intentos | — |
-| `protocol/fiat_shamir.py` | R8 | Esqueleto | Funcional |
-| `attacks/nonce_reuse.py`, `simulator.py`, `impostor.py` | R10 | ✅ Funcionales | — |
-| `attacks/replay.py`, `bsgs.py`, `stolen_db.py` | R10 | Esqueleto | Funcionales, con gráficas |
-| `benchmark/latency.py` | R7 | Esqueleto | Tabla y gráficas |
-| `demo.py` | R11 | ✅ Opciones 1, 2, 4 y 7 | Menú completo |
-| `api/app.py`, `http_client.py` | R11 | ✅ Registro, compromiso, respuesta y auditoría | Endpoint no interactivo |
+| R1 | Parámetros públicos válidos (p, q primos, p = 2q + 1, g^q ≡ 1) | `core/params.py`, `core/rfc3526.py` | `test_params.py` |
+| R2 | El banco guarda solo y | `protocol/bank.py`, `mechanisms/zkp/server.py` | `test_protocol.py`, `test_client_app.py` |
+| R3 | r y c nuevos en cada sesión | `protocol/client.py`, `protocol/bank.py` | `test_protocol.py` |
+| R4 | Potencia modular rápida propia | `core/modular.py` | `test_modular.py`, `test_backends.py` |
+| R5 | Inverso modular con Euclides extendido | `core/modular.py` | `test_modular.py` |
+| R6 | Verificación g^s ≡ t·y^c (mod p) | `protocol/bank.py` | `test_protocol.py` |
+| R7 | Distintos tamaños de p y su latencia | `core/params.py`, `benchmark/latency.py` | `test_params.py`, `test_latency.py`, `test_protocol.py` |
+| R8 | Variante no interactiva (Fiat-Shamir) | `protocol/fiat_shamir.py` | `test_fiat_shamir.py` |
+| R9 | Validación de entradas y bloqueo al tercer fallo | `protocol/bank.py`, `api/validation.py` | `test_protocol.py`, `test_api.py` |
+| R10 | Laboratorio de ataques | `attacks/`, `client_app/lab.py` | `test_attacks.py`, `test_bsgs.py`, `test_replay.py`, `test_contracts.py` |
+| R11 | Interfaz de revisión | `client_app/`, `api/`, `demo.py`, `http_client.py` | `test_client_app.py`, `test_api.py`, `test_demo.py`, `test_infra.py` |
 
-Resultado de `pytest`: **131 pruebas aprobadas y 14 pendientes para el informe final**.
+Las pruebas que el segundo avance dejó escritas como contrato (`xfail` estricto) para el informe final hoy pasan todas: no queda ninguna pendiente.
 
-## El protocolo en una pantalla
+## Resultados del laboratorio
 
-`python demo.py --option 1` reproduce la transcripción del escrito (p = 23, q = 11, g = 4, x = 7, r = 5, c = 3):
+Mediciones en `results/`, regenerables con `python -m benchmark.latency` y con el experimento de la base robada.
 
-```
-[Parámetros]    p = 23   q = 11   g = 4        (g^q ≡ 1 mod p ✔)
-[Registro]      x = 7 (secreta)  →  y = 4^7 mod 23 = 8   (el banco guarda solo y)
-[Compromiso]    r = 5  →  t = 4^5 mod 23 = 12
-[Reto]          c = 3
-[Respuesta]     s = 5 + 3·7 mod 11 = 4
-[Verificación]  g^s = 4^4 mod 23 = 3   |   t·y^c = 12·8^3 mod 23 = 3
-                (y^c)^-1 = 6^-1 = 4 (Euclides extendido) → g^s·(y^c)^-1 = 12 = t ✔
->>> ACCESO CONCEDIDO
-```
+**Latencia de una autenticación completa** (mediana de 31 repeticiones; *propia* = nuestra `mod_pow`, *nativa* = `pow` de Python, *gmpy2* = GMP):
 
-Con `--verbose` se agregan los pasos de la exponenciación rápida (un renglón por bit del exponente) y las divisiones y el despeje del Algoritmo Extendido de Euclides.
+| Grupo | Seguridad (bits) | Propia | Nativa | gmpy2 |
+| --- | --- | --- | --- | --- |
+| safe-256 | < 80 | 0.61 ms | 0.40 ms | 0.14 ms |
+| safe-512 | < 80 | 2.79 ms | 1.87 ms | 0.38 ms |
+| safe-1024 | 80 | 14.3 ms | 9.87 ms | 1.86 ms |
+| rfc-2048 | 112 | 94.7 ms | 65.4 ms | 8.66 ms |
+| rfc-3072 | 128 | 305 ms | 209 ms | 26.0 ms |
+| schnorr-2048 | 112 | 11.1 ms | 9.01 ms | 1.97 ms |
+| schnorr-3072 | 128 | 25.8 ms | 20.9 ms | 4.00 ms |
 
-Menú (`python demo.py`): 1 paso a paso con p = 23 · 2 autenticación en el grupo elegido (`--group toy|safe-256|safe-512|safe-1024`) y bloqueo al tercer fallo · 3 Fiat-Shamir · 4 laboratorio de ataques · 5 latencia · 6 BSGS · 7 pruebas · 0 salir. Las opciones del informe final responden «Disponible en el informe final».
+- **Predicción del escrito (P3).** Al duplicar k el tiempo debía multiplicarse por 2³ = 8 (definición 8). De 1024 a 2048 bits se midió **6.61**: 17 % de error frente a k³ y 10 % frente a Karatsuba (k^2.585 → razón ≈ 6), que es lo que usa CPython para multiplicar enteros grandes. La razón se acerca a 8 a medida que k crece, porque el costo fijo del intérprete pesa menos.
+- **Ajuste del modelo.** Con el **mismo nivel de seguridad**, un grupo de Schnorr (q de 224 bits en lugar de 2047) autentica **8.5 veces más rápido** que el grupo RFC 3526 de 2048 bits, porque los exponentes tienen los bits de q y no los de p.
+- **¿Python frente a C?** Los enteros de Python ya están escritos en C, así que nuestra `mod_pow` es solo 1.4–1.6 veces más lenta que `pow` nativo. La diferencia grande la hace la biblioteca: GMP es unas 7–8 veces más rápida. La aritmética es intercambiable (`SCHNORR_ARITHMETIC=propia|nativa|gmpy2`, por defecto *propia*) sin tocar el protocolo, para comparar en igualdad de condiciones.
 
-## Probar la API con clics (Swagger)
+**Base de datos robada (BSGS, definición 9).** Recuperar *x* a partir de *y* con paso de bebé, paso de gigante cuesta del orden de √q operaciones. Se midió con q de 16 a 40 bits (x recuperada siempre; 0.27 s con 40 bits) y el tiempo crece 0.498 bits por cada bit de q, frente a 0.5 esperado. Extrapolando: **1.5·10¹⁰ años con q de 160 bits** (la edad del universo), 6.5·10¹⁹ años con 224 bits y 4.3·10²⁴ con 256 bits.
 
-Con `uvicorn api.app:app --reload` y el grupo por defecto (`toy`, p = 23), en http://127.0.0.1:8000/docs:
-
-1. `POST /demo/client` con `{"user_id": "cliente01", "x": "7"}` → devuelve `y = "8"`. Es solo una ayuda para Swagger: está separado del banco y no queda en la auditoría.
-2. `POST /register` con `{"user_id": "cliente01", "y": "8"}`.
-3. Con r = 5, el compromiso es t = 4⁵ mod 23 = 12: `POST /login/commit` con `{"user_id": "cliente01", "t": "12"}` → el banco responde `session_id` y un reto `c` aleatorio. Si se pide otro reto sin responder este, la sesión pendiente se descarta y cuenta como intento fallido.
-4. Calcular s = (5 + 7·c) mod 11 con la tabla y enviar `POST /login/respond` con `{"session_id": "...", "s": "..."}`.
-
-   | c | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
-   | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-   | s | 5 | 1 | 8 | 4 | 0 | 7 | 3 | 10 | 6 | 2 | 9 |
-
-5. `GET /bank/users` muestra que el banco guarda solo `y`, y `GET /audit/log` muestra todo lo que recibió: x nunca aparece.
-
-Para otro tamaño de p: `SCHNORR_GROUP=safe-512 uvicorn api.app:app`. Todos los enteros viajan como **cadenas decimales**, porque JavaScript (y Swagger) pierde precisión por encima de 2⁵³.
-
-| Método y ruta | Cuerpo | Respuesta |
-| --- | --- | --- |
-| `GET /params` | — | `{name, p, q, g, bits}` |
-| `POST /register` | `{user_id, y}` | 201 `{user_id, stored: {y}}`; 400 con `reason` |
-| `POST /login/commit` | `{user_id, t}` | `{session_id, c}`; 400 si t está fuera del subgrupo; 404 si el usuario no existe; 423 si está bloqueado |
-| `POST /login/respond` | `{session_id, s}` | `{accepted, reason, transcript, details, attempts_left}` |
-| `GET /bank/users` | — | `{user_id: y}` |
-| `GET /audit/log` | — | Cuerpos recibidos por el banco, en orden, incluidos los rechazados por mal formados (`valid: false`) |
-| `POST /demo/client` | `{user_id, x?}` | x e y de un cliente de prueba (solo demostración) |
+**Otras evidencias:**
+- La reutilización de r recupera x = 7.
+- Las 110 transcripciones simuladas coinciden terna a terna con las reales.
+- El impostor acierta cerca de 1/q = 9.09 %.
+- Una prueba no interactiva repetida o con m vieja se rechaza.
 
 ## Arquitectura
 
+El código es **agnóstico al mecanismo de autenticación**. El ZKP es el primer mecanismo enchufable; agregar otro no requiere tocar el banco, el celular ni la interfaz.
+
 ```mermaid
-flowchart TD
-    subgraph Interfaces
-        demo[demo.py]
-        api[api/app.py]
-        http[http_client.py]
+flowchart LR
+    subgraph Navegador
+        ui[client_app/static · interfaz]
     end
-    subgraph Experimentos
-        attacks[attacks/]
-        bench[benchmark/]
+    subgraph Celular["Proceso: app del celular (8001)"]
+        flows[client_app · flujos paso a paso, wallet con x, laboratorio]
     end
-    protocol["protocol/ · Client, Bank, Transcript"]
-    core["core/ · modular.py, params.py"]
-    demo --> protocol
-    api --> protocol
-    http --> protocol
-    demo --> attacks
-    attacks --> protocol
-    bench --> protocol
+    subgraph Banco["Proceso: banco (8000)"]
+        api[api · banco genérico]
+    end
+    mech[mechanisms · contrato + ZKP]
+    infra[infra · eventos, SSE, auditoría]
+    protocol[protocol · Client, Bank, Fiat-Shamir]
+    core[core · aritmética modular y grupos]
+    ui -- "HTTP: siguiente paso" --> flows
+    ui -. "SSE: eventos y vistas del banco" .-> api
+    flows -- "HTTP: y, t, s, m (nunca x)" --> api
+    flows --> mech
+    api --> mech
+    mech --> protocol
+    mech --> infra
+    api --> infra
     protocol --> core
-    attacks --> core
 ```
 
-Las flechas indican «usa». Toda la matemática vive en `core/`. Las interfaces solo importan `protocol/`, que les reexporta la selección de grupos. Los ataques son la única excepción y llaman directo a `core/`, por ejemplo a `mod_inverse` para extraer x. Ningún módulo de una capa inferior importa uno de una capa superior.
+- **`core/`**: la matemática. Exponenciación rápida, Euclides extendido, grupos (primos seguros, RFC 3526, grupos de Schnorr) y aritmética intercambiable.
+- **`protocol/`**: el protocolo de Schnorr. `Client`, `Bank`, transcripciones y Fiat-Shamir. No sabe de HTTP.
+- **`mechanisms/`**: el contrato común (`MechanismInfo` con flujos y pasos explicados, la parte del banco y la parte del celular) y el registro. `mechanisms/zkp/` adapta el protocolo a HTTP y publica cada decisión.
+- **`infra/`**: la bitácora de eventos con correlación (el celular envía `X-Correlation-Id` y el banco la copia), la transmisión SSE y la auditoría.
+- **`api/`**: el banco. Monta las rutas de cada mecanismo y agrega `/mechanisms`, `/bank/users`, `/audit/log`, `/events`, `/events/stream` y `/lab/reset`.
+- **`client_app/`**: la app del celular. Guarda *x*, ejecuta los flujos paso a paso, lanza ataques y sirve la interfaz. Es otro proceso: habla con el banco solo por HTTP.
+- **`attacks/` y `benchmark/`**: los experimentos.
 
-```
-schnorr_lab/
-├── core/
-│   ├── modular.py      mod_pow, extended_gcd, mod_inverse
-│   ├── params.py       GroupParams, validate_params, in_subgroup, generator_for, get_group
-│   └── groups.json     primos seguros de 256, 512 y 1024 bits ya generados
-├── protocol/
-│   ├── client.py       Client: register_payload, commit, respond
-│   ├── bank.py         Bank: register, challenge, verify
-│   ├── transcript.py   Transcript (t, c, s), VerifyResult, Reason
-│   └── fiat_shamir.py  prove, verify_nizk                    (esqueleto)
-├── attacks/
-│   ├── nonce_reuse.py  extract_secret, FaultyClient
-│   ├── simulator.py    simulate, enumerate_real, enumerate_simulated
-│   ├── impostor.py     impostor_rate
-│   ├── replay.py       replay_experiment                     (esqueleto)
-│   ├── bsgs.py         bsgs                                  (esqueleto)
-│   └── stolen_db.py    stolen_db_experiment                  (esqueleto)
-├── benchmark/
-│   └── latency.py      measure_auth, measure, plot           (esqueleto)
-├── api/
-│   ├── app.py          API HTTP del banco (FastAPI)
-│   └── schemas.py      esquemas de petición y respuesta
-├── tests/              pruebas por requerimiento + tabla de trazabilidad (conftest.py)
-├── results/            gráficas y tablas generadas (informe final)
-├── docs/evidencia/     salidas capturadas para el informe
-├── demo.py             menú principal y modo --verbose
-└── http_client.py      cliente que inicia sesión por HTTP
-```
+**Para agregar un mecanismo** (por ejemplo, contraseña con hash, TOTP, SRP o passkey):
+
+1. Crear `mechanisms/<nombre>/` con su `MechanismInfo` (flujos y pasos explicados), su parte del banco (router y `stored_credentials`) y su parte del celular (una función por paso).
+2. Registrarlo en `mechanisms/registry.py`.
+
+La interfaz dibuja sus flujos y la auditoría lo registra automáticamente.
 
 ### Del diagrama de flujo al código (Tabla 6 del escrito)
 
@@ -165,61 +148,58 @@ schnorr_lab/
 | ¿Prueba válida? | `protocol/bank.py` → `Bank.verify`, con `modular.mod_pow` y `modular.mod_inverse` |
 | Sumar intento / ¿Menos de 3 fallos? / Bloquear | `protocol/bank.py` → `Bank._fail`, `Bank._abandon_pending_session`, `Bank.is_locked` |
 
-### Objetos y estructuras discretas en el código
+### Objetos y estructuras discretas
 
-| Estructura del escrito | Dónde está |
+| Estructura | Dónde está |
 | --- | --- |
 | Grupo Zp\* y subgrupo de orden q | `GroupParams(p, q, g)`; pertenencia con `in_subgroup` (u^q ≡ 1 mod p) |
-| Enteros modulares y congruencias | `mod_pow`, `mod_inverse` y la comparación g^s ≡ t·y^c en `Bank.verify` |
-| Transcripción (t, c, s) | `Transcript`, inmutable (`dataclass(frozen=True)`) |
-| Registro de usuarios: id → y | `Bank._users: dict[str, int]` |
-| Sesiones e intentos | `Bank._sessions: dict[str, (id, t, c)]`, de un solo uso; `Bank._open_sessions: dict[str, str]` (a lo sumo una sesión pendiente por usuario); `Bank._failures: dict[str, int]` |
-| Conjunto de pruebas usadas | `Bank._used_proofs: set[(t, s)]` (lo usará Fiat-Shamir) |
+| Enteros modulares y congruencias | `mod_pow`, `mod_inverse` y la comparación g^s ≡ t·y^c en `Bank` |
+| Transcripción (t, c, s) | `Transcript`, inmutable |
+| Registro id → y | `Bank._users` |
+| Sesiones e intentos | `Bank._sessions` (de un solo uso), `Bank._open_sessions` (una pendiente por usuario), `Bank._failures` |
+| Conjunto de pruebas usadas | `Bank._used_proofs: set[(t, s)]` (Fiat-Shamir) |
+| Diccionario de pasos de bebé | `attacks/bsgs.py` (g^j → j) |
 
-## Pruebas y trazabilidad (Tabla 7 del escrito)
+## API del banco
 
-Cada prueba lleva `@pytest.mark.req("Rn")`. Al terminar, `pytest` imprime cada prueba con su requerimiento y un resumen por requerimiento. Las pruebas lentas se omiten con `pytest -m "not slow"`, que es lo que corre GitHub Actions en cada *push* y *pull request*.
+Todos los enteros viajan como **cadenas decimales**, porque JavaScript pierde precisión por encima de 2⁵³. Cualquier campo inesperado (por ejemplo `x`) se rechaza con 422 y queda auditado.
 
-| ID | Criterio de aceptación del escrito | Pruebas |
+| Método y ruta | Cuerpo | Respuesta |
 | --- | --- | --- |
-| R1 | (23, 11, 4) se acepta; (23, 11, 1) y (21, 10, 4) se rechazan | `tests/test_params.py` |
-| R2 | El banco guarda solo id → y | `tests/test_protocol.py` (también revisa que x no esté en ningún dato del banco) |
-| R3 | En 1000 inicios de sesión con q de al menos 256 bits no se repite r ni c | `tests/test_protocol.py` |
-| R4 | `mod_pow` coincide con `pow` en 1000 casos y 4⁷ mod 23 = 8 | `tests/test_modular.py` |
-| R5 | `mod_inverse` coincide con SymPy en 1000 casos y 6⁻¹ mod 23 = 4 | `tests/test_modular.py` |
-| R6 | (12, 3, 4) se acepta; con s = 5 se rechaza | `tests/test_protocol.py` |
-| R7 | Autenticación honesta aceptada con cada tamaño de p (toy, 256, 512, 1024); 2048 y latencia, pendientes | `tests/test_protocol.py`, `tests/test_params.py`, `tests/test_pending.py` |
-| R8 | Prueba válida aceptada; repetida o con m vieja rechazada (pendiente) | `tests/test_fiat_shamir.py` |
-| R9 | s = 11, t = 5 e y = 1 se rechazan; el cuarto intento se rechaza aunque sea válido | `tests/test_protocol.py`, `tests/test_api.py` |
-| R10 | x = 7 recuperada por reutilización de r; simuladas = reales y válidas; impostor ≈ 9.09 % | `tests/test_attacks.py`, `tests/test_pending.py` |
-| R11 | Flujo completo por la API aceptado y x ausente de todo mensaje; opción 1 idéntica al escrito | `tests/test_api.py`, `tests/test_demo.py` |
+| `GET /zkp/params` | — | `{name, p, q, g, bits}` |
+| `POST /zkp/register` | `{user_id, y}` | 201 `{user_id, stored: {y}}`; 400 con `reason` |
+| `POST /zkp/login/commit` | `{user_id, t}` | `{session_id, c}`; 400 si t está fuera del subgrupo, 404 si el usuario no existe, 423 si está bloqueado |
+| `POST /zkp/login/respond` | `{session_id, s}` | `{accepted, reason, transcript, details, attempts_left}` |
+| `POST /zkp/login/nizk` | `{user_id, t, s, m}` | Igual que `/zkp/login/respond` |
+| `POST /zkp/demo/client` | `{user_id, x?}` | x e y de un cliente de prueba (solo para Swagger) |
+| `GET /mechanisms` | — | Mecanismos, flujos y pasos, y el grupo en uso |
+| `GET /bank/users` | — | Lo que guarda el banco, por mecanismo |
+| `GET /audit/log` | — | Todo cuerpo recibido, en orden (`valid: false` si se rechazó) |
+| `GET /events`, `GET /events/stream` | — | Eventos del banco (JSON o en vivo por SSE) |
+| `POST /lab/reset` | `{group?}` | Reinicia el banco, opcionalmente con otro grupo (solo laboratorio) |
 
-### Decisiones de implementación que conviene conocer
+## Decisiones de implementación
 
-- **Rango de r.** El cliente toma r ∈ [1, q − 1], como dice la Tabla 1. Por eso, con p = 23 el cliente real produce q·(q − 1) = **110** transcripciones distintas. El simulador recorre los q² pares (c, s) y descarta t = 1, que un cliente honesto nunca envía. Así obtiene exactamente las mismas 110, sin conocer x. Con r = 0 se tendría t = 1 y s = c·x, lo que delataría x.
-- **Primo seguro.** `validate_params` exige p = 2q + 1, como pide R1. Los grupos de Schnorr del informe final (q mucho menor que p) se validarán con `require_safe_prime=False`.
-- **«x no viaja» con p = 23.** `http_client.py` siempre verifica que solo viajen los campos públicos `user_id, y, t, session_id, s`. Que el *valor* de x no aparezca es concluyente con q grande. Con q = 11, un t o un s puede coincidir con x por azar (probabilidad ≈ 1/q), así que eso se informa como nota y no como fuga. La prueba automática de R11 usa `safe-256`.
-- **Intentos abandonados.** Cada usuario tiene a lo sumo una sesión pendiente. Pedir un reto nuevo sin responder el anterior descarta esa sesión y la cuenta como intento fallido. Sin esta regla, un impostor podría abrir retos sin responderlos hasta que saliera el c que adivinó, sin que nunca se le contara un fallo.
-- **Impostor.** Para medir la probabilidad por intento (1/q), el experimento desactiva el bloqueo. Con el bloqueo a los 3 fallos y la regla anterior, la probabilidad de entrar es a lo sumo 1 − (1 − 1/q)³.
-- **Auditoría completa.** `/audit/log` guarda también los cuerpos que el banco rechazó por mal formados (por ejemplo, uno que trajera un campo `x`). La respuesta 422 explica el motivo en español sin repetir la entrada.
+- **Rango de r.** El cliente toma r ∈ [1, q − 1] (Tabla 1). Por eso, con p = 23, hay q·(q − 1) = 110 transcripciones posibles; el simulador descarta t = 1, que un cliente honesto nunca envía.
+- **Intentos abandonados.** Cada usuario tiene a lo sumo una sesión pendiente. Pedir un reto nuevo sin responder el anterior cuenta como intento fallido, así el bloqueo limita de verdad al impostor: 1 − (1 − 1/q)³.
+- **Fiat-Shamir.** c = SHA-256(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q con codificación de longitud fija (RFC 8235). Una prueba repetida o con m fuera de la ventana de 30 s se rechaza, y esos rechazos no cuentan como fallos, para que un espía no pueda bloquear a la víctima. Con p = 23 solo existen 110 pares (t, s): tras varios inicios de sesión aparece «Prueba ya utilizada» incluso para el cliente honesto, otra razón por la que el grupo de ejemplo solo sirve para aprender.
+- **Grupos RFC 3526.** Los primos se copiaron del texto del RFC y una prueba los verifica contra la fórmula con π de cada sección.
+- **Proceso del celular aparte.** La app del celular guarda *x* y habla con el banco por HTTP, como en la realidad. La interfaz solo lee las vistas del banco (CORS limitado al origen del celular) y nunca envía secretos.
 
 ## Convenciones del código
 
-- **Idioma:** identificadores, funciones y archivos en inglés; comentarios, docstrings y mensajes en pantalla en español.
-- **Matemática propia:** dentro de `core/`, `protocol/` y `attacks/` no se usa `pow(a, b, n)` ni `pow(a, -1, n)`, sino siempre `mod_pow` y `mod_inverse`. El `pow` nativo y SymPy se usan en las pruebas para contrastar. SymPy además se usa para la primalidad.
-- **Aleatoriedad:** solo `secrets` (x, r, c, identificadores de sesión y búsqueda de primos).
-- **Errores:** las validaciones devuelven un resultado con `accepted=False` y un `reason` en español. Las excepciones quedan para el uso incorrecto del código (por ejemplo, `mod_inverse` sin inverso).
-- **Docstrings:** cada función pública indica el requerimiento que cubre («Cubre R4.») y la definición del marco teórico que implementa.
-- **Tipos:** anotaciones en todas las firmas públicas y `dataclass(frozen=True)` para los valores inmutables.
-- **Git:** rama `main` protegida; una rama por tarea (`feat/bank-verify`, `test/r6`); cada *pull request* debe pasar las pruebas en GitHub Actions. Mensajes con el formato *conventional commits*.
-
-Para regenerar los primos seguros: `python -m core.params --generate 256 512 1024`. Si falta alguno en `core/groups.json`, se genera solo la primera vez que se pide; el de 1024 bits tarda unos segundos.
+- Identificadores en inglés; comentarios, docstrings y mensajes en español. Cada función pública indica el requerimiento que cubre («Cubre R4.») y la definición del escrito que implementa.
+- Dentro de `core/`, `protocol/` y `attacks/` no se usa `pow(a, b, n)`: siempre `mod_pow` y `mod_inverse`. La única excepción es el despacho de la aritmética intercambiable.
+- Aleatoriedad solo con `secrets`. Tipos en todas las firmas públicas y `dataclass(frozen=True)` para los valores.
+- `main` protegida: cada cambio entra por *pull request* y debe pasar las pruebas de GitHub Actions.
 
 ## Referencias
 
 - Schnorr, C. P. (1991). Efficient signature generation by smart cards. *Journal of Cryptology, 4*(3), 161–174.
+- Fiat, A. y Shamir, A. (1987). How to prove yourself: Practical solutions to identification and signature problems. En *Advances in cryptology — CRYPTO ’86* (pp. 186–194). Springer.
 - Menezes, A. J., van Oorschot, P. C. y Vanstone, S. A. (1996). *Handbook of applied cryptography*. CRC Press.
 - Katz, J. y Lindell, Y. (2020). *Introduction to modern cryptography* (3.ª ed.). CRC Press.
 - Rosen, K. H. (2019). *Discrete mathematics and its applications* (8.ª ed.). McGraw-Hill Education.
+- Barker, E. (2020). *Recommendation for key management: Part 1 – General* (NIST SP 800-57 Part 1, Rev. 5).
 - Hao, F. (2017). *Schnorr non-interactive zero-knowledge proof* (RFC 8235). IETF.
 - Kivinen, T. y Kojo, M. (2003). *More modular exponential (MODP) Diffie-Hellman groups for IKE* (RFC 3526). IETF.
