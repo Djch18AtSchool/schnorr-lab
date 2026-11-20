@@ -1,8 +1,10 @@
 """Parámetros públicos (p, q, g): generación, validación y carga de grupos (R1, R7).
 
-Ejecutable como ``python -m core.params --generate 256 512 1024`` para generar una sola vez
-los primos seguros y guardarlos en ``core/groups.json`` (el archivo se sube al repositorio).
-SymPy se usa aquí solo para la primalidad; las potencias modulares usan ``mod_pow``.
+Ejecutable como ``python -m core.params --generate 256 512 1024 schnorr-2048 schnorr-3072``
+para generar una sola vez los primos seguros y los grupos de Schnorr y guardarlos en
+``core/groups.json`` (el archivo se sube al repositorio). Los grupos del RFC 3526 no se generan:
+se copian del RFC (``core/rfc3526.py``). SymPy se usa aquí solo para la primalidad y para elegir
+el primo q de los grupos de Schnorr; las potencias modulares usan ``mod_pow``.
 """
 
 import argparse
@@ -10,12 +12,15 @@ import json
 import os
 import secrets
 import time
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, replace
+from functools import partial
 from pathlib import Path
 
 import sympy
 
 from core.modular import mod_pow
+from core.rfc3526 import RFC3526_GENERATOR, modp_prime
 
 GROUPS_FILE = Path(__file__).with_name("groups.json")
 MIN_SAFE_PRIME_BITS = 5          # el primo seguro más pequeño de ese tamaño es 23 (el ejemplo)
@@ -23,14 +28,17 @@ SMALL_PRIME_LIMIT = 2000         # criba rápida antes de la prueba de primalida
 SMALL_PRIMES = tuple(sympy.primerange(3, SMALL_PRIME_LIMIT))
 SAFE_GROUP_BITS = (256, 512, 1024)
 RFC_GROUP_BITS = (2048, 3072)
-SCHNORR_GROUP_SIZES = {"schnorr-2048": (2048, 224), "schnorr-3072": (3072, 256)}
+SCHNORR_GROUP_SIZES = {"schnorr-2048": (2048, 224), "schnorr-3072": (3072, 256)}  # NIST: 112 y 128 bits
+MIN_Q_BITS = 2
+MIN_COFACTOR_BITS = 2            # p necesita al menos 2 bits más que q para que exista un j par
+MAX_COFACTOR_TRIES = 10_000      # candidatos j por cada q antes de probar con otro q
+CACHED_GROUP_NAMES = (*(f"safe-{bits}" for bits in SAFE_GROUP_BITS), *SCHNORR_GROUP_SIZES)
 GROUP_NAMES = (
     "toy",
     *(f"safe-{bits}" for bits in SAFE_GROUP_BITS),
     *(f"rfc-{bits}" for bits in RFC_GROUP_BITS),
     *SCHNORR_GROUP_SIZES,
 )
-PENDING_MESSAGE = "Disponible en el informe final"
 
 
 @dataclass(frozen=True)
@@ -40,7 +48,7 @@ class GroupParams:
     p: int
     q: int
     g: int
-    name: str            # "toy-23", "safe-512", "rfc3526-2048", "schnorr-2048-224", ...
+    name: str            # "toy-23", "safe-512", "rfc3526-2048", "schnorr-2048", "schnorr-56-24", ...
 
     @property
     def bits(self) -> int:
@@ -128,22 +136,59 @@ def safe_prime_group(bits: int) -> GroupParams:
             return GroupParams(p=p, q=q, g=generator_for(p, q), name=f"safe-{bits}")
 
 
-def schnorr_group(p_bits: int, q_bits: int) -> GroupParams:
-    """Grupo de Schnorr: q primo de q_bits bits y p = j·q + 1 primo de p_bits bits. Cubre R7.
+def _even_cofactor_range(p_bits: int, q: int) -> tuple[int, int]:
+    """Menor y mayor j par con 2^(p_bits − 1) ≤ j·q + 1 < 2^p_bits (p de exactamente p_bits bits)."""
+    low = -(-((1 << (p_bits - 1)) - 1) // q)      # techo de (2^(p_bits − 1) − 1)/q
+    high = ((1 << p_bits) - 2) // q
+    low += low % 2
+    high -= high % 2
+    if low > high:
+        raise ValueError(f"No hay un j par que dé un p de {p_bits} bits con q = {q}.")
+    return low, high
 
-    Plan (informe final): q con sympy.randprime; luego j par al azar hasta que p tenga
-    exactamente p_bits bits y sea primo; g = generator_for(p, q).
+
+def _prime_with_cofactor(q: int, p_bits: int) -> int | None:
+    """Prueba j pares al azar (con secrets) hasta que p = j·q + 1 sea primo; None si no hay suerte."""
+    low, high = _even_cofactor_range(p_bits, q)
+    even_count = (high - low) // 2 + 1
+    for _ in range(MAX_COFACTOR_TRIES):
+        j = low + 2 * secrets.randbelow(even_count)
+        p = j * q + 1
+        if not _has_small_factor(p) and sympy.isprime(p):
+            return p
+    return None
+
+
+def schnorr_group(p_bits: int, q_bits: int) -> GroupParams:
+    """Grupo de Schnorr: q primo de q_bits bits y p = j·q + 1 primo de p_bits bits (definición 7). Cubre R7.
+
+    Como indica el spec, q se elige con sympy.randprime en [2^(q_bits − 1), 2^q_bits); p, q y g
+    son públicos, así que no hace falta secrets para q. Después se prueban j pares al azar (con
+    secrets) hasta que p = j·q + 1 tenga exactamente p_bits bits y sea primo; j par garantiza
+    que p sea impar. Si tras MAX_COFACTOR_TRIES candidatos no aparece un primo, se cambia q.
+    g = generator_for(p, q) tiene orden q, aunque q sea mucho menor que p: así las potencias
+    usan exponentes de q_bits bits y la autenticación es más rápida con el mismo nivel de
+    seguridad (definición 10). Tarda segundos incluso para 2048/224.
     """
-    raise NotImplementedError(f"{PENDING_MESSAGE}: grupos de Schnorr ({p_bits}/{q_bits} bits).")
+    if q_bits < MIN_Q_BITS or p_bits < q_bits + MIN_COFACTOR_BITS:
+        raise ValueError(f"Se requiere q de al menos {MIN_Q_BITS} bits y p con al menos "
+                         f"{MIN_COFACTOR_BITS} bits más que q (se pidió p de {p_bits} y q de {q_bits}).")
+    while True:
+        q = sympy.randprime(1 << (q_bits - 1), 1 << q_bits)
+        p = _prime_with_cofactor(q, p_bits)
+        if p is not None:
+            return GroupParams(p=p, q=q, g=generator_for(p, q), name=f"schnorr-{p_bits}-{q_bits}")
 
 
 def load_rfc_group(bits: int) -> GroupParams:
     """Grupos MODP de RFC 3526 (Kivinen y Kojo, 2003): 2048 bits (grupo 14) y 3072 (grupo 15). Cubre R7.
 
-    Plan (informe final): copiar los hexadecimales del texto del RFC, con g = 2 y q = (p − 1)/2;
-    una prueba verifica el tamaño, la primalidad de p y q y que 2^q ≡ 1 (mod p).
+    p se copia del texto del RFC (secciones 3 y 4, en core/rfc3526.py), g = 2 y q = (p − 1)/2.
+    Son primos seguros (definición 2) y NIST les asigna 112 y 128 bits de seguridad
+    (definición 10). Otro tamaño lanza ValueError.
     """
-    raise NotImplementedError(f"{PENDING_MESSAGE}: grupo MODP de {bits} bits del RFC 3526.")
+    p = modp_prime(bits)
+    return GroupParams(p=p, q=(p - 1) // 2, g=RFC3526_GENERATOR, name=f"rfc3526-{bits}")
 
 
 def _load_cache(path: Path) -> dict:
@@ -173,12 +218,12 @@ def _save_cache(path: Path, data: dict) -> None:
     os.replace(temporary, path)
 
 
-def _cached_safe_group(bits: int, cache_path: Path) -> GroupParams:
-    name = f"safe-{bits}"
+def _cached_group(name: str, build: Callable[[], GroupParams], cache_path: Path) -> GroupParams:
+    """Lee el grupo de core/groups.json; si falta, lo genera con build y lo guarda con ese nombre."""
     cache = _load_cache(cache_path)
     if name in cache:
         return _group_from_entry(name, cache[name])
-    group = safe_prime_group(bits)
+    group = replace(build(), name=name)
     entry = {"p": str(group.p), "q": str(group.q), "g": str(group.g)}
     _save_cache(cache_path, {**cache, name: entry})
     return group
@@ -188,20 +233,22 @@ def _build_group(name: str, cache_path: Path) -> GroupParams:
     if name == "toy":
         return TOY_GROUP
     kind, bits_text = name.split("-")
-    if kind == "safe":
-        return _cached_safe_group(int(bits_text), cache_path)
     if kind == "rfc":
         return load_rfc_group(int(bits_text))
-    return schnorr_group(*SCHNORR_GROUP_SIZES[name])
+    if kind == "safe":
+        return _cached_group(name, partial(safe_prime_group, int(bits_text)), cache_path)
+    return _cached_group(name, partial(schnorr_group, *SCHNORR_GROUP_SIZES[name]), cache_path)
 
 
 def get_group(name: str, cache_path: Path = GROUPS_FILE) -> GroupParams:
     """Punto de entrada único para obtener (p, q, g). Cubre R1 y R7.
 
-    Nombres: "toy", "safe-256", "safe-512", "safe-1024" (funcionales en este avance) y
-    "rfc-2048", "rfc-3072", "schnorr-2048", "schnorr-3072" (informe final).
-    Los primos seguros se leen de core/groups.json; si faltan, se generan y se guardan.
-    El grupo siempre pasa por validate_params; si hay fallas, lanza ValueError con la lista.
+    Nombres: "toy", "safe-256", "safe-512", "safe-1024", "rfc-2048", "rfc-3072",
+    "schnorr-2048" (q de 224 bits) y "schnorr-3072" (q de 256 bits).
+    Los primos seguros y los grupos de Schnorr se leen de core/groups.json; si faltan, se generan
+    y se guardan. Los grupos RFC se copian del RFC 3526. El grupo siempre pasa por
+    validate_params (los de Schnorr con require_safe_prime=False); si hay fallas, lanza
+    ValueError con la lista.
     """
     if name not in GROUP_NAMES:
         raise ValueError(f"Grupo desconocido «{name}». Opciones: {', '.join(GROUP_NAMES)}.")
@@ -212,14 +259,25 @@ def get_group(name: str, cache_path: Path = GROUPS_FILE) -> GroupParams:
     return group
 
 
+def _cache_name(choice: str) -> str:
+    """«256» → «safe-256»; los nombres completos (safe-512, schnorr-2048, ...) se dejan igual."""
+    return f"safe-{choice}" if choice.isdigit() else choice
+
+
 def main(argv: list[str] | None = None) -> int:
-    """Genera (o confirma) los primos seguros pedidos y los guarda en core/groups.json. Cubre R1 y R7."""
-    parser = argparse.ArgumentParser(description="Genera primos seguros y los guarda en core/groups.json.")
-    parser.add_argument("--generate", nargs="+", type=int, choices=SAFE_GROUP_BITS, required=True)
+    """Genera (o confirma) los grupos pedidos y los guarda en core/groups.json. Cubre R1 y R7.
+
+    Acepta tamaños de primos seguros (256 512 1024) y nombres de grupos cacheados
+    (safe-256, ..., schnorr-2048, schnorr-3072).
+    """
+    choices = (*(str(bits) for bits in SAFE_GROUP_BITS), *CACHED_GROUP_NAMES)
+    parser = argparse.ArgumentParser(description="Genera primos seguros y grupos de Schnorr en core/groups.json.")
+    parser.add_argument("--generate", nargs="+", choices=choices, required=True, metavar="GRUPO",
+                        help=f"opciones: {' '.join(choices)}")
     args = parser.parse_args(argv)
-    for bits in args.generate:
+    for choice in args.generate:
         start = time.perf_counter()
-        group = get_group(f"safe-{bits}")
+        group = get_group(_cache_name(choice))
         elapsed = time.perf_counter() - start
         print(f"{group.name}: p de {group.bits} bits, q de {group.q.bit_length()} bits ({elapsed:.1f} s)")
     return 0
