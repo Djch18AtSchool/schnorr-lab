@@ -10,6 +10,14 @@ htmlcov/
 # Resultados generados al ejecutar (se conservan solo los que se suben a propósito)
 results/*
 !results/.gitkeep
+# Salidas que usa la demostración (R7 y R10): python -m benchmark.latency y stolen_db.run()
+!results/latency.csv
+!results/latency.json
+!results/latency.png
+!results/backends.png
+!results/bsgs.csv
+!results/bsgs.json
+!results/bsgs.png
 
 # Editor / sistema
 .vscode/
