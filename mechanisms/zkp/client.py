@@ -7,10 +7,11 @@ La clave secreta x vive en el «wallet» del celular y nunca se pone en un cuerp
 
 from typing import Any
 
-from mechanisms.base import ClientStep, FlowContext, StepError, StepResult
+from mechanisms.base import ClientStep, Exchange, FlowContext, StepError, StepResult
 from mechanisms.zkp.info import INFO, MECHANISM_ID
 from protocol import GroupParams, validate_params
 from protocol.client import Client
+from protocol.fiat_shamir import current_timestamp, hash_challenge, prove
 
 MAX_TRACE_BITS = 64
 
@@ -118,12 +119,10 @@ def respond(ctx: FlowContext) -> StepResult:
     return StepResult(values=values)
 
 
-def send_response(ctx: FlowContext) -> StepResult:
-    """Envía s y recibe la decisión del banco con los valores de la verificación. Cubre R6 y R9."""
-    body = {"session_id": ctx.state["session_id"], "s": str(ctx.state["s"])}
-    exchange = _send(ctx, "POST", "/zkp/login/respond", body)
+def _verdict(exchange: Exchange) -> StepResult:
+    """Convierte la decisión del banco (aceptado o no, con los valores verificados) en el último paso."""
     data = exchange.response_body if isinstance(exchange.response_body, dict) else {}
-    details = data.get("details", {})
+    details = data.get("details") or {}
     labels = {"gs": "g^s mod p", "tyc": "t·y^c mod p", "yc": "y^c mod p",
               "yc_inv": "(y^c)^-1 mod p (Euclides)", "t_rec": "g^s·(y^c)^-1 mod p"}
     values = {label: str(details[key]) for key, label in labels.items() if key in details}
@@ -133,9 +132,35 @@ def send_response(ctx: FlowContext) -> StepResult:
                       message=str(data.get("reason", "Respuesta inesperada del banco")), finished=True)
 
 
+def send_response(ctx: FlowContext) -> StepResult:
+    """Envía s y recibe la decisión del banco con los valores de la verificación. Cubre R6 y R9."""
+    body = {"session_id": ctx.state["session_id"], "s": str(ctx.state["s"])}
+    return _verdict(_send(ctx, "POST", "/zkp/login/respond", body))
+
+
+def prove_noninteractive(ctx: FlowContext) -> StepResult:
+    """Calcula la prueba de Fiat-Shamir (t, s, m) sin esperar un reto del banco. Cubre R8."""
+    client = _stored_client(ctx)
+    proof = prove(client, m=current_timestamp())
+    c = hash_challenge(client.gp, client.y, proof.t, proof.user_id, proof.m)
+    ctx.state["proof"] = proof
+    values = {"t = g^r mod p": str(proof.t), "m (hora del intento)": str(proof.m),
+              "c = H(p‖g‖y‖t‖id‖m) mod q": str(c), "s = (r + c·x) mod q": str(proof.s),
+              "r": "se usó una vez y se borró"}
+    return StepResult(values=values)
+
+
+def send_proof(ctx: FlowContext) -> StepResult:
+    """Envía la prueba en un solo mensaje; el banco recalcula c y verifica. Cubre R8 y R9."""
+    proof = ctx.state["proof"]
+    body = {"user_id": proof.user_id, "t": str(proof.t), "s": str(proof.s), "m": str(proof.m)}
+    return _verdict(_send(ctx, "POST", "/zkp/login/nizk", body))
+
+
 FLOW_ACTIONS = {
     "register": (fetch_params, generate_keys, send_registration),
     "login": (fetch_params, commit, send_commitment, respond, send_response),
+    "login_nizk": (fetch_params, prove_noninteractive, send_proof),
 }
 
 

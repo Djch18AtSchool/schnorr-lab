@@ -42,6 +42,27 @@ def test_registro_e_inicio_de_sesion_paso_a_paso(lab):
     assert login["steps"][-1]["record"]["exchange"]["path"] == "/zkp/login/respond"
 
 
+@pytest.mark.req("R8")
+def test_inicio_de_sesion_no_interactivo_en_un_solo_mensaje(lab):
+    bank, phone = lab
+    _run(phone, "register")
+    login = _run(phone, "login_nizk")
+    assert login["status"] == "aceptado"
+    assert [step["id"] for step in login["steps"]] == ["params", "prove", "send_proof"]
+    sent = login["steps"][-1]["record"]["exchange"]["request_body"]
+    assert set(sent) == {"user_id", "t", "s", "m"}
+    assert bank.get("/audit/log").json()[-1]["endpoint"] == "/zkp/login/nizk"
+
+
+@pytest.mark.req("R10")
+def test_repetir_la_prueba_no_interactiva_capturada_es_rechazado(lab):
+    _, phone = lab
+    _run(phone, "register")
+    _run(phone, "login_nizk")
+    replay = phone.post("/api/lab/attacks/replay_nizk", json={}).json()
+    assert replay["accepted"] is False and "Prueba ya utilizada" in replay["conclusion"]
+
+
 @pytest.mark.req("R11")
 def test_cada_paso_muestra_sus_valores_y_la_traza_con_p_pequeno(lab):
     _, phone = lab

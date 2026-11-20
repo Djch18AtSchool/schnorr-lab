@@ -13,7 +13,7 @@ from collections.abc import Callable
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
-from attacks import impostor, nonce_reuse, simulator
+from attacks import impostor, nonce_reuse, replay, simulator
 from attacks.simulator import simulate
 from client_app.gateway import BankGateway
 from mechanisms.base import Exchange, StepError
@@ -26,9 +26,12 @@ OFFLINE_ATTACKS: dict[str, tuple[str, Callable[[], dict]]] = {
     "simulator": ("Simulador (conocimiento cero)", lambda: simulator.run(verbose=True)),
     "impostor": ("Impostor que adivina el reto",
                  lambda: impostor.run(verbose=True, trials=OFFLINE_IMPOSTOR_TRIALS)),
+    "replay": ("Repetición de una prueba no interactiva", lambda: replay.run(verbose=True)),
 }
+REPLAYABLE_PATHS = {"replay_response": "/zkp/login/respond", "replay_nizk": "/zkp/login/nizk"}
 LIVE_ATTACKS = {
-    "replay_response": "Repetir la última respuesta capturada",
+    "replay_response": "Repetir la última respuesta capturada (interactivo)",
+    "replay_nizk": "Repetir la última prueba no interactiva capturada",
     "steal_database": "Robar la base de datos del banco",
     "impostor_live": "Suplantar a un usuario sin conocer x",
 }
@@ -70,8 +73,9 @@ class LiveAttacker:
 
     def run(self, name: str, user_id: str = LIVE_IMPOSTOR_ID) -> dict[str, Any]:
         """Lanza un ataque en vivo por nombre. Cubre R10."""
-        actions = {"replay_response": self.replay_response, "steal_database": self.steal_database,
-                   "impostor_live": lambda: self.impostor(user_id)}
+        actions = {"replay_response": lambda: self.replay(REPLAYABLE_PATHS["replay_response"]),
+                   "replay_nizk": lambda: self.replay(REPLAYABLE_PATHS["replay_nizk"]),
+                   "steal_database": self.steal_database, "impostor_live": lambda: self.impostor(user_id)}
         if name not in actions:
             raise ValueError(f"Ataque desconocido: «{name}».")
         return {"name": name, "title": LIVE_ATTACKS[name], **actions[name]()}
@@ -79,18 +83,18 @@ class LiveAttacker:
     def _send(self, method: str, path: str, body: dict[str, Any] | None = None) -> Exchange:
         return self._attacker.request(method, path, body, mechanism="zkp")
 
-    def replay_response(self) -> dict[str, Any]:
-        """Reenvía la última respuesta s que pasó por la red: la sesión ya se consumió. Cubre R9 y R10."""
-        captured = [ex for ex in self._network.captured() if ex.path == "/zkp/login/respond"]
+    def replay(self, path: str) -> dict[str, Any]:
+        """Reenvía el último mensaje capturado en esa ruta: sesión consumida o prueba ya usada. Cubre R9 y R10."""
+        captured = [ex for ex in self._network.captured() if ex.path == path]
         if not captured:
-            raise StepError("Todavía no hay una respuesta capturada: inicie sesión primero.")
+            raise StepError("Todavía no hay un mensaje capturado de ese tipo: inicie sesión primero.")
         original = captured[-1]
         exchange = self._send("POST", original.path, original.request_body)
         body = exchange.response_body if isinstance(exchange.response_body, dict) else {}
         accepted = body.get("accepted") is True
         return {"accepted": accepted, "exchange": exchange.to_json(),
                 "conclusion": ("El banco aceptó la repetición" if accepted else
-                               f"El banco la rechazó: {body.get('reason')}. Cada sesión sirve una sola vez.")}
+                               f"El banco la rechazó: {body.get('reason')}. Lo capturado no sirve dos veces.")}
 
     def steal_database(self) -> dict[str, Any]:
         """Lee lo que el banco guarda: solo claves públicas, que no permiten entrar. Cubre R2 y R10."""

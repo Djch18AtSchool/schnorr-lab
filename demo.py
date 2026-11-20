@@ -13,10 +13,11 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from attacks import impostor, nonce_reuse, simulator
+from attacks import impostor, nonce_reuse, replay, simulator
 from protocol import TOY_GROUP, GroupParams, get_group, validate_params
 from protocol.bank import Bank
 from protocol.client import Client
+from protocol.fiat_shamir import DEFAULT_WINDOW_SECONDS, current_timestamp, hash_challenge, prove, verify_nizk
 from protocol.transcript import VerifyResult
 
 ROOT = Path(__file__).resolve().parent
@@ -194,13 +195,35 @@ def option_pending(name: str) -> Callable[[bool], None]:
     return run
 
 
+def option_fiat_shamir(verbose: bool, group_name: str | None = None) -> None:
+    """Opción 3: inicio de sesión no interactivo (Fiat-Shamir) y qué pasa al repetir la prueba. Cubre R8 y R11."""
+    gp = TOY_GROUP if group_name is None else _load_group(group_name)
+    if gp is None:
+        return
+    bank, client = Bank(gp), Client(USER_ID, gp, x=EXAMPLE_X if gp == TOY_GROUP else None)
+    bank.register(*client.register_payload())
+    now = current_timestamp()
+    proof = prove(client, m=now)
+    c = hash_challenge(gp, client.y, proof.t, USER_ID, now)
+    _say("[Parámetros]", f"{gp.name}: p de {gp.bits} bits   y = {_fmt(client.y, verbose)}")
+    _say("[Compromiso]", f"t = g^r mod p = {_fmt(proof.t, verbose)}   m = {now} (hora del intento)")
+    _say("[Reto local]", f"c = H(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q = {_fmt(c, verbose)}   (sin esperar al banco)")
+    _say("[Respuesta]", f"s = (r + c·x) mod q = {_fmt(proof.s, verbose)}   → se envía (id, t, s, m)")
+    result = verify_nizk(bank, proof, now=now)
+    _say("[Verificación]", f"el banco recalcula c y comprueba g^s ≡ t·y^c (mod p) → {result.reason}")
+    _say("[Repetición]", f"la misma prueba otra vez → {verify_nizk(bank, proof, now=now + 1).reason}")
+    age = DEFAULT_WINDOW_SECONDS + 1
+    stale = verify_nizk(bank, prove(client, m=now - age), now=now)
+    _say("[m vieja]", f"prueba con m de hace {age} s → {stale.reason}")
+    _print_outcome(result)
+
+
 def option_attacks(_verbose: bool) -> None:
     """Opción 4: ejecuta los ataques funcionales con p = 23 e informa los pendientes. Cubre R10 y R11."""
-    for attack in (nonce_reuse, simulator, impostor):
+    for attack in (nonce_reuse, simulator, impostor, replay):
         attack.run(verbose=True)
         print()
-    for name in ("Repetición de pruebas (Fiat-Shamir)", "Base de datos robada (BSGS)"):
-        print(f"[{name}] {PENDING}.")
+    print(f"[Base de datos robada (BSGS)] {PENDING}.")
 
 
 def option_tests(_verbose: bool) -> None:
@@ -211,7 +234,6 @@ def option_tests(_verbose: bool) -> None:
 
 OPTIONS: dict[str, Callable[[bool], None]] = {
     "1": option_example,
-    "3": option_pending("Variante no interactiva (Fiat-Shamir)"),
     "4": option_attacks,
     "5": option_pending("Medición de latencia"),
     "6": option_pending("BSGS"),
@@ -223,6 +245,9 @@ def run_option(option: str, verbose: bool, group: str | None) -> bool:
     """Ejecuta una opción; devuelve False si la opción no existe. Cubre R11."""
     if option == "2":
         option_interactive(verbose, group)
+        return True
+    if option == "3":
+        option_fiat_shamir(verbose, group)
         return True
     handler = OPTIONS.get(option)
     if handler is None:

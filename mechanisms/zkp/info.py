@@ -84,7 +84,6 @@ LOGIN_FLOW = FlowInfo(
 NIZK_FLOW = FlowInfo(
     id="login_nizk",
     title="Iniciar sesión (no interactivo, Fiat-Shamir)",
-    available=False,  # se habilita cuando protocol/fiat_shamir.py está implementado
     steps=(
         PARAMS_STEP,
         StepInfo(

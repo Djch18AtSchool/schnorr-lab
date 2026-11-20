@@ -47,10 +47,20 @@ def test_opcion_2_informa_grupos_pendientes_sin_fallar(capsys):
 
 
 @pytest.mark.req("R11")
-@pytest.mark.parametrize("option", ["3", "5", "6"])
+@pytest.mark.parametrize("option", ["5", "6"])
 def test_opciones_en_esqueleto_avisan_en_lugar_de_fallar(capsys, option):
     assert demo.main(["--option", option]) == 0
     assert "Disponible en el informe final" in capsys.readouterr().out
+
+
+@pytest.mark.req("R8")
+@pytest.mark.parametrize("group", [None, "safe-256"])
+def test_opcion_3_inicia_sesion_sin_interaccion_y_rechaza_repeticiones(capsys, group):
+    args = ["--option", "3"] + (["--group", group] if group else [])
+    assert demo.main(args) == 0
+    out = capsys.readouterr().out
+    assert "c = H(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q" in out and ">>> ACCESO CONCEDIDO" in out
+    assert "Prueba ya utilizada" in out and "Marca de tiempo fuera de la ventana permitida" in out
 
 
 @pytest.mark.req("R11")

@@ -18,6 +18,7 @@ from mechanisms.zkp.schemas import (
     CommitResponse,
     DemoClientRequest,
     DemoClientResponse,
+    NizkRequest,
     ParamsResponse,
     RegisterRequest,
     RegisterResponse,
@@ -27,6 +28,7 @@ from mechanisms.zkp.schemas import (
 from protocol import GroupParams, get_group
 from protocol.bank import Bank
 from protocol.client import Client
+from protocol.fiat_shamir import NizkProof, verify_nizk
 from protocol.transcript import Reason, VerifyResult
 
 PREFIX = "/zkp"
@@ -60,7 +62,8 @@ class ZkpServer:
     """Banco del mecanismo ZKP: un protocol.Bank en memoria y sus endpoints. Cubre R11."""
 
     info = INFO
-    audited_paths = frozenset({f"{PREFIX}/register", f"{PREFIX}/login/commit", f"{PREFIX}/login/respond"})
+    audited_paths = frozenset({f"{PREFIX}/register", f"{PREFIX}/login/commit", f"{PREFIX}/login/respond",
+                               f"{PREFIX}/login/nizk"})
 
     def __init__(self, ctx: ServerContext, settings: Mapping[str, str]) -> None:
         self._ctx = ctx
@@ -146,6 +149,27 @@ class ZkpServer:
                                                "trace": "\n".join(trace or [])})
         return payload
 
+    def login_nizk(self, body: NizkRequest) -> VerifyResponse | JSONResponse:
+        """Verifica una prueba no interactiva (Fiat-Shamir) recibida en un solo mensaje. Cubre R8, R9 y R11.
+
+        El banco recalcula c = H(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q y rechaza pruebas repetidas o con m
+        fuera de la ventana permitida (definición 14).
+        """
+        self._ctx.audit(f"{PREFIX}/login/nizk", body.model_dump(), MECHANISM_ID)
+        self._event("paso", "El banco recibe una prueba no interactiva (t, s, m)", body.model_dump())
+        proof = NizkProof(user_id=body.user_id, t=int(body.t), s=int(body.s), m=int(body.m))
+        try:
+            with self._ctx.lock:
+                result = verify_nizk(self._bank, proof)
+        except ValueError as error:
+            return error_response(status.HTTP_400_BAD_REQUEST, str(error))
+        payload = verify_payload(result)
+        verdict = "ACCESO CONCEDIDO" if result.accepted else f"Rechazado: {result.reason}"
+        challenge = {"c = H(p‖g‖y‖t‖id‖m) mod q": payload.transcript["c"]} if payload.transcript else {}
+        self._event("verificacion", verdict, {**challenge, **payload.details, "accepted": str(result.accepted),
+                                               "attempts_left": str(result.attempts_left)})
+        return payload
+
     def demo_client(self, body: DemoClientRequest) -> DemoClientResponse | JSONResponse:
         """Calcula un par de claves en el servidor, solo para probar con clics en Swagger. Cubre R11."""
         try:
@@ -166,6 +190,8 @@ class ZkpServer:
                              summary="Paso 1: enviar el compromiso t y recibir el reto c")
         router.add_api_route("/login/respond", self.login_respond, methods=["POST"], response_model=VerifyResponse,
                              responses=ERRORS, summary="Paso 2: enviar la respuesta s y recibir la decisión")
+        router.add_api_route("/login/nizk", self.login_nizk, methods=["POST"], response_model=VerifyResponse,
+                             responses=ERRORS, summary="Inicio de sesión no interactivo (Fiat-Shamir): t, s y m")
         router.add_api_route("/demo/client", self.demo_client, methods=["POST"], status_code=201,
                              response_model=DemoClientResponse, responses=ERRORS, tags=["demostración"],
                              summary="Crear un cliente de prueba (solo para Swagger)")
