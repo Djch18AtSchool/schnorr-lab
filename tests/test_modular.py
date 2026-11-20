@@ -5,10 +5,17 @@ import secrets
 import pytest
 import sympy
 
-from core.modular import extended_gcd, mod_inverse, mod_pow
+from core.modular import extended_gcd, mod_inverse, mod_pow, use_backend
 
 RANDOM_CASES = 1000
 OPERAND_BITS = 256
+
+
+@pytest.fixture(autouse=True)
+def _implementacion_propia():
+    """R4 y R5 verifican siempre la implementación propia, aunque SCHNORR_ARITHMETIC diga otra cosa."""
+    with use_backend("propia"):
+        yield
 
 
 def _random_modulus() -> int:

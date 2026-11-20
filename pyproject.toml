@@ -8,6 +8,7 @@ dependencies = ["sympy", "matplotlib", "fastapi", "uvicorn", "httpx"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+bench = ["gmpy2"]   # solo para comparar backends aritméticos en benchmark/latency.py (R7)
 
 [build-system]
 requires = ["setuptools>=68"]
