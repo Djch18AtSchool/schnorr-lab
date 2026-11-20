@@ -25,7 +25,8 @@ function card(name, title, live) {
 }
 
 function verdict(result) {
-  if (result.stolen) return `<div class="verdict ok">El atacante solo obtuvo claves públicas.</div>`;
+  if (result.cracked === true) return `<div class="verdict bad">✘ Con un q tan pequeño, el atacante despejó x</div>`;
+  if (result.cracked === false) return `<div class="verdict ok">✔ El atacante solo obtuvo claves públicas: no puede despejar x</div>`;
   if (typeof result.accepted !== "boolean") return "";
   return result.accepted
     ? `<div class="verdict bad">✘ El ataque tuvo éxito</div>`

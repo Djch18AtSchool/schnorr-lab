@@ -48,11 +48,19 @@ def test_opcion_2_autentica_con_el_grupo_rfc_de_2048_bits(capsys):
     assert ">>> ACCESO CONCEDIDO" in out
 
 
-@pytest.mark.req("R11")
-@pytest.mark.parametrize("option", ["5", "6"])
-def test_opciones_en_esqueleto_avisan_en_lugar_de_fallar(capsys, option):
-    assert demo.main(["--option", option]) == 0
-    assert "Disponible en el informe final" in capsys.readouterr().out
+@pytest.mark.req("R7")
+def test_opcion_5_muestra_la_latencia_medida_y_las_predicciones(capsys):
+    assert demo.main(["--option", "5"]) == 0
+    out = capsys.readouterr().out
+    assert "rfc-2048" in out and "k^2.585" in out and "mediana ms" in out
+
+
+@pytest.mark.req("R10")
+def test_opcion_6_recupera_x_con_bsgs_y_rechaza_q_grandes(capsys):
+    assert demo.main(["--option", "6"]) == 0
+    assert "x encontrada = 7" in capsys.readouterr().out
+    assert demo.main(["--option", "6", "--group", "safe-256"]) == 0
+    assert "inviable" in capsys.readouterr().out
 
 
 @pytest.mark.req("R8")
@@ -71,7 +79,7 @@ def test_opcion_4_ejecuta_el_laboratorio_de_ataques(capsys):
     out = capsys.readouterr().out
     assert "mod 11 = 7" in out                       # x recuperada por reutilización de r
     assert "¿Misma distribución? sí" in out
-    assert "[Impostor]" in out and "Disponible en el informe final" in out
+    assert "[Impostor]" in out and "[BSGS]" in out and "x encontrada = 7" in out
 
 
 @pytest.mark.req("R11")

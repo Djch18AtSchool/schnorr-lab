@@ -8,12 +8,14 @@ Uso:
 """
 
 import argparse
+import json
 import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from attacks import impostor, nonce_reuse, replay, simulator
+from attacks import bsgs, impostor, nonce_reuse, replay, simulator
+from benchmark.latency import format_table
 from protocol import TOY_GROUP, GroupParams, get_group, validate_params
 from protocol.bank import Bank
 from protocol.client import Client
@@ -29,7 +31,7 @@ EXAMPLE_X, EXAMPLE_R, EXAMPLE_C = 7, 5, 3      # transcripción del escrito
 MAX_TRACE_BITS = 64                            # con p más grande la traza bit a bit es ilegible
 MAX_PLAIN_DIGITS = 20
 AVAILABLE_GROUPS = ("toy", "safe-256", "safe-512", "safe-1024")
-PENDING = "Disponible en el informe final"
+LATENCY_RESULTS = ROOT / "results" / "latency.json"
 MENU = (
     ("1", "Ejemplo paso a paso con p = 23 (transcripción del escrito)"),
     ("2", "Autenticación interactiva (elegir grupo) y bloqueo por intentos"),
@@ -187,12 +189,33 @@ def option_interactive(verbose: bool, group_name: str | None = None) -> None:
 
 # ---------------------------------------------------------------- resto de opciones
 
-def option_pending(name: str) -> Callable[[bool], None]:
-    """Opción en esqueleto: avisa «Disponible en el informe final» en lugar de fallar. Cubre R11."""
-    def run(_verbose: bool) -> None:
-        """Imprime el aviso de la opción pendiente. Cubre R11."""
-        print(f"{name}: {PENDING}.")
-    return run
+def option_latency(_verbose: bool) -> None:
+    """Opción 5: latencia medida según los bits de p y su comparación con k³ y k^2.585. Cubre R7.
+
+    Muestra los resultados ya generados (results/latency.json); para volver a medir se ejecuta
+    python -m benchmark.latency (tarda menos de un minuto).
+    """
+    if not LATENCY_RESULTS.is_file():
+        print(f"Todavía no hay mediciones: ejecute «python -m benchmark.latency» ({LATENCY_RESULTS.name}).")
+        return
+    data = json.loads(LATENCY_RESULTS.read_text(encoding="utf-8"))
+    print(f"Latencia de una autenticación completa (mediana de {data['rows'][0]['reps']} repeticiones, "
+          f"Python {data['python']}). Razón = tiempo / tiempo del tamaño anterior.")
+    for line in format_table(data["rows"]):
+        print(line)
+    print("Predicción del escrito al duplicar k: k³ → 8; con Karatsuba (k^2.585) → ≈ 6. "
+          "Gráficas en results/latency.png y results/backends.png.")
+
+
+def option_bsgs(verbose: bool, group_name: str | None = None) -> None:
+    """Opción 6: el atacante roba y y recupera x con paso de bebé, paso de gigante. Cubre R10."""
+    gp = TOY_GROUP if group_name is None else _load_group(group_name)
+    if gp is None:
+        return
+    try:
+        bsgs.run(gp, verbose=True)
+    except ValueError as error:
+        print(error)
 
 
 def option_fiat_shamir(verbose: bool, group_name: str | None = None) -> None:
@@ -220,10 +243,9 @@ def option_fiat_shamir(verbose: bool, group_name: str | None = None) -> None:
 
 def option_attacks(_verbose: bool) -> None:
     """Opción 4: ejecuta los ataques funcionales con p = 23 e informa los pendientes. Cubre R10 y R11."""
-    for attack in (nonce_reuse, simulator, impostor, replay):
+    for attack in (nonce_reuse, simulator, impostor, replay, bsgs):
         attack.run(verbose=True)
         print()
-    print(f"[Base de datos robada (BSGS)] {PENDING}.")
 
 
 def option_tests(_verbose: bool) -> None:
@@ -235,8 +257,7 @@ def option_tests(_verbose: bool) -> None:
 OPTIONS: dict[str, Callable[[bool], None]] = {
     "1": option_example,
     "4": option_attacks,
-    "5": option_pending("Medición de latencia"),
-    "6": option_pending("BSGS"),
+    "5": option_latency,
     "7": option_tests,
 }
 
@@ -248,6 +269,9 @@ def run_option(option: str, verbose: bool, group: str | None) -> bool:
         return True
     if option == "3":
         option_fiat_shamir(verbose, group)
+        return True
+    if option == "6":
+        option_bsgs(verbose, group)
         return True
     handler = OPTIONS.get(option)
     if handler is None:

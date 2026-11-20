@@ -1,7 +1,7 @@
-"""Contratos de los módulos que el escrito deja para el informe final (R7 y R10).
+"""Contratos que el segundo avance fijó para el informe final (R7 y R10).
 
-Repetición de pruebas, BSGS, base de datos robada y latencia. Igual que en
-test_fiat_shamir.py, se marcan xfail estricto mientras sean esqueletos.
+Repetición de pruebas, BSGS, base de datos robada y latencia. Se escribieron como xfail
+estricto cuando esos módulos eran esqueletos; hoy pasan y quedan como pruebas de aceptación.
 """
 
 import pytest
@@ -10,10 +10,6 @@ from attacks import replay, stolen_db
 from attacks.bsgs import bsgs
 from benchmark import latency
 from core.params import TOY_GROUP
-
-PENDING_FINAL = pytest.mark.xfail(
-    raises=NotImplementedError, strict=True, reason="Esqueleto: disponible en el informe final"
-)
 
 
 @pytest.mark.req("R10")
