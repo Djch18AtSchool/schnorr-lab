@@ -226,7 +226,7 @@ def main(argv: list[str] | None = None) -> int:
     rows = measure(args.groups, args.reps, args.backends, results_dir=RESULTS_DIR)
     plot(rows, RESULTS_DIR)
     print("\n".join(format_table(rows)))
-    print(f"\nTiempo total: {time.perf_counter() - start:.1f} s. Resultados en {RESULTS_DIR}.")
+    print(f"\nTiempo total: {time.perf_counter() - start:.1f} s. Resultados en {RESULTS_DIR.name}/.")
     return 0
 
 
