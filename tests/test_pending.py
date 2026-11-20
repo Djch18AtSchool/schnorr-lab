@@ -38,6 +38,5 @@ def test_tiempo_de_bsgs_crece_como_raiz_de_q(tmp_path):
 
 
 @pytest.mark.req("R7")
-@PENDING_FINAL
 def test_latencia_mide_una_autenticacion_completa():
     assert latency.measure_auth(TOY_GROUP, reps=3) > 0
