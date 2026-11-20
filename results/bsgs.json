@@ -1,0 +1,96 @@
+{
+  "rows": [
+    {
+      "q_bits": 16,
+      "p_bits": 48,
+      "x_real": 15181,
+      "x_found": 15181,
+      "operations": 281,
+      "seconds": 7.746799383312464e-05
+    },
+    {
+      "q_bits": 20,
+      "p_bits": 52,
+      "x_real": 263437,
+      "x_found": 263437,
+      "operations": 1094,
+      "seconds": 0.0003295939968666062
+    },
+    {
+      "q_bits": 24,
+      "p_bits": 56,
+      "x_real": 342257,
+      "x_found": 342257,
+      "operations": 3679,
+      "seconds": 0.0006600260021514259
+    },
+    {
+      "q_bits": 28,
+      "p_bits": 60,
+      "x_real": 144582057,
+      "x_found": 144582057,
+      "operations": 24724,
+      "seconds": 0.003730507000000216
+    },
+    {
+      "q_bits": 32,
+      "p_bits": 64,
+      "x_real": 487259637,
+      "x_found": 487259637,
+      "operations": 69372,
+      "seconds": 0.014722963998792693
+    },
+    {
+      "q_bits": 36,
+      "p_bits": 68,
+      "x_real": 39030030670,
+      "x_found": 39030030670,
+      "operations": 398043,
+      "seconds": 0.08187077200273052
+    },
+    {
+      "q_bits": 40,
+      "p_bits": 72,
+      "x_real": 48081162160,
+      "x_found": 48081162160,
+      "operations": 998623,
+      "seconds": 0.2729346490013995
+    }
+  ],
+  "extra_p_bits": 32,
+  "fit": {
+    "seconds_per_operation": 2.637643606353062e-07,
+    "growth_exponent": 0.49768244272823026,
+    "expected_growth_exponent": 0.5
+  },
+  "holdout": {
+    "q_bits": 40,
+    "predicted_seconds": 0.20538650684567186,
+    "measured_seconds": 0.2729346490013995,
+    "relative_error": 0.24748833613786167
+  },
+  "predictions": [
+    {
+      "q_bits": 160,
+      "operations": 1.8133887294219438e+24,
+      "memory_entries": 1.2089258196146292e+24,
+      "seconds": 4.783073187992493e+17,
+      "years": 15156644320.203352
+    },
+    {
+      "q_bits": 224,
+      "operations": 7.788445287802241e+33,
+      "memory_entries": 5.192296858534828e+33,
+      "seconds": 2.0543142916802216e+27,
+      "years": 6.509729167237755e+19
+    },
+    {
+      "q_bits": 256,
+      "operations": 5.104235503814077e+38,
+      "memory_entries": 3.402823669209385e+38,
+      "seconds": 1.34631541419555e+32,
+      "years": 4.266216107040935e+24
+    }
+  ],
+  "universe_age_years": 13800000000.0
+}
