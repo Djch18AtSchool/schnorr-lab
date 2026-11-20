@@ -21,6 +21,9 @@ class Reason(StrEnum):
     ACCOUNT_LOCKED = "Cuenta bloqueada"
     S_OUT_OF_RANGE = "s fuera de rango"
     CONGRUENCE_FAILED = "La congruencia no se cumple"
+    MISSING_TIMESTAMP = "Falta la marca de tiempo"
+    TIMESTAMP_OUT_OF_WINDOW = "Marca de tiempo fuera de la ventana permitida"
+    PROOF_ALREADY_USED = "Prueba ya utilizada"
 
 
 @dataclass(frozen=True)
