@@ -41,9 +41,11 @@ def test_opcion_2_autentica_y_muestra_el_bloqueo(capsys, group):
 
 
 @pytest.mark.req("R11")
-def test_opcion_2_informa_grupos_pendientes_sin_fallar(capsys):
+def test_opcion_2_autentica_con_el_grupo_rfc_de_2048_bits(capsys):
     assert demo.main(["--option", "2", "--group", "rfc-2048"]) == 0
-    assert "Disponible en el informe final" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "rfc3526-2048: p de 2048 bits" in out
+    assert ">>> ACCESO CONCEDIDO" in out
 
 
 @pytest.mark.req("R11")
