@@ -2,7 +2,13 @@
 
 Cada prueba lleva el marcador ``@pytest.mark.req("Rn")``. Al terminar la ejecución se
 imprime la trazabilidad de la Tabla 7 del escrito: primero cada prueba y después un
-resumen por requerimiento. Las pruebas marcadas ``xfail`` corresponden a funcionalidades
+resumen por requerimiento. Los identificadores Cn (C1–C5) son los de la comparación con
+otros mecanismos de autenticación y se listan después de los Rn:
+    C1  registro e inicio de sesión de contraseña, TOTP y SRP (credenciales correctas e incorrectas)
+    C2  qué guarda el banco por usuario y qué viaja por la red
+    C3  validación de entradas y bloqueo por intentos fallidos
+    C4  repetición de mensajes capturados, reuso de códigos y verificación mutua
+    C5  experimento de comparación (benchmark/compare.py) Las pruebas marcadas ``xfail`` corresponden a funcionalidades
 que el escrito deja para el informe final (esqueletos).
 """
 
@@ -11,7 +17,8 @@ import re
 import pytest
 
 NO_REQ = "—"
-_REQ_PATTERN = re.compile(r"^R(\d+)$")
+_REQ_PATTERN = re.compile(r"^([RC])(\d+)$")
+_PREFIX_ORDER = {"R": 0, "C": 1}           # primero los del escrito, luego los de la comparación
 _rows: list[tuple[str, str, str]] = []
 
 
@@ -24,10 +31,12 @@ def _outcome_label(report: pytest.TestReport) -> str:
     return report.outcome
 
 
-def _sort_key(row: tuple[str, str, str]) -> tuple[int, str]:
-    """Ordena R1, R2, ..., R11 numéricamente (no alfabéticamente)."""
+def _sort_key(row: tuple[str, str, str]) -> tuple[int, int, str]:
+    """Ordena R1, ..., R11 y después C1, ..., C5, numéricamente (no alfabéticamente)."""
     match = _REQ_PATTERN.match(row[0])
-    return (int(match.group(1)) if match else 99, row[1])
+    if not match:
+        return (len(_PREFIX_ORDER), 0, row[1])
+    return (_PREFIX_ORDER[match.group(1)], int(match.group(2)), row[1])
 
 
 @pytest.hookimpl(wrapper=True)
