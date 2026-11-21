@@ -115,7 +115,6 @@ export function LookSection({ prefs, onPrefs, source, onSource, consoleUrl }: Pr
         <Seg label="Fuente de datos" value={source} onChange={onSource} options={[{ value: "real", label: "Banco en vivo" }, { value: "simulada", label: "Simulación" }]} />
         <div className="links">
           {consoleUrl && <a href={consoleUrl} target="_blank" rel="noreferrer">Consola del banco <ExternalLink /></a>}
-          <a href="/clasico">Interfaz clásica</a>
         </div>
       </section>
     </>
