@@ -1,8 +1,9 @@
 /** Tira storyboard inferior con el transporte (anterior, siguiente/reproducir, reiniciar). */
+import { ChevronLeft, Pause, Play, RotateCcw } from "lucide-react";
 import { Fragment, useEffect, useRef } from "react";
 import type { FrameModel } from "../model/storyboard";
 import { FrameSvg } from "./FrameSvg";
-import { prefersReducedMotion } from "./motion";
+import { useMotionSettings } from "./motion";
 
 interface BoardProps {
   actTitle: string;
@@ -29,26 +30,25 @@ function playLabel({ auto, playing, atEnd, pending }: Pick<BoardProps, "auto" | 
 export function Board(props: BoardProps) {
   const { actTitle, frames, index, hasEve, pending, atEnd, auto, playing, holdMs, onPrev, onPlay, onRestart, onJump } = props;
   const strip = useRef<HTMLElement>(null);
+  const { reduced } = useMotionSettings();
   useEffect(() => {
     const current = strip.current?.querySelector<HTMLElement>(".frame.cur");
-    current?.scrollIntoView({ block: "nearest", inline: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
-  }, [index, frames.length]);
+    current?.scrollIntoView({ block: "nearest", inline: "center", behavior: reduced ? "auto" : "smooth" });
+  }, [index, frames.length, reduced]);
   return (
     <footer className="board">
       <div className="transport">
         <div className="act">{actTitle}<small>Paso {index + 1} de {frames.length}</small></div>
         <div className="tbtns">
           <button type="button" className="tbtn" onClick={onPrev} disabled={index === 0} aria-label="Paso anterior (←)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+            <ChevronLeft />
           </button>
           <button type="button" className="tbtn primary" onClick={onPlay} disabled={pending} aria-keyshortcuts="ArrowRight Space">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              {auto && playing ? <><rect x="6.5" y="5" width="4" height="14" rx="1" /><rect x="13.5" y="5" width="4" height="14" rx="1" /></> : <path d="M8 5.5v13l11-6.5z" />}
-            </svg>
+            {auto && playing ? <Pause fill="currentColor" /> : <Play fill="currentColor" />}
             <span>{playLabel({ auto, playing, atEnd, pending })}</span>
           </button>
           <button type="button" className="tbtn" onClick={onRestart} aria-label="Reiniciar acto (R)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" /></svg>
+            <RotateCcw />
           </button>
         </div>
       </div>

@@ -10,6 +10,13 @@
 html, body, #root { height: 100%; margin: 0; }
 body { -webkit-font-smoothing: antialiased; }
 [hidden] { display: none !important; }
+/*
+ * Movimiento reducido del sistema, solo donde la página no decide por sí misma: el Escenario
+ * pone <html data-motion> según su preferencia «Animaciones» (escenario/styles/motion.css).
+ * Una sola iteración además de la duración mínima: un bucle de 1 ms parpadearía sin parar.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  :root:not([data-motion]) *, :root:not([data-motion]) *::before, :root:not([data-motion]) *::after {
+    animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important;
+  }
 }

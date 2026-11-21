@@ -1,9 +1,10 @@
 /** Barra superior: nombre, fila «En escena» con quien actúa y el botón de Dirección. */
+import { SlidersHorizontal } from "lucide-react";
 import type { CastMember } from "../../shared/types";
-import type { Focus } from "../model/types";
-import { SlidersIcon } from "./icons";
+import type { Focus, Lane } from "../model/types";
+import { LANE_ICON } from "./icons";
 
-const CHIPS: ReadonlyArray<{ member: CastMember; lane: string; label: string }> = [
+const CHIPS: ReadonlyArray<{ member: CastMember; lane: Lane; label: string }> = [
   { member: "ana", lane: "ana", label: "Ana" },
   { member: "red", lane: "net", label: "Red" },
   { member: "banco", lane: "bank", label: "Banco" },
@@ -29,15 +30,18 @@ export function TopBar({ cast, hasEve, focus, simulated, drawerOpen, onDirection
       </div>
       <div className="cast" aria-label="Elenco en escena">
         <span className="cast-label">En escena</span>
-        {CHIPS.map((chip) => (
-          <span key={chip.lane} className={`chip${chip.lane === focus ? " on" : ""}${present(chip.member) ? "" : " out"}`} data-a={chip.lane}>
-            <i />
-            {chip.label}
-          </span>
-        ))}
+        {CHIPS.map((chip) => {
+          const ChipIcon = LANE_ICON[chip.lane];
+          return (
+            <span key={chip.lane} className={`chip${chip.lane === focus ? " on" : ""}${present(chip.member) ? "" : " out"}`} data-a={chip.lane}>
+              <ChipIcon />
+              {chip.label}
+            </span>
+          );
+        })}
       </div>
       <button type="button" className="dir-btn" onClick={onDirection} aria-controls="drawer" aria-expanded={drawerOpen}>
-        <SlidersIcon />
+        <SlidersHorizontal />
         <span className="lbl">Dirección</span>
         <kbd>D</kbd>
       </button>

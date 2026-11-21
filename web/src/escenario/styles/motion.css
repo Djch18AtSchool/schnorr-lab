@@ -1,0 +1,34 @@
+/*
+ * Movimiento del Escenario. Lo decide la preferencia «Animaciones» del drawer con
+ * <html data-motion="completo|reducido">, no la media query global: el Escenario se proyecta
+ * y «Completas» (por defecto) anima igual aunque el equipo pida menos movimiento.
+ *
+ * Modo reducido: nada se repite en bucle, nada se desplaza; lo que cambia aparece de una vez
+ * o con un fundido breve. La cámara corta sin desplazarse (useCamera, --cam-ms: 0).
+ */
+
+/* Lo que gira o titila en bucle se queda quieto (el cursor, visible; la rueda, como un aro). */
+:root[data-motion="reducido"] .cursor,
+:root[data-motion="reducido"] .spinner {
+  animation: none !important;
+}
+
+/* Las entradas (líneas de terminal, tarjeta, íconos) aparecen ya en su estado final. */
+:root[data-motion="reducido"] *:not(.prog):not(.welcome-toast),
+:root[data-motion="reducido"] *::before,
+:root[data-motion="reducido"] *::after {
+  animation-duration: 1ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-delay: 0s !important;
+  transition-duration: .16s !important;
+}
+
+/* El aviso del celular dura lo mismo, pero solo aparece y se desvanece, sin deslizarse. */
+:root[data-motion="reducido"] .scr.active .welcome-toast {
+  animation-name: toastFade !important;
+  animation-delay: 0s !important;
+}
+@keyframes toastFade { 0% { opacity: 0; } 8%, 88% { opacity: 1; } 100% { opacity: 0; } }
+
+:root[data-motion="reducido"] .strip { scroll-behavior: auto; }

@@ -97,7 +97,3 @@
   .frame svg { height: 38px; }
   .brackets span { display: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .world, .brackets, .actor, .note, .chip, .drawer, .row, .head { transition-duration: .01ms !important; }
-  .spinner, .cursor { animation-duration: 3s; }
-}

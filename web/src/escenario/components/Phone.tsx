@@ -1,4 +1,5 @@
 /** Celular de Ana: marco realista y la pantalla que corresponde al beat. */
+import { BatteryFull, Signal, Wifi } from "lucide-react";
 import { useEffect, useState, type RefObject } from "react";
 import type { PhoneView } from "../model/types";
 import { HomeScreen } from "./HomeScreen";
@@ -12,9 +13,9 @@ function StatusBar() {
     <div className="statusbar">
       <span>9:41</span>
       <span>
-        <svg viewBox="0 0 18 11" fill="#121826" aria-hidden="true"><rect x="0" y="7" width="3" height="4" rx="1" /><rect x="5" y="5" width="3" height="6" rx="1" /><rect x="10" y="2.5" width="3" height="8.5" rx="1" /><rect x="15" y="0" width="3" height="11" rx="1" /></svg>
-        <svg viewBox="0 0 16 11" fill="#121826" aria-hidden="true"><path d="M8 2.2c2.3 0 4.4.9 6 2.4l1.2-1.3A10.4 10.4 0 0 0 8 .4 10.4 10.4 0 0 0 .8 3.3L2 4.6a8.6 8.6 0 0 1 6-2.4zm0 3.5c1.4 0 2.6.5 3.6 1.4l1.2-1.3A7 7 0 0 0 8 3.9a7 7 0 0 0-4.8 1.9l1.2 1.3c1-.9 2.2-1.4 3.6-1.4zM8 9.2l1.9-2a2.8 2.8 0 0 0-3.8 0z" /></svg>
-        <svg viewBox="0 0 26 12" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3" stroke="#121826" opacity=".4" /><rect x="2" y="2" width="16" height="8" rx="1.6" fill="#121826" /><path d="M24 4v4c.8-.3 1.3-1 1.3-2s-.5-1.7-1.3-2z" fill="#121826" opacity=".4" /></svg>
+        <Signal strokeWidth={2.5} />
+        <Wifi strokeWidth={2.5} />
+        <BatteryFull strokeWidth={2} />
       </span>
     </div>
   );

@@ -6,7 +6,7 @@
   position: relative; height: 120px; overflow: hidden;
   border-radius: 13px; background: var(--term-bg); color: var(--term-ink);
   box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,.04) inset; font-family: var(--mono);
-  transition: height .55s var(--ease-cam);
+  transition: height calc(.55s * var(--tempo)) var(--ease-cam);
 }
 .no-anim .win { transition: none; }
 .win-in { position: absolute; left: 0; right: 0; top: 0; }
@@ -24,7 +24,7 @@
 .log .entry { opacity: .42; border-left: 2px solid transparent; padding-left: 10px; margin-left: -12px; transition: opacity .4s; }
 .log .entry.cur { opacity: 1; border-left-color: #2fbfa9; }
 .log .entry.cur.eve { border-left-color: var(--eve); }
-.log .entry.fresh { animation: logIn .5s ease .45s both; }
+.log .entry.fresh { animation: logIn calc(.5s * var(--tempo)) ease calc(.45s * var(--tempo)) both; }
 .log .ln { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
 .lv-info { color: #5fd38e; } .lv-warn { color: #f0b54a; } .lg-src { color: #2fbfa9; }
 .lg-req { color: #e8edf5; } .lg-st { color: #7fd9c8; } .lg-ms { color: #8e9bb0; } .lg-k { color: #6f7c90; } .lg-bad { color: #ff8a8a; } .lg-ok { color: #5fd38e; }
