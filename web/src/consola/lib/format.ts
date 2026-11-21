@@ -58,11 +58,16 @@ export function sup(value: number | string): string {
 
 /** Notación científica compacta: 1.5·10¹⁰ (o el número tal cual si es pequeño). */
 export function sci(value: number, digits = 1): string {
-  if (value === 0) return "0";
+  const parts = sciParts(value, digits);
+  return parts.exponent === null ? parts.mantissa : `${parts.mantissa}·10${sup(parts.exponent)}`;
+}
+
+/** Mantisa y exponente por separado (para escribir el exponente con <sup> en HTML). */
+export function sciParts(value: number, digits = 1): { mantissa: string; exponent: number | null } {
+  if (value === 0) return { mantissa: "0", exponent: null };
   const exponent = Math.floor(Math.log10(Math.abs(value)));
-  if (exponent >= -2 && exponent < 4) return String(Number(value.toPrecision(3)));
-  const mantissa = value / 10 ** exponent;
-  return `${mantissa.toFixed(digits)}·10${sup(exponent)}`;
+  if (exponent >= -2 && exponent < 4) return { mantissa: String(Number(value.toPrecision(3))), exponent: null };
+  return { mantissa: (value / 10 ** exponent).toFixed(digits), exponent };
 }
 
 export function plural(count: number, one: string, many: string): string {

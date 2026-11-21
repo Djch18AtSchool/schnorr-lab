@@ -1,0 +1,52 @@
+/* Responsivo y movimiento reducido. */
+/* ---------- Responsivo ---------- */
+@media (max-width: 1280px) {
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kpi:nth-child(4) { border-left: 0; }
+  .kpi:nth-child(n+4) { border-top: 1px solid var(--line-2); }
+  .traffic { grid-template-columns: minmax(0, 1fr) 380px; }
+}
+@media (max-width: 1100px) {
+  .grid-main, .lab2, .traffic { grid-template-columns: minmax(0, 1fr); }
+  .insp { position: static; max-height: none; }
+  .clock .d { display: none; }
+}
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
+  .top { padding: 8px 12px; flex-wrap: wrap; gap: 8px 10px; }
+  .brand { width: auto; }
+  .svc .muted, .op span.who, .clock { display: none; }
+  .op { border-left: 0; padding-left: 0; }
+  .side { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 6px 8px; border-right: 0; border-bottom: 1px solid var(--line); gap: 2px; }
+  .side a.nav { flex: none; padding: 6px 10px; }
+  .side a.nav[aria-current="page"]::before { display: none; }
+  .side .key, .side .grp, .side .foot { display: none; }
+  .view { padding: 16px 16px 32px; gap: 14px; }
+  .two, .mechs { grid-template-columns: minmax(0, 1fr); }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi { border-left: 1px solid var(--line-2) !important; border-top: 1px solid var(--line-2); }
+  .kpi:nth-child(odd) { border-left: 0 !important; }
+  .kpi:nth-child(-n+2) { border-top: 0; }
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fact:nth-child(3) { border-left: 0; }
+  .fact:nth-child(n+3) { border-top: 1px solid var(--line-2); }
+  input.field { width: 100%; }
+  .aitem { grid-template-columns: 44px 70px minmax(0, 1fr); }
+  .aitem > :nth-child(4) { grid-column: 3; justify-self: start; }
+  .aitem > code { grid-column: 1 / -1; }
+  .aitem .why { grid-column: 1 / -1; }
+  .frow { grid-template-columns: 120px minmax(0, 1fr) 44px; }
+  .ll { grid-template-columns: 70px 60px minmax(0, 1fr); }
+  .ll .src { display: none; }
+  .tbl-scroll { max-height: 60vh; }
+  .sketchcorner { display: flex !important; }
+}
+.sketchcorner { display: none; gap: 10px; justify-content: space-between; font-size: 12px; color: var(--faint); padding: 0 2px; }
+.sketchcorner a { color: var(--muted); }
+@media (max-width: 480px) {
+  .env { display: none; }
+  .vhead h1 { font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

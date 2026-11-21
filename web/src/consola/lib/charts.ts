@@ -123,11 +123,3 @@ export function bsgsSeries(results: BsgsResults): BsgsSeries {
     secondsPerOp: perOp,
   };
 }
-
-/** Potencias de 10 entre dos valores, saltando de `step` en `step` exponentes. */
-export function decadeTicks(min: number, max: number, step = 1): number[] {
-  const from = Math.ceil(Math.log10(min));
-  const to = Math.floor(Math.log10(max));
-  const count = Math.max(0, Math.floor((to - from) / step) + 1);
-  return Array.from({ length: count }, (_, i) => 10 ** (from + i * step));
-}

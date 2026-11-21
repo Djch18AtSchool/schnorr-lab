@@ -1,0 +1,25 @@
+/* Piezas que el boceto no necesitaba: avisos de fuente, recursos no disponibles y estados de error. */
+.notice { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; padding: 10px 12px; border-radius: var(--r);
+  background: var(--warn-soft); color: var(--warn); font-size: 12.5px; line-height: 1.5; border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent); }
+.notice > span:nth-child(2) { color: var(--fg); flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }
+.notice .tools { margin-left: auto; }
+.unavailable { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px; border: 1px dashed var(--line); border-radius: var(--r-lg);
+  background: var(--surface-2); color: var(--muted); font-size: 12.5px; line-height: 1.5; min-width: 0; }
+.unavailable b { color: var(--fg); font-weight: 600; }
+.unavailable .mono { overflow-wrap: anywhere; }
+.loading { padding: 40px 0; text-align: center; }
+.pulse.off { background: var(--faint); }
+.pulse.off::after { display: none; }
+.guard.bad { background: var(--bad-soft); color: var(--bad); }
+.deduction { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; }
+.deduction b { font-weight: 550; }
+.deduction .muted { font-size: 12.5px; }
+.deduction code, .ad code { font-family: var(--mono); font-size: 12px; color: var(--fg); }
+.passed.fallido { color: var(--bad); }
+.passed.omitido, .passed.pendiente { color: var(--muted); }
+.testbar i.bad { background: var(--bad); }
+.runline .big.bad { color: var(--bad); }
+.checks li.bad svg { color: var(--bad); }
+.checks li.faint { font-size: 12px; }
+.badc { color: var(--bad); font-size: 12.5px; }
+.toast { pointer-events: auto; }

@@ -1,0 +1,44 @@
+/* Tokens por tema (claro por defecto, oscuro por preferencia o por elección) y base. Del boceto D. */
+:root {
+  --bg: #f4f6f9; --surface: #ffffff; --surface-2: #f8f9fc; --sunken: #eef1f6;
+  --fg: #141a2a; --muted: #5b6478; --faint: #8a92a6; --line: #e2e5ee; --line-2: #edf0f5;
+  --ana: #4f5bd5; --red: #d4892a; --banco: #0f9d8a; --banco-ink: #0a7a6b; --banco-soft: #e2f4f1; --eve: #d1437a;
+  --ok: #1d9150; --ok-soft: #e4f4ea; --bad: #cf3c3c; --bad-soft: #fbe8e8; --warn: #b9770f; --warn-soft: #fbf0dc;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --read: #a3abbd;
+  --get: #2a78d6; --post: #0a7a6b;
+  --sans: "Geist Sans", "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r-sm: 4px; --r: 7px; --r-lg: 10px;
+  --shadow-pop: 0 10px 30px -12px rgba(20, 30, 60, .28), 0 2px 6px rgba(20, 30, 60, .08);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1220; --surface: #161b2c; --surface-2: #131829; --sunken: #10142240;
+  --fg: #e8ebf4; --muted: #98a1b8; --faint: #6d758d; --line: #262d44; --line-2: #1f2539;
+  --ana: #8a93f0; --red: #e9a656; --banco: #3cc4b0; --banco-ink: #5fd6c3; --banco-soft: #123430; --eve: #ec74a1;
+  --ok: #45c47f; --ok-soft: #143323; --bad: #ef6b6b; --bad-soft: #3b1b21; --warn: #e9a656; --warn-soft: #3a2b13;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --read: #4f5872; --get: #6aa5ee; --post: #5fd6c3;
+  --shadow-pop: 0 14px 34px -12px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .3);
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1220; --surface: #161b2c; --surface-2: #131829; --sunken: #10142240;
+  --fg: #e8ebf4; --muted: #98a1b8; --faint: #6d758d; --line: #262d44; --line-2: #1f2539;
+  --ana: #8a93f0; --red: #e9a656; --banco: #3cc4b0; --banco-ink: #5fd6c3; --banco-soft: #123430; --eve: #ec74a1;
+  --ok: #45c47f; --ok-soft: #143323; --bad: #ef6b6b; --bad-soft: #3b1b21; --warn: #e9a656; --warn-soft: #3a2b13;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --read: #4f5872; --get: #6aa5ee; --post: #5fd6c3;
+  --shadow-pop: 0 14px 34px -12px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .3);
+  color-scheme: dark; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 13.5px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1; overflow-x: hidden; }
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--banco-ink); }
+:focus-visible { outline: 2px solid var(--banco); outline-offset: 2px; border-radius: 3px; }
+.mono { font-family: var(--mono); font-size: .93em; }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
