@@ -36,3 +36,16 @@ def bank_server(bank: TestClient, mechanism: str):
 def phone_mechanism(phone: TestClient, mechanism: str):
     """La parte del celular de un mecanismo (para fijar el reloj en las pruebas)."""
     return phone.app.state.phone.manager.mechanisms[mechanism]
+
+
+class FakeClock:
+    """Reloj fijo que la prueba adelanta a mano (para TOTP)."""
+
+    def __init__(self, now: float = 1_700_000_000.0) -> None:
+        self.now = now
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
