@@ -9,9 +9,11 @@ import sympy
 from core import params
 from core.modular import mod_pow
 from core.params import (
+    FFDHE_GROUP_NAMES,
     SCHNORR_GROUP_SIZES,
     TOY_GROUP,
     GroupParams,
+    declared_security_bits,
     generator_for,
     get_group,
     in_subgroup,
@@ -26,6 +28,9 @@ TOY_SUBGROUP = {4, 16, 18, 3, 12, 2, 8, 9, 13, 6, 1}  # potencias de 4 en Z23* (
 # Fórmula de cada sección del RFC 3526: p = 2^k − 2^(k − 64) − 1 + 2^64·(⌊2^e·π⌋ + desplazamiento)
 RFC_PI_FORMULA = {2048: (1918, 124476), 3072: (2942, 1690314)}
 PI_PRECISION_BITS = 3200
+# Fórmula del apéndice A del RFC 7919: p = 2^k − 2^(k − 64) + (⌊2^(k − 130)·e⌋ + X)·2^64 − 1
+FFDHE_E_FORMULA = {"ffdhe-2048": (2048, 560316), "ffdhe-3072": (3072, 2625351)}
+FFDHE_STATED_SECURITY = {"ffdhe-2048": 103, "ffdhe-3072": 125}
 
 
 # --------------------------------------------------------------------- R1: validación
@@ -170,6 +175,41 @@ def test_get_group_rfc_usa_el_rfc_y_rechaza_otros_tamanos():
     assert get_group("rfc-2048").name == "rfc3526-2048"
     with pytest.raises(ValueError, match="RFC 3526"):
         load_rfc_group(4096)
+
+
+# ------------------------------------------------------------- R7: grupos del RFC 7919
+
+@pytest.mark.req("R7")
+@pytest.mark.parametrize("name", FFDHE_GROUP_NAMES)
+def test_grupo_ffdhe_es_primo_seguro_con_g_2_y_valido(name):
+    group = get_group(name)
+    bits, _ = FFDHE_E_FORMULA[name]
+    assert group.bits == bits and group.name == name
+    assert group.g == 2 and group.q == (group.p - 1) // 2
+    assert validate_params(group) == []
+
+
+@pytest.mark.req("R7")
+@pytest.mark.parametrize("name", FFDHE_GROUP_NAMES)
+def test_primo_ffdhe_coincide_con_la_formula_de_e_del_rfc_7919(name):
+    bits, offset = FFDHE_E_FORMULA[name]
+    with mpmath.workprec(PI_PRECISION_BITS):
+        e_part = int(mpmath.floor(mpmath.ldexp(mpmath.e, bits - 130)))
+    assert get_group(name).p == 2**bits - 2 ** (bits - 64) + (e_part + offset) * 2**64 - 1
+
+
+@pytest.mark.req("R7")
+@pytest.mark.parametrize("name", FFDHE_GROUP_NAMES)
+def test_grupo_ffdhe_declara_el_nivel_de_seguridad_del_rfc(name):
+    assert declared_security_bits(name) == FFDHE_STATED_SECURITY[name]
+    assert declared_security_bits("rfc-2048") is None
+
+
+@pytest.mark.req("R7")
+def test_grupo_ffdhe_no_se_genera_si_falta_en_el_archivo(tmp_path):
+    with pytest.raises(ValueError, match="RFC 7919"):
+        get_group("ffdhe-2048", cache_path=tmp_path / "groups.json")
+    assert not (tmp_path / "groups.json").exists()
 
 
 # ------------------------------------------------------------- R7: grupos de Schnorr
