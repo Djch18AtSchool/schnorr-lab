@@ -12,6 +12,7 @@ import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
@@ -21,7 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = ROOT / "results"
 TEST_REPORT = RESULTS_DIR / "tests.json"
 RESULT_SUFFIXES = (".json", ".png", ".csv")
-UNOBSERVED_PREFIXES = ("/events", "/telemetry", "/consola", "/results", "/docs", "/openapi.json", "/redoc",
+UNOBSERVED_PREFIXES = ("/events", "/telemetry", "/mechanisms", "/consola", "/results", "/docs", "/openapi.json", "/redoc",
                        "/lab/tests", "/lab/results", "/favicon")
 FORWARDED_HEADER = "X-Forwarded-For"
 DEVICE_HEADER = "X-Device"
@@ -76,7 +77,7 @@ def telemetry_middleware(mechanism_ids: frozenset[str], correlation_header: str)
             method=request.method, path=path, route=route, status=response.status_code,
             duration_ms=round((time.perf_counter() - start) * 1000, 2), client=_client(request),
             user_agent=request.headers.get("user-agent", ""),
-            device=request.headers.get(DEVICE_HEADER, UNKNOWN_DEVICE),
+            device=unquote(request.headers.get(DEVICE_HEADER, UNKNOWN_DEVICE)),
             correlation_id=request.headers.get(correlation_header), mechanism=_mechanism(path, scope, mechanism_ids),
             request_body=_decode(raw), response_body=_decode(body), signals=tuple(scope.signals))
         return Response(content=body, status_code=response.status_code, headers=dict(response.headers),

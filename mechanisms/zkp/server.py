@@ -72,7 +72,8 @@ class ZkpServer:
 
     def __init__(self, ctx: ServerContext, settings: Mapping[str, str]) -> None:
         self._ctx = ctx
-        self._bank = Bank(get_group(settings.get(GROUP_SETTING, DEFAULT_GROUP)))
+        self._group_id = settings.get(GROUP_SETTING, DEFAULT_GROUP)
+        self._bank = Bank(get_group(self._group_id))
         self._session_users: dict[str, str] = {}     # sesión → usuario (para la telemetría)
         self._consumed: dict[str, str] = {}          # sesiones ya usadas → usuario
 
@@ -82,16 +83,18 @@ class ZkpServer:
 
     def reset(self, settings: Mapping[str, str]) -> None:
         """Reemplaza el banco por uno vacío en el grupo indicado (solo laboratorio). Cubre R7 y R11."""
-        bank = Bank(get_group(settings.get(GROUP_SETTING, self.gp.name)))
+        group_id = settings.get(GROUP_SETTING) or self._group_id
+        bank = Bank(get_group(group_id))
         with self._ctx.lock:
             self._bank = bank
+            self._group_id = group_id
             self._session_users.clear()
             self._consumed.clear()
 
     def describe(self) -> dict[str, Any]:
         """Grupo en uso, para el encabezado de la interfaz. Cubre R7 y R11."""
         gp = self.gp
-        return {"group": gp.name, "bits": gp.bits, "q_bits": gp.q.bit_length(),
+        return {"group": gp.name, "group_id": self._group_id, "bits": gp.bits, "q_bits": gp.q.bit_length(),
                 "p": str(gp.p), "q": str(gp.q), "g": str(gp.g)}
 
     def stored_credentials(self) -> dict[str, dict[str, str]]:

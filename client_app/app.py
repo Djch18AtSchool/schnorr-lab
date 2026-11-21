@@ -17,8 +17,11 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 
+from client_app.acts.catalog import ACTS
+from client_app.acts.engine import ActFinishedError, ActManager, ActRun
 from client_app.flows import Flow, FlowFinishedError, FlowManager
-from client_app.gateway import BankGateway
+from client_app.gateway import DIRECTOR, EVE_LAPTOP, BankGateway
+from client_app.groups import group_options
 from client_app.lab import LIVE_ATTACKS, OFFLINE_ATTACKS, LiveAttacker, run_offline
 from infra.events import EventLog
 from infra.sse import sse_response
@@ -30,6 +33,8 @@ BANK_URL_ENV = "BANK_URL"
 DEFAULT_BANK_URL = "http://127.0.0.1:8000"
 HTTP_TIMEOUT_SECONDS = 60
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
+SCENARIO_PAGE = WEB_DIST / "escenario.html"
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 RESULT_SUFFIXES = (".json", ".png", ".csv")
 
@@ -49,6 +54,11 @@ class AttackRequest(StrictRequest):
     user_id: UserId = "cliente01"
 
 
+class ActRequest(StrictRequest):
+    act: str = Field(examples=["login", "espia_respuesta"])
+    user_id: UserId = "ana"
+
+
 class PhoneState:
     """Estado del proceso del celular: canal al banco, flujos, wallet y laboratorio."""
 
@@ -58,7 +68,36 @@ class PhoneState:
         self.events = EventLog()
         self.gateway = BankGateway(http, self.events)
         self.manager = FlowManager(create_clients(), self.gateway, self.events)
-        self.attacker = LiveAttacker(BankGateway(http, self.events, source="atacante"), self.gateway)
+        self.eve_gateway = BankGateway(http, self.events, source="atacante", identity=EVE_LAPTOP)
+        self.attacker = LiveAttacker(self.eve_gateway, self.gateway)
+        self.acts = ActManager(ACTS, self.manager.mechanisms, self.gateway, self.eve_gateway, self.manager.wallet,
+                               self.events, self.reset_lab)
+
+    def reset_lab(self, group: str | None = None) -> str:
+        """Reinicia el banco (mismo grupo si group es None) y olvida flujos, secretos y capturas.
+
+        Devuelve el id del grupo activo; StepError si el banco no responde o rechaza el grupo.
+        """
+        try:
+            response = self.http.post("/lab/reset", json={"group": group}, headers=DIRECTOR.headers())
+        except httpx.HTTPError as error:
+            raise StepError(f"El banco no responde: {error}") from error
+        if response.status_code != status.HTTP_200_OK:
+            raise StepError(response.json().get("reason", "El banco rechazó el reinicio"))
+        with self.manager.lock:
+            self.manager.reset()
+            self.gateway.clear()
+            self.eve_gateway.clear()
+        self.events.publish("sistema", "log", "Laboratorio reiniciado: banco y celular desde cero")
+        return str(response.json()[0]["server"].get("group_id", ""))
+
+    def active_group(self) -> str:
+        """El grupo que usa el banco ahora (id de opción), o «desconocido» si no responde."""
+        try:
+            mechanisms = self.http.get("/mechanisms").json()
+            return str(mechanisms[0]["server"].get("group_id", ""))
+        except (httpx.HTTPError, ValueError, LookupError):
+            return "desconocido"
 
 
 def get_phone(request: Request) -> PhoneState:
@@ -114,9 +153,11 @@ def _register_flow_routes(app: FastAPI) -> None:
 def _register_lab_routes(app: FastAPI) -> None:
     @app.get("/api/config", summary="Configuración de la interfaz")
     def config(phone: Phone) -> dict[str, Any]:
-        """Dirección del banco (para sus vistas y Swagger), mecanismos y ataques disponibles. Cubre R11."""
+        """Dirección del banco, Consola, Swagger, mecanismos, actos, grupos y ataques disponibles. Cubre R11."""
         mechanisms = [m.info.to_json() for m in phone.manager.mechanisms.values()]
-        return {"bank_url": phone.bank_url, "docs_url": f"{phone.bank_url}/docs", "mechanisms": mechanisms,
+        return {"bank_url": phone.bank_url, "docs_url": f"{phone.bank_url}/docs",
+                "console_url": f"{phone.bank_url}/consola/", "mechanisms": mechanisms,
+                "acts": phone.acts.catalog(), "groups": list(group_options()), "group": phone.active_group(),
                 "attacks": {"offline": {k: v[0] for k, v in OFFLINE_ATTACKS.items()}, "live": LIVE_ATTACKS}}
 
     @app.get("/api/wallet", summary="Secretos guardados en este celular")
@@ -136,19 +177,15 @@ def _register_lab_routes(app: FastAPI) -> None:
         return sse_response(phone.events, request, since)
 
     @app.post("/api/lab/reset", summary="Reiniciar banco y celular")
-    def reset(body: LabResetRequest, phone: Phone) -> Any:
-        """Reinicia el banco (opcionalmente con otro grupo) y borra flujos y secretos del celular. Cubre R7."""
+    def reset(body: LabResetRequest, phone: Phone) -> dict[str, Any]:
+        """Reinicia el banco (opcionalmente con otro grupo) y borra flujos, secretos y actos. Cubre R7."""
         try:
-            response = phone.http.post("/lab/reset", json={"group": body.group})
-        except httpx.HTTPError as error:
-            raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"El banco no responde: {error}") from error
-        if response.status_code != status.HTTP_200_OK:
-            raise HTTPException(response.status_code, response.json().get("reason", "Error del banco"))
-        with phone.manager.lock:
-            phone.manager.reset()
-            phone.gateway.clear()
-        phone.events.publish("sistema", "log", "Celular reiniciado: se borraron flujos y secretos")
-        return response.json()
+            group = phone.reset_lab(body.group)
+        except StepError as error:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, str(error)) from error
+        with phone.acts.lock:
+            phone.acts.clear()
+        return {"group": group}
 
     @app.post("/api/lab/attacks/{name}", summary="Lanzar un ataque")
     def attack(name: str, body: AttackRequest, phone: Phone) -> dict[str, Any]:
@@ -168,6 +205,53 @@ def _register_lab_routes(app: FastAPI) -> None:
         return sorted(p.name for p in RESULTS_DIR.iterdir() if p.suffix in RESULT_SUFFIXES)
 
 
+def _run(phone: PhoneState, run_id: str) -> ActRun:
+    try:
+        return phone.acts.get(run_id)
+    except KeyError as error:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No existe el acto {run_id}.") from error
+
+
+def _register_act_routes(app: FastAPI) -> None:
+    @app.get("/api/acts", summary="Actos disponibles para el Escenario")
+    def list_acts(phone: Phone) -> list[dict[str, Any]]:
+        """Cada acto con su elenco y sus pasos (Ana, Eve). Cubre R10 y R11."""
+        return phone.acts.catalog()
+
+    @app.post("/api/acts", status_code=status.HTTP_201_CREATED, summary="Preparar un acto")
+    def start_act(body: ActRequest, phone: Phone) -> dict[str, Any]:
+        """Reinicia el laboratorio (y registra a Ana si el acto lo pide) y deja el acto listo. Cubre R11."""
+        with phone.acts.lock:
+            try:
+                return phone.acts.start(body.act, body.user_id).to_json()
+            except ValueError as error:
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, str(error)) from error
+            except StepError as error:
+                raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(error)) from error
+
+    @app.get("/api/acts/{run_id}", summary="Estado de un acto")
+    def read_act(run_id: str, phone: Phone) -> dict[str, Any]:
+        return _run(phone, run_id).to_json()
+
+    @app.post("/api/acts/{run_id}/next", summary="Ejecutar el siguiente paso del acto")
+    def next_act_step(run_id: str, phone: Phone) -> dict[str, Any]:
+        """Un paso de verdad: un cálculo, un mensaje al banco o una acción de Eve. Cubre R11."""
+        with phone.acts.lock:
+            run = _run(phone, run_id)
+            try:
+                run.next()
+            except ActFinishedError as error:
+                raise HTTPException(status.HTTP_409_CONFLICT, str(error)) from error
+            return run.to_json()
+
+    @app.post("/api/acts/{run_id}/run", summary="Ejecutar el resto del acto")
+    def run_act(run_id: str, phone: Phone) -> dict[str, Any]:
+        with phone.acts.lock:
+            run = _run(phone, run_id)
+            run.run_all()
+            return run.to_json()
+
+
 def create_client_app(bank_url: str | None = None, bank_http: httpx.Client | None = None) -> FastAPI:
     """Construye la app del celular; bank_http permite inyectar un cliente (pruebas). Cubre R11."""
     url = bank_url or os.environ.get(BANK_URL_ENV, DEFAULT_BANK_URL)
@@ -177,12 +261,19 @@ def create_client_app(bank_url: str | None = None, bank_http: httpx.Client | Non
     app.state.phone = PhoneState(url, http)
     _register_flow_routes(app)
     _register_lab_routes(app)
+    _register_act_routes(app)
 
     @app.get("/", include_in_schema=False)
     def index() -> FileResponse:
+        return FileResponse(SCENARIO_PAGE if SCENARIO_PAGE.is_file() else STATIC_DIR / "index.html")
+
+    @app.get("/clasico", include_in_schema=False)
+    def classic() -> FileResponse:
         return FileResponse(STATIC_DIR / "index.html")
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    if (WEB_DIST / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=WEB_DIST / "assets"), name="assets")
     RESULTS_DIR.mkdir(exist_ok=True)
     app.mount("/results", StaticFiles(directory=RESULTS_DIR), name="results")
     return app

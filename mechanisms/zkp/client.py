@@ -9,11 +9,13 @@ from typing import Any
 
 from mechanisms.base import ClientStep, Exchange, FlowContext, StepError, StepResult
 from mechanisms.zkp.info import INFO, MECHANISM_ID
+from mechanisms.zkp.observe import short
 from protocol import GroupParams, validate_params
 from protocol.client import Client
 from protocol.fiat_shamir import current_timestamp, hash_challenge, prove
 
 MAX_TRACE_BITS = 64
+DEFECTS_KEY = "defects"            # fallas simuladas del celular (laboratorio): {"reuse_r": True, "r": ...}
 
 
 def _trace(ctx: FlowContext, gp: GroupParams) -> list[str] | None:
@@ -53,7 +55,8 @@ def fetch_params(ctx: FlowContext) -> StepResult:
     ctx.state["gp"] = gp
     values = {"grupo": gp.name, "p": str(gp.p), "q": str(gp.q), "g": str(gp.g),
               "bits de p": str(gp.bits), "¿válidos?": "sí: p, q primos y g^q ≡ 1 (mod p)"}
-    return StepResult(values=values, exchange=exchange)
+    math = (f"g^q mod p = {short(gp.g)}^{short(gp.q)} mod {short(gp.p)} = {pow(gp.g, gp.q, gp.p)} ✔",)
+    return StepResult(values=values, exchange=exchange, math=math)
 
 
 def generate_keys(ctx: FlowContext) -> StepResult:
@@ -63,7 +66,9 @@ def generate_keys(ctx: FlowContext) -> StepResult:
     client = Client(ctx.user_id, gp, trace=trace)
     ctx.state["client"] = client
     values = {"x (secreta, se queda en el celular)": str(client.x), "y = g^x mod p": str(client.y)}
-    return StepResult(values=values, trace=tuple(trace or ()))
+    math = (f"x = {short(client.x)}  (al azar en [1, q − 1])",
+            f"y = g^x mod p = {short(gp.g)}^{short(client.x)} mod {short(gp.p)} = {short(client.y)}")
+    return StepResult(values=values, trace=tuple(trace or ()), math=math)
 
 
 def send_registration(ctx: FlowContext) -> StepResult:
@@ -83,10 +88,27 @@ def commit(ctx: FlowContext) -> StepResult:
     """Elige r nuevo y calcula t = g^r mod p. Cubre R3."""
     client = _stored_client(ctx)
     trace = _trace(ctx, client.gp)
-    t = client.commit(trace=trace)
-    ctx.state.update(client=client, t=t, r=client.pending_r)
-    values = {"r (aleatorio, de un solo uso)": str(client.pending_r), "t = g^r mod p": str(t)}
-    return StepResult(values=values, trace=tuple(trace or ()))
+    t = client.commit(r=_defective_r(ctx), trace=trace)
+    r = client.pending_r
+    ctx.state.update(client=client, t=t, r=r)
+    values = {"r (aleatorio, de un solo uso)": str(r), "t = g^r mod p": str(t)}
+    gp = client.gp
+    math = (f"t = g^r mod p = {short(gp.g)}^{short(r)} mod {short(gp.p)} = {short(t)}",)
+    return StepResult(values=values, trace=tuple(trace or ()), math=math)
+
+
+def _defective_r(ctx: FlowContext) -> int | None:
+    """Con la falla «reuse_r» (solo laboratorio) el celular repite el mismo r en cada inicio de sesión."""
+    defects = ctx.state.get(DEFECTS_KEY)
+    if not defects or not defects.get("reuse_r"):
+        return None
+    return defects.get("r")
+
+
+def _remember_defective_r(ctx: FlowContext, r: int) -> None:
+    defects = ctx.state.get(DEFECTS_KEY)
+    if defects and defects.get("reuse_r") and "r" not in defects:
+        defects["r"] = r
 
 
 def send_commitment(ctx: FlowContext) -> StepResult:
@@ -114,9 +136,12 @@ def respond(ctx: FlowContext) -> StepResult:
     except ValueError as error:
         raise StepError(f"Reto inválido: {error}") from error
     ctx.state["s"] = s
+    _remember_defective_r(ctx, r)
     substitution = f"{r} + {c}·{client.x} mod {client.gp.q} = {s}"
     values = {"x (secreta)": str(client.x), "s": str(s), "cálculo": substitution}
-    return StepResult(values=values)
+    math = (f"s = (r + c·x) mod q = ({short(r)} + {short(c)}·{short(client.x)}) mod {short(client.gp.q)} = {short(s)}",
+            "r se borra: no se vuelve a usar")
+    return StepResult(values=values, math=math)
 
 
 def _verdict(exchange: Exchange) -> StepResult:
@@ -147,7 +172,11 @@ def prove_noninteractive(ctx: FlowContext) -> StepResult:
     values = {"t = g^r mod p": str(proof.t), "m (hora del intento)": str(proof.m),
               "c = H(p‖g‖y‖t‖id‖m) mod q": str(c), "s = (r + c·x) mod q": str(proof.s),
               "r": "se usó una vez y se borró"}
-    return StepResult(values=values)
+    gp = client.gp
+    math = (f"t = g^r mod p = {short(proof.t)}",
+            f"c = SHA-256(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q = {short(c)}  (m = {proof.m})",
+            f"s = (r + c·x) mod q = {short(proof.s)}  (q = {short(gp.q)})")
+    return StepResult(values=values, math=math)
 
 
 def send_proof(ctx: FlowContext) -> StepResult:

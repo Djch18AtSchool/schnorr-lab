@@ -22,10 +22,11 @@ def _register(bank: TestClient) -> None:
     assert bank.post("/zkp/register", json={"user_id": USER_ID, "y": "8"}, headers=ANA).status_code == 201
 
 
-def _login(bank: TestClient, x: int = X, correlation: str = "acto:1") -> dict:
+def _login(bank: TestClient, forged: bool = False, correlation: str = "acto:1") -> dict:
+    """Inicio de sesión del ejemplo; forged=True envía s + 1 (inválida sea cual sea c)."""
     commit = bank.post("/zkp/login/commit", json={"user_id": USER_ID, "t": "12"},
                        headers={**ANA, "X-Correlation-Id": correlation}).json()
-    s = (R + int(commit["c"]) * x) % 11
+    s = (R + int(commit["c"]) * X + (1 if forged else 0)) % 11
     body = {"session_id": commit["session_id"], "s": str(s)}
     return {"body": body, "verdict": bank.post("/zkp/login/respond", json=body, headers=ANA).json()}
 
@@ -66,7 +67,7 @@ def test_repetir_la_respuesta_desde_otro_dispositivo_genera_una_alerta_con_evide
 def test_tres_pruebas_invalidas_bloquean_y_la_alerta_lo_explica(bank):
     _register(bank)
     for _ in range(3):
-        assert not _login(bank, x=3)["verdict"]["accepted"]
+        assert not _login(bank, forged=True)["verdict"]["accepted"]
     kinds = [alert["kind"] for alert in bank.get("/telemetry/alerts").json()]
     assert kinds.count("invalid_proof") == 3 and kinds[-1] == "lockout"
     account = bank.get("/bank/accounts").json()[0]
@@ -78,7 +79,7 @@ def test_tres_pruebas_invalidas_bloquean_y_la_alerta_lo_explica(bank):
 def test_resumen_con_totales_series_y_rutas(bank):
     _register(bank)
     _login(bank)
-    _login(bank, x=3)
+    _login(bank, forged=True)
     summary = bank.get("/telemetry/summary?window=300&bucket=30").json()
     assert summary["totals"]["auth_ok"] == 1 and summary["totals"]["auth_rejected"] == 1
     assert summary["requests_per_min"] == 5

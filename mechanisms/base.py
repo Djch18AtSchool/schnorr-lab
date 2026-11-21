@@ -81,9 +81,10 @@ class Exchange:
     response_body: Any
     elapsed_ms: float
     correlation_id: str | None = None
+    origin: str | None = None                # quién lo envió (ana, eve, ...), si el canal lo sabe
 
     def to_json(self) -> dict[str, Any]:
-        """Representación serializable (para la pestaña «Red» de la interfaz). Cubre R11."""
+        """Representación serializable (para la red del Escenario). Cubre R11."""
         return vars(self).copy()
 
 
@@ -113,6 +114,7 @@ class StepResult:
     values: Mapping[str, str] = field(default_factory=dict)
     exchange: Exchange | None = None
     trace: tuple[str, ...] = ()
+    math: tuple[str, ...] = ()               # cálculos con los números reales, uno por línea
     outcome: str = "ok"                      # ok | aceptado | rechazado
     message: str = ""
     finished: bool = False
