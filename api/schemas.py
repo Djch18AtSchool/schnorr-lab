@@ -23,6 +23,7 @@ class EventOut(BaseModel):
     mechanism: str | None
     correlation_id: str | None
     data: dict[str, Any]
+    request_id: int | None = None
 
 
 class ResetRequest(StrictRequest):

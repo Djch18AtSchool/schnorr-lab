@@ -65,6 +65,23 @@ class Bank:
         """Intentos que le quedan al usuario antes del bloqueo. Cubre R9."""
         return max(0, self._max_attempts - self._failures.get(user_id, 0))
 
+    def unlock(self, user_id: str) -> bool:
+        """Soporte del banco: borra los fallos y la sesión pendiente del usuario. False si no existe. Cubre R9."""
+        if user_id not in self._users:
+            return False
+        self._failures.pop(user_id, None)
+        session_id = self._open_sessions.pop(user_id, None)
+        if session_id is not None:
+            self._sessions.pop(session_id, None)
+        return True
+
+    def remove(self, user_id: str) -> bool:
+        """Soporte del banco: da de baja la cuenta (su y, fallos y sesión pendiente). False si no existe. Cubre R2."""
+        if not self.unlock(user_id):
+            return False
+        del self._users[user_id]
+        return True
+
     def register(self, user_id: str, y: int) -> VerifyResult:
         """Rechaza id inválido o repetido, y = 1 o y fuera del subgrupo. Guarda solo y. Cubre R2 y R9."""
         if not isinstance(user_id, str) or not _USER_ID_REGEX.fullmatch(user_id):

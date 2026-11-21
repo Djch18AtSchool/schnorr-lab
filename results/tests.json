@@ -1,8 +1,8 @@
 {
- "generated_at": 1795275402.634921,
- "duration_s": 31.88,
- "total": 372,
- "passed": 372,
+ "generated_at": 1795297443.1438205,
+ "duration_s": 31.04,
+ "total": 375,
+ "passed": 375,
  "failed": 0,
  "skipped": 0,
  "requirements": [
@@ -139,6 +139,11 @@
     {
      "name": "test_las_cuentas_muestran_solo_y_y_la_actividad_observada",
      "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_con_cuenta_existente_da_de_baja_y_registra_de_nuevo",
+     "file": "tests/test_acts.py",
      "outcome": "passed"
     },
     {
@@ -1054,6 +1059,11 @@
      "outcome": "passed"
     },
     {
+     "name": "test_tras_el_impostor_soporte_desbloquea_y_ana_vuelve_a_entrar_sin_reiniciar",
+     "file": "tests/test_acts.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_tres_pruebas_invalidas_bloquean_y_la_alerta_lo_explica",
      "file": "tests/test_observability.py",
      "outcome": "passed"
@@ -1553,6 +1563,11 @@
     {
      "name": "test_resumen_con_totales_series_y_rutas",
      "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_una_peticion_trae_los_eventos_que_el_banco_publico_al_atenderla",
+     "file": "tests/test_acts.py",
      "outcome": "passed"
     },
     {

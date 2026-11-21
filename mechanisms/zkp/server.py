@@ -109,6 +109,24 @@ class ZkpServer:
                               "attempts_left": self._bank.attempts_left(user_id)}
                     for user_id in self._bank.users}
 
+    def unlock(self, user_id: str) -> bool:
+        """Soporte: desbloquea la cuenta (borra sus fallos). False si no existe. Cubre R9."""
+        with self._ctx.lock:
+            done = self._bank.unlock(user_id)
+        if done:
+            self._event("log", f"Soporte desbloqueó la cuenta {user_id}", {"user": user_id}, event="unlock",
+                        signals=["admin.unlock"], user_id=user_id)
+        return done
+
+    def remove(self, user_id: str) -> bool:
+        """Soporte: da de baja la cuenta (su clave pública y). False si no existe. Cubre R2."""
+        with self._ctx.lock:
+            done = self._bank.remove(user_id)
+        if done:
+            self._event("log", f"Soporte dio de baja la cuenta {user_id}", {"user": user_id}, event="remove",
+                        signals=["admin.remove"], user_id=user_id)
+        return done
+
     def _event(self, kind: str, title: str, data: Mapping[str, Any], *, event: str, level: str = "INFO",
                span: dict[str, Any] | None = None,
                math: list[str] | None = None, signals: tuple[str, ...] | list[str] = (),
@@ -123,6 +141,8 @@ class ZkpServer:
             payload["signal"] = signals[-1]
         for name in signals:
             telemetry.signal(name, user_id, MECHANISM_ID, evidence)
+        if user_id is not None:
+            telemetry.tag(user=user_id)
         self._ctx.events.publish("banco", kind, title, mechanism=MECHANISM_ID, data=payload)
 
     def _trace(self) -> list[str] | None:
@@ -177,6 +197,7 @@ class ZkpServer:
             return error_response(code, outcome.reason)
         session_id, c = outcome
         self._remember_session(session_id, body.user_id)
+        telemetry.tag(session=session_id)
         self._event("paso", "t ∈ subgrupo ✔ → el banco elige el reto c al azar", event="challenge",
                     data={**fields, "subgroup": "ok", "c": observe.short(c),
                                           "session": session_id[:8] + "…"},
@@ -215,6 +236,7 @@ class ZkpServer:
         with self._ctx.lock:
             result = self._bank.verify(body.session_id, int(body.s), trace)
         user_id, replayed = self._consume_session(body.session_id, result)
+        telemetry.tag(session=body.session_id)
         payload = verify_payload(result)
         verdict = "ACCESO CONCEDIDO" if result.accepted else f"Rechazado: {result.reason}"
         fields = {"session": body.session_id[:8] + "…", "user": user_id or "?", "s": observe.short(body.s),

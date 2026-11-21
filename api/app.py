@@ -20,6 +20,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from api.admin import router as admin_router
 from api.observability import RESULTS_DIR, locked_counter, telemetry_middleware
 from api.observability import router as observability_router
 from api.schemas import AuditEntryOut, EventOut, ResetRequest
@@ -178,12 +179,13 @@ def create_app(group_name: str | None = None, cors_origins: str | None = None) -
     app.add_exception_handler(RequestValidationError, validation_handler(ctx, state.audited_paths))
     app.middleware("http")(telemetry_middleware(frozenset(servers), CORRELATION_HEADER))
     app.middleware("http")(correlation_middleware)
-    app.add_middleware(CORSMiddleware, allow_origins=_cors_origins(cors_origins), allow_methods=["GET", "POST"],
+    app.add_middleware(CORSMiddleware, allow_origins=_cors_origins(cors_origins), allow_methods=["GET", "POST", "DELETE"],
                        allow_headers=["Content-Type", CORRELATION_HEADER, "Last-Event-ID"])
     for server in servers.values():
         app.include_router(server.router())
     app.include_router(router)
     app.include_router(observability_router)
+    app.include_router(admin_router)
     RESULTS_DIR.mkdir(exist_ok=True)
     app.mount("/results", StaticFiles(directory=RESULTS_DIR), name="results")
     _mount_console(app)

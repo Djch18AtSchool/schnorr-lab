@@ -206,6 +206,10 @@ class ZkpClient:
             raise ValueError(f"El flujo «{flow.title}» está disponible en el informe final.")
         return [ClientStep(info, action) for info, action in zip(flow.steps, actions, strict=True)]
 
+    def matches(self, secret: Client, stored: dict[str, str]) -> bool:
+        """True si la clave del celular corresponde a lo que guarda el banco (misma y). Cubre R2."""
+        return stored.get("y") == str(secret.y)
+
     def describe_secret(self, secret: Client) -> dict[str, str]:
         """Lo que el celular tiene guardado para una cuenta (se muestra solo en su pantalla). Cubre R2."""
         return {"grupo": secret.gp.name, "x (secreta)": str(secret.x), "y (pública)": str(secret.y)}

@@ -21,7 +21,7 @@ from pydantic import Field
 
 from client_app.acts.catalog import ACTS
 from client_app.acts.engine import ActFinishedError, ActManager, ActRun
-from client_app.gateway import DIRECTOR, EVE_LAPTOP, BankGateway
+from client_app.gateway import DIRECTOR, EVE_LAPTOP, SUPPORT, BankGateway
 from client_app.groups import group_options
 from infra.events import EventLog
 from infra.sse import sse_response
@@ -60,8 +60,9 @@ class PhoneState:
         self.lock = threading.Lock()
         self.gateway = BankGateway(http, self.events)
         self.eve_gateway = BankGateway(http, self.events, source="atacante", identity=EVE_LAPTOP)
-        self.acts = ActManager(ACTS, self.mechanisms, self.gateway, self.eve_gateway, self.wallet, self.events,
-                               self.reset_lab)
+        self.support_gateway = BankGateway(http, self.events, source="sistema", identity=SUPPORT)
+        self.acts = ActManager(ACTS, self.mechanisms, self.gateway, self.eve_gateway, self.support_gateway,
+                               self.wallet, self.events, self.active_group)
 
     def reset_lab(self, group: str | None = None) -> str:
         """Reinicia el banco (mismo grupo si group es None) y olvida secretos y capturas.

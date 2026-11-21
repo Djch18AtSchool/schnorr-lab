@@ -147,6 +147,8 @@ export interface BankEvent {
   mechanism: string | null;
   correlation_id: string | null;
   data: Record<string, unknown>;
+  /** Petición del banco durante la que ocurrió (eventos del mecanismo, acceso y alertas). */
+  request_id: number | null;
 }
 
 export interface AccessData {
@@ -194,6 +196,14 @@ export interface RequestRecord {
   request_body: unknown;
   response_body: unknown;
   signal: string | null;
+  /** Etiquetas del mecanismo para agrupar: {user: "ana", session: "77991cce…"}. */
+  tags: Record<string, string>;
+}
+
+/** GET /telemetry/requests/{id}: la petición y lo que el banco publicó al atenderla (log, span, cálculos). */
+export interface RequestDetail {
+  request: RequestRecord;
+  events: BankEvent[];
 }
 
 export interface SeriesPoint {
@@ -255,6 +265,8 @@ export interface Account {
   attempts_left: number | null;
   created_at: number | null;
   last_login_at: number | null;
+  /** Dispositivos desde los que el banco vio actuar sobre la cuenta, el más reciente primero. */
+  devices: Array<{ device: string; client: string; last_seen: number; requests: number }>;
 }
 
 export interface AuditEntry {

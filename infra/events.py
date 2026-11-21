@@ -24,6 +24,7 @@ CORRELATION_HEADER = "X-Correlation-Id"
 SOURCES = frozenset({"banco", "cliente", "atacante", "sistema"})
 
 current_correlation_id: ContextVar[str | None] = ContextVar("current_correlation_id", default=None)
+current_request_id: ContextVar[int | None] = ContextVar("current_request_id", default=None)
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,7 @@ class Event:
     mechanism: str | None = None
     correlation_id: str | None = None
     data: Mapping[str, Any] = field(default_factory=dict)
+    request_id: int | None = None          # petición del banco durante la que ocurrió (si hubo)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "data", MappingProxyType(dict(self.data)))
@@ -46,7 +48,7 @@ class Event:
         """Representación serializable para la API y el flujo SSE. Cubre R11."""
         return {"id": self.id, "timestamp": self.timestamp, "source": self.source, "kind": self.kind,
                 "title": self.title, "mechanism": self.mechanism, "correlation_id": self.correlation_id,
-                "data": dict(self.data)}
+                "data": dict(self.data), "request_id": self.request_id}
 
 
 class EventLog:
@@ -79,6 +81,7 @@ class EventLog:
                 mechanism=mechanism,
                 correlation_id=correlation_id or current_correlation_id.get(),
                 data=data or {},
+                request_id=current_request_id.get(),
             )
             self._events.append(event)
             self._next_id += 1

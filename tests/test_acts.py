@@ -145,4 +145,37 @@ def test_los_mensajes_de_ana_y_eve_llegan_al_banco_con_su_dispositivo(lab):
     _play(phone, "espia_respuesta")
     records = bank.get("/telemetry/requests").json()
     assert {r["device"] for r in records if r["route"].startswith("/zkp")} == {"celular de Ana", "laptop de Eve"}
-    assert {r["device"] for r in records if r["route"] == "/lab/reset"} == {"dirección del laboratorio"}
+    assert not [r for r in records if r["route"] == "/lab/reset"]        # los actos no reinician el banco
+
+
+@pytest.mark.req("R9")
+def test_tras_el_impostor_soporte_desbloquea_y_ana_vuelve_a_entrar_sin_reiniciar(lab):
+    bank, phone = lab
+    _play(phone, "impostor", group="safe-256")
+    assert _play(phone, "login")["status"] == "aceptado"
+    records = bank.get("/telemetry/requests").json()
+    unlock = [r for r in records if r["route"].endswith("/unlock")]
+    assert len(unlock) == 1 and unlock[0]["device"] == "soporte del banco"
+    assert len(bank.get("/audit/log").json()) == 10   # 1 registro + 3×2 del impostor + 1 rechazo + 2 del login
+
+
+@pytest.mark.req("R2")
+def test_registro_con_cuenta_existente_da_de_baja_y_registra_de_nuevo(lab):
+    bank, phone = lab
+    _play(phone, "login")
+    assert _play(phone, "registro")["status"] == "aceptado"
+    removals = [r for r in bank.get("/telemetry/requests").json() if r["method"] == "DELETE"]
+    assert [r["route"] for r in removals] == ["/admin/accounts/{mechanism}/{user_id}"]
+    assert list(bank.get("/bank/users").json()["zkp"]) == [ANA]
+
+
+@pytest.mark.req("R11")
+def test_una_peticion_trae_los_eventos_que_el_banco_publico_al_atenderla(lab):
+    bank, phone = lab
+    _play(phone, "login")
+    verify = [r for r in bank.get("/telemetry/requests").json() if r["route"] == "/zkp/login/respond"][-1]
+    detail = bank.get(f"/telemetry/requests/{verify['id']}").json()
+    kinds = {event["kind"] for event in detail["events"]}
+    assert {"verificacion", "acceso"} <= kinds and verify["tags"]["user"] == ANA and "session" in verify["tags"]
+    account = bank.get("/bank/accounts").json()[0]
+    assert account["devices"][0]["device"] == "celular de Ana"

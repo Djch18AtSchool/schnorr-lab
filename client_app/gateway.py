@@ -35,6 +35,7 @@ class Identity:
 
 ANA_PHONE = Identity("ana", "celular de Ana", "BancoLab-iOS/3.2 (iPhone; iOS 18)", "192.168.1.23")
 EVE_LAPTOP = Identity("eve", "laptop de Eve", "python-httpx/0.28 (Linux x86_64)", "192.168.1.66")
+SUPPORT = Identity("soporte", "soporte del banco", "BancoLab-Backoffice/1.0", "10.0.0.5")
 DIRECTOR = Identity("direccion", "dirección del laboratorio", "SchnorrLab-Escenario/0.4", "127.0.0.1")
 
 

@@ -16,6 +16,7 @@ from urllib.parse import unquote
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
+from infra.events import current_request_id
 from infra.telemetry import RequestScope, current_scope
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -64,22 +65,25 @@ def telemetry_middleware(mechanism_ids: frozenset[str], correlation_header: str)
         if request.method == "OPTIONS" or path.startswith(UNOBSERVED_PREFIXES):
             return await call_next(request)
         raw = await request.body()
-        scope = RequestScope()
-        token = current_scope.set(scope)
+        telemetry = request.app.state.bank.ctx.telemetry
+        scope = RequestScope(request_id=telemetry.reserve_id())
+        scope_token, id_token = current_scope.set(scope), current_request_id.set(scope.request_id)
         start = time.perf_counter()
         try:
             response = await call_next(request)
+            body = b"".join([chunk async for chunk in response.body_iterator])  # type: ignore[attr-defined]
+            telemetry.record(
+                request_id=scope.request_id, tags=dict(scope.tags), method=request.method, path=path,
+                route=getattr(request.scope.get("route"), "path", path), status=response.status_code,
+                duration_ms=round((time.perf_counter() - start) * 1000, 2), client=_client(request),
+                user_agent=request.headers.get("user-agent", ""),
+                device=unquote(request.headers.get(DEVICE_HEADER, UNKNOWN_DEVICE)),
+                correlation_id=request.headers.get(correlation_header),
+                mechanism=_mechanism(path, scope, mechanism_ids), request_body=_decode(raw),
+                response_body=_decode(body), signals=tuple(scope.signals))
         finally:
-            current_scope.reset(token)
-        body = b"".join([chunk async for chunk in response.body_iterator])  # type: ignore[attr-defined]
-        route = getattr(request.scope.get("route"), "path", path)
-        request.app.state.bank.ctx.telemetry.record(
-            method=request.method, path=path, route=route, status=response.status_code,
-            duration_ms=round((time.perf_counter() - start) * 1000, 2), client=_client(request),
-            user_agent=request.headers.get("user-agent", ""),
-            device=unquote(request.headers.get(DEVICE_HEADER, UNKNOWN_DEVICE)),
-            correlation_id=request.headers.get(correlation_header), mechanism=_mechanism(path, scope, mechanism_ids),
-            request_body=_decode(raw), response_body=_decode(body), signals=tuple(scope.signals))
+            current_scope.reset(scope_token)
+            current_request_id.reset(id_token)
         return Response(content=body, status_code=response.status_code, headers=dict(response.headers),
                         media_type=response.media_type)
 
@@ -107,6 +111,17 @@ def telemetry_requests(request: Request, since: int = 0,
     return [record.to_json() for record in _state(request).ctx.telemetry.requests_since(since, limit)]
 
 
+@router.get("/telemetry/requests/{request_id}", summary="Una petición con todo lo que hizo el banco")
+def telemetry_request(request: Request, request_id: int) -> dict[str, Any]:
+    """La petición y los eventos que el banco publicó al atenderla (log, función ejecutada y cálculos). Cubre R11."""
+    state = _state(request)
+    record = state.ctx.telemetry.request(request_id)
+    if record is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No hay registro de la petición {request_id}.")
+    events = [event.to_json() for event in state.ctx.events.since(0, 100_000) if event.request_id == request_id]
+    return {"request": record.to_json(), "events": events}
+
+
 @router.get("/telemetry/alerts", summary="Alertas de seguridad deducidas")
 def telemetry_alerts(request: Request) -> list[dict[str, Any]]:
     """Repeticiones, bloqueos, pruebas inválidas o viejas y cuerpos mal formados, con evidencia. Cubre R9 y R11."""
@@ -130,7 +145,8 @@ def bank_accounts(request: Request) -> list[dict[str, Any]]:
             info = statuses.get(user_id, {})
             rows.append({"mechanism": mechanism_id, "user_id": user_id, "stored": stored,
                          "status": info.get("status", "activa"), "attempts_left": info.get("attempts_left"),
-                         "created_at": created, "last_login_at": last_login})
+                         "created_at": created, "last_login_at": last_login,
+                         "devices": state.ctx.telemetry.account_devices(mechanism_id, user_id)})
     return rows
 
 

@@ -120,13 +120,13 @@ class ActManager:
     """Catálogo, preparación y ejecuciones de los actos. Cubre R10 y R11."""
 
     def __init__(self, acts: Mapping[str, ActDefinition], mechanisms: Mapping[str, ClientMechanism],
-                 ana: BankGateway, eve: BankGateway, wallet: dict, events: EventLog,
-                 reset_lab: Callable[[], str]) -> None:
+                 ana: BankGateway, eve: BankGateway, support: BankGateway, wallet: dict, events: EventLog,
+                 active_group: Callable[[], str]) -> None:
         self.acts = dict(acts)
         self._mechanisms = mechanisms
-        self._ana, self._eve, self._wallet = ana, eve, wallet
+        self._ana, self._eve, self._support, self._wallet = ana, eve, support, wallet
         self._events = events
-        self._reset_lab = reset_lab
+        self._active_group = active_group
         self._runs: OrderedDict[str, ActRun] = OrderedDict()
         self.lock = threading.Lock()
 
@@ -134,7 +134,10 @@ class ActManager:
         return [act.to_json() for act in self.acts.values()]
 
     def start(self, act_id: str, user_id: str = DEFAULT_USER) -> ActRun:
-        """Prepara el banco y el celular para el acto y lo deja listo para el primer paso. Cubre R11.
+        """Deja la cuenta de Ana como el acto la necesita, sin reiniciar el banco, y el acto listo. Cubre R11.
+
+        Como lo haría un banco real: si hace falta, soporte desbloquea o da de baja la cuenta y Ana se
+        registra de nuevo. El banco conserva su historial; solo cambiar de grupo lo reinicia.
 
         ValueError si el acto no existe o no está disponible; StepError si la preparación falla.
         """
@@ -142,9 +145,8 @@ class ActManager:
         if definition is None or not definition.available:
             raise ValueError(f"Acto desconocido o no disponible: «{act_id}».")
         run_id = secrets.token_hex(RUN_ID_BYTES)
-        group = self._reset_lab()
-        if definition.setup == "registered":
-            self._register(definition.mechanism, user_id, f"{run_id}:{SETUP_SUFFIX}")
+        self._prepare(definition, user_id, f"{run_id}:{SETUP_SUFFIX}")
+        group = self._active_group()
         context = ActContext(user_id=user_id, ana_gateway=self._ana, eve_gateway=self._eve, wallet=self._wallet,
                              defects=dict(definition.defects))
         run = ActRun(run_id, definition, context, group, self._events)
@@ -152,6 +154,29 @@ class ActManager:
         while len(self._runs) > MAX_RUNS:
             self._runs.popitem(last=False)
         return run
+
+    def _prepare(self, definition: ActDefinition, user_id: str, correlation_id: str) -> None:
+        mechanism_id = definition.mechanism
+        accounts = self._support.request("GET", "/bank/accounts").response_body
+        account = next((a for a in accounts if a["mechanism"] == mechanism_id and a["user_id"] == user_id), None) \
+            if isinstance(accounts, list) else None
+        secret = self._wallet.get((mechanism_id, user_id))
+        matches = getattr(self._mechanisms[mechanism_id], "matches", lambda _s, _a: True)
+        usable = account is not None and secret is not None and matches(secret, account["stored"])
+        if definition.setup == "registered" and usable:
+            if account["status"] == "bloqueada":
+                self._admin("POST", f"/admin/accounts/{mechanism_id}/{user_id}/unlock", correlation_id)
+            return
+        if account is not None:
+            self._admin("DELETE", f"/admin/accounts/{mechanism_id}/{user_id}", correlation_id)
+        self._wallet.pop((mechanism_id, user_id), None)
+        if definition.setup == "registered":
+            self._register(mechanism_id, user_id, correlation_id)
+
+    def _admin(self, method: str, path: str, correlation_id: str) -> None:
+        exchange = self._support.request(method, path, correlation_id=correlation_id)
+        if exchange.status != 200:
+            raise StepError(f"Soporte no pudo preparar la cuenta: {exchange.response_body}")
 
     def _register(self, mechanism_id: str, user_id: str, correlation_id: str) -> None:
         """Crea la cuenta de Ana en silencio, con los mismos pasos del flujo de registro."""
