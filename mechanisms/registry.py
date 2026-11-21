@@ -11,6 +11,9 @@ from mechanisms.base import ClientMechanism, MechanismInfo, ServerMechanism
 from mechanisms.password import client as password_client
 from mechanisms.password import server as password_server
 from mechanisms.password.info import INFO as PASSWORD_INFO
+from mechanisms.totp import client as totp_client
+from mechanisms.totp import server as totp_server
+from mechanisms.totp.info import INFO as TOTP_INFO
 from mechanisms.zkp import client as zkp_client
 from mechanisms.zkp import server as zkp_server
 from mechanisms.zkp.info import INFO as ZKP_INFO
@@ -22,6 +25,7 @@ ClientFactory = Callable[[], ClientMechanism]
 MECHANISMS: tuple[tuple[MechanismInfo, ServerFactory, ClientFactory], ...] = (
     (ZKP_INFO, zkp_server.create_server, zkp_client.create_client),
     (PASSWORD_INFO, password_server.create_server, password_client.create_client),
+    (TOTP_INFO, totp_server.create_server, totp_client.create_client),
 )
 
 SERVER_FACTORIES: dict[str, ServerFactory] = {info.id: server for info, server, _ in MECHANISMS}
