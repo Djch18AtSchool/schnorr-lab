@@ -2,9 +2,9 @@
  * Inspector de una petición: lo que el banco recibió y respondió, la verificación que hizo, lo que
  * dedujo (alertas) y el resto del flujo con la misma correlación. No sabe qué «acto» ocurre.
  */
+import { ShieldCheck, TriangleAlert } from "lucide-react";
 import type { Alert, RequestRecord, RouteStats } from "../../../shared/types";
 import { CodeText, Method, Result, Severity, Status } from "../../components/Common";
-import { Icon } from "../../components/Icons";
 import { JsonView } from "../../components/JsonView";
 import { containsSecret } from "../../lib/audit";
 import { fmtClock, fmtClockMs, fmtMs, plural, shortNum } from "../../lib/format";
@@ -25,11 +25,11 @@ interface InspectorProps {
 function Guard({ body }: { body: unknown }) {
   const fields = bodyFields(body);
   if (containsSecret(body)) {
-    return <div className="isec"><div className="guard bad"><Icon name="alta" /><span>El cuerpo trae un campo <code>x</code>: un secreto llegó al banco.</span></div></div>;
+    return <div className="isec"><div className="guard bad"><TriangleAlert className="i" aria-hidden="true" /><span>El cuerpo trae un campo <code>x</code>: un secreto llegó al banco.</span></div></div>;
   }
   return (
     <div className="isec">
-      <div className="guard"><Icon name="shield" style={{ marginTop: 1 }} />
+      <div className="guard"><ShieldCheck className="i" aria-hidden="true" style={{ marginTop: 1 }} />
         <span>El cuerpo solo trae valores públicos: {fields.length ? fields.map((f, i) => <span key={f}>{i ? ", " : ""}<code>{f}</code></span>) : "ninguno"}. Ningún campo x llegó al banco.</span>
       </div>
     </div>
