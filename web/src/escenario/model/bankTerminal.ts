@@ -14,7 +14,7 @@ export const LOG_ENTRIES_SHOWN = 3;
 const MAX_FIELD_CHARS = 12;
 const FIELD_HEAD_CHARS = 8;
 const MAX_PHRASE_CHARS = 40;
-const RESERVED_FIELDS = ["logger", "span", "math", "signal", "event", "level"];
+const RESERVED_FIELDS = ["logger", "span", "math", "signal", "event", "level", "trace"];
 const BAD_SIGNALS = ["auth.rejected", "auth.replay", "auth.locked", "auth.stale", "auth.invalid"];
 const LEVELS: readonly LogLevel[] = ["INFO", "WARN", "ERROR"];
 

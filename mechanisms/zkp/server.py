@@ -109,11 +109,12 @@ class ZkpServer:
                               "attempts_left": self._bank.attempts_left(user_id)}
                     for user_id in self._bank.users}
 
-    def _event(self, kind: str, title: str, data: Mapping[str, Any], *, span: dict[str, Any] | None = None,
+    def _event(self, kind: str, title: str, data: Mapping[str, Any], *, event: str, level: str = "INFO",
+               span: dict[str, Any] | None = None,
                math: list[str] | None = None, signals: tuple[str, ...] | list[str] = (),
                user_id: str | None = None, evidence: Mapping[str, str] | None = None) -> None:
         """Publica una línea de log estructurada (con traza y cálculos) y avisa a la telemetría."""
-        payload: dict[str, Any] = {"logger": LOGGER, **data}
+        payload: dict[str, Any] = {"logger": LOGGER, "event": event, "level": level, **data}
         if span is not None:
             payload["span"] = span
         if math:
@@ -132,7 +133,8 @@ class ZkpServer:
     def read_params(self) -> ParamsResponse:
         """Parámetros públicos del grupo (p, q, g). Cubre R1 y R11."""
         gp = self.gp
-        self._event("paso", "params", {"grupo": gp.name, "bits": str(gp.bits)},
+        self._event("paso", "El banco entrega los parámetros públicos (p, q, g)",
+                    {"grupo": gp.name, "bits": str(gp.bits)}, event="params",
                     span=code_span(ZkpServer.read_params, ("return ParamsResponse",)))
         return ParamsResponse(name=gp.name, p=str(gp.p), q=str(gp.q), g=str(gp.g), bits=gp.bits)
 
@@ -149,10 +151,12 @@ class ZkpServer:
         math = observe.subgroup_math("y", y, self.gp)
         span = observe.register_span(result.reason)
         if not result.accepted:
-            self._event("error", "register", {**fields, "accepted": "false", "reason": str(result.reason)},
+            self._event("error", f"Registro rechazado: {result.reason}",
+                        {**fields, "accepted": "false", "reason": str(result.reason)}, event="register", level="WARN",
                         span=span, math=math, signals=["account.rejected"], user_id=body.user_id)
             return error_response(status.HTTP_400_BAD_REQUEST, result.reason)
-        self._event("registro", "register", {**fields, "subgroup": "ok", "stored": "solo y"}, span=span,
+        self._event("registro", "y ∈ subgrupo ✔ → el banco guarda (id, y)",
+                    {**fields, "subgroup": "ok", "stored": "solo y"}, event="register", span=span,
                     math=math, signals=["account.created"], user_id=body.user_id)
         return RegisterResponse(user_id=body.user_id, stored={"y": str(y)})
 
@@ -165,15 +169,16 @@ class ZkpServer:
         fields = {"user": body.user_id, "t": observe.short(t)}
         math = observe.subgroup_math("t", t, self.gp)
         if isinstance(outcome, VerifyResult):
-            self._event("error", "challenge",
-                        {**fields, "reason": str(outcome.reason), "attempts_left": str(outcome.attempts_left)},
+            self._event("error", f"Compromiso rechazado: {outcome.reason}", event="challenge", level="WARN",
+                        data={**fields, "reason": str(outcome.reason), "attempts_left": str(outcome.attempts_left)},
                         span=observe.challenge_span(outcome.reason), math=math,
                         signals=observe.verdict_signals(outcome, replayed=False), user_id=body.user_id)
             code = COMMIT_ERROR_STATUS.get(outcome.reason, status.HTTP_400_BAD_REQUEST)
             return error_response(code, outcome.reason)
         session_id, c = outcome
         self._remember_session(session_id, body.user_id)
-        self._event("paso", "challenge", {**fields, "subgroup": "ok", "c": observe.short(c),
+        self._event("paso", "t ∈ subgrupo ✔ → el banco elige el reto c al azar", event="challenge",
+                    data={**fields, "subgroup": "ok", "c": observe.short(c),
                                           "session": session_id[:8] + "…"},
                     span=observe.challenge_span(None), math=[*math, f"c = {observe.short(c)} (al azar en [0, q − 1])"],
                     signals=["auth.challenge"], user_id=body.user_id)
@@ -216,7 +221,8 @@ class ZkpServer:
                   **{key: observe.short(value) for key, value in payload.details.items()},
                   "accepted": str(result.accepted).lower(), "reason": str(result.reason),
                   "attempts_left": str(result.attempts_left)}
-        self._event("verificacion", verdict, {**fields, "trace": "\n".join(trace or [])},
+        self._event("verificacion", verdict, {**fields, "trace": "\n".join(trace or [])}, event="verify",
+                    level="INFO" if result.accepted else "WARN",
                     span=observe.verify_span(result),
                     math=self._verify_math(user_id, result.transcript, result.details),
                     signals=observe.verdict_signals(result, replayed), user_id=user_id,
@@ -245,7 +251,8 @@ class ZkpServer:
                   "accepted": str(result.accepted).lower(), "reason": str(result.reason),
                   "attempts_left": str(result.attempts_left)}
         math = ["c = SHA-256(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q" + (f" = {observe.short(challenge['c'])}" if challenge else "")]
-        self._event("verificacion", verdict, fields, span=observe.nizk_span(result),
+        self._event("verificacion", verdict, fields, event="verify_nizk", level="INFO" if result.accepted else "WARN",
+                    span=observe.nizk_span(result),
                     math=[*math, *self._verify_math(body.user_id, result.transcript, result.details)],
                     signals=observe.verdict_signals(result, replayed), user_id=body.user_id,
                     evidence={"t": body.t, "s": body.s} if replayed else None)
