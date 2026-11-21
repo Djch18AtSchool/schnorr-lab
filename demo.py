@@ -19,7 +19,13 @@ from benchmark.latency import format_table
 from protocol import TOY_GROUP, GroupParams, get_group, validate_params
 from protocol.bank import Bank
 from protocol.client import Client
-from protocol.fiat_shamir import DEFAULT_WINDOW_SECONDS, current_timestamp, hash_challenge, prove, verify_nizk
+from protocol.fiat_shamir import (
+    DEFAULT_WINDOW_SECONDS,
+    current_timestamp,
+    hash_challenge,
+    prove,
+    verify_nizk,
+)
 from protocol.transcript import VerifyResult
 
 ROOT = Path(__file__).resolve().parent
@@ -32,6 +38,7 @@ MAX_TRACE_BITS = 64                            # con p más grande la traza bit 
 MAX_PLAIN_DIGITS = 20
 AVAILABLE_GROUPS = ("toy", "safe-256", "safe-512", "safe-1024")
 LATENCY_RESULTS = ROOT / "results" / "latency.json"
+COMPARISON_RESULTS = ROOT / "results" / "comparacion.json"
 MENU = (
     ("1", "Ejemplo paso a paso con p = 23 (transcripción del escrito)"),
     ("2", "Autenticación interactiva (elegir grupo) y bloqueo por intentos"),
@@ -40,6 +47,7 @@ MENU = (
     ("5", "Latencia según el tamaño de p"),
     ("6", "Logaritmo discreto con paso de bebé, paso de gigante (BSGS)"),
     ("7", "Ejecutar las pruebas"),
+    ("8", "Comparación con contraseña, TOTP y SRP"),
     ("0", "Salir"),
 )
 
@@ -254,11 +262,32 @@ def option_tests(_verbose: bool) -> None:
     print(f"pytest terminó con código {completed.returncode}.")
 
 
+def option_comparison(_verbose: bool) -> None:
+    """Opción 8: resultados de la comparación con contraseña, TOTP y SRP. Cubre C5.
+
+    Muestra results/comparacion.json; para volver a medir se ejecuta python -m benchmark.compare.
+    """
+    if not COMPARISON_RESULTS.is_file():
+        print(f"Todavía no hay mediciones: ejecute «python -m benchmark.compare» ({COMPARISON_RESULTS.name}).")
+        return
+    from benchmark.compare import (
+        format_table as comparison_table,  # importa el banco solo si se pide
+    )
+
+    data = json.loads(COMPARISON_RESULTS.read_text(encoding="utf-8"))
+    print(f"Comparación en igualdad de condiciones (mediana de {data['reps']} repeticiones, "
+          f"backend «{data['backend']}», Python {data['python']}).")
+    for line in comparison_table(data):
+        print(line)
+    print("Gráficas en results/comparacion_latencia.png, comparacion_red.png y comparacion_base_robada.png.")
+
+
 OPTIONS: dict[str, Callable[[bool], None]] = {
     "1": option_example,
     "4": option_attacks,
     "5": option_latency,
     "7": option_tests,
+    "8": option_comparison,
 }
 
 
