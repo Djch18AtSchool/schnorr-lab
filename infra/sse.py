@@ -37,6 +37,7 @@ async def stream_events(
     """
     idle = 0.0
     polls = 0
+    yield ": conectado\n\n"       # entrega las cabeceras de inmediato (también a través de proxies)
     while max_polls is None or polls < max_polls:
         polls += 1
         if await is_disconnected():

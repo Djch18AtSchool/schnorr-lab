@@ -1,1 +1,0 @@
-import{n as e,r as t,t as n}from"./jsx-runtime-ESacktzD.js";var r=t(),i=e(),a=n();function o(){return(0,a.jsx)(`main`,{style:{fontFamily:`Geist, system-ui, sans-serif`,padding:24},children:`Banco Lab · escenario (en construcción)`})}(0,i.createRoot)(document.getElementById(`root`)).render((0,a.jsx)(r.StrictMode,{children:(0,a.jsx)(o,{})}));

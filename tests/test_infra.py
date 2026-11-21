@@ -45,7 +45,7 @@ def test_formato_sse_y_flujo_de_eventos():
             return False
         return [chunk async for chunk in stream_events(log, 0, connected, max_polls=2)]
 
-    assert asyncio.run(collect()) == [text]
+    assert asyncio.run(collect()) == [": conectado\n\n", text]   # comentario inicial: cabeceras de inmediato
 
 
 @pytest.mark.req("R11")
