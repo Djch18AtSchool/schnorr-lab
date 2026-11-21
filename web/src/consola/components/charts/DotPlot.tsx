@@ -63,7 +63,7 @@ function RowMarks({ row, cy, sx, x, series, clipLabel, connect }: { row: DotRow;
   const xs = row.points.map((p) => clamp(p.value));
   return (
     <>
-      {connect && xs.length > 1 ? <line x1={Math.min(...xs)} x2={Math.max(...xs)} y1={cy} y2={cy} stroke="var(--faint)" strokeWidth={2} /> : null}
+      {connect && xs.length > 1 ? <line x1={Math.min(...xs)} x2={Math.max(...xs)} y1={cy} y2={cy} stroke="var(--ink-3)" strokeWidth={2} /> : null}
       {row.points.map((p) => {
         const style = series.find((s) => s.key === p.series);
         const cx = clamp(p.value);
@@ -71,7 +71,7 @@ function RowMarks({ row, cy, sx, x, series, clipLabel, connect }: { row: DotRow;
         return (
           <g key={p.series} {...(p.tip ? tipHandlers(tip, p.tip) : {})}>
             {p.tip ? <circle className="hit" cx={cx} cy={cy} r={HIT_R} /> : null}
-            <Marker shape={clipped ? "arrow" : style?.shape ?? "circle"} cx={cx} cy={cy} color={style?.color ?? "var(--fg)"} hollow={style?.hollow} />
+            <Marker shape={clipped ? "arrow" : style?.shape ?? "circle"} cx={cx} cy={cy} color={style?.color ?? "var(--ink)"} hollow={style?.hollow} />
             {clipped && clipLabel ? <text className="lbl strong" x={cx - 12} y={cy - 9} textAnchor="end">{clipLabel(p.value)}</text> : null}
           </g>
         );
@@ -115,7 +115,7 @@ export function DotPlot({ aria, rows, series, x, refs = [], clipLabel, connect, 
         </g>
         {refs.map((r, i) => (
           <g key={i}>
-            <line x1={sx(r.x)} x2={sx(r.x)} y1={m.t - 4} y2={bottom} stroke="var(--muted)" strokeWidth={1.2} strokeDasharray="3 4" />
+            <line x1={sx(r.x)} x2={sx(r.x)} y1={m.t - 4} y2={bottom} stroke="var(--ink-2)" strokeWidth={1.2} strokeDasharray="3 4" />
             <text className="lbl" x={sx(r.x)} y={m.t - 10} textAnchor="middle">{r.label}</text>
           </g>
         ))}

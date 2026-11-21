@@ -1,36 +1,41 @@
-/** Las 9 secciones de la Consola, en el orden de los atajos 1–9. */
-import { ArrowLeftRight, Braces, ClipboardCheck, FlaskConical, LayoutDashboard, ListChecks, ScrollText, SlidersHorizontal, Users, type LucideIcon } from "lucide-react";
+/** Las 7 secciones de la Consola en 3 grupos: cada una responde una sola pregunta. */
+import { Activity, FlaskConical, LayoutDashboard, ListChecks, Server, ShieldAlert, Users, type LucideIcon } from "lucide-react";
 
-export type Section = "resumen" | "trafico" | "logs" | "usuarios" | "auditoria" | "laboratorio" | "pruebas" | "api" | "configuracion";
+export type Section = "resumen" | "actividad" | "seguridad" | "clientes" | "laboratorio" | "pruebas" | "sistema";
+export type SectionGroup = "operacion" | "investigacion" | "sistema";
 
 export interface SectionInfo {
   id: Section;
   title: string;
+  /** La pregunta que responde (subtítulo de la sección). */
+  question: string;
   icon: LucideIcon;
-  group: "operacion" | "sistema";
+  group: SectionGroup;
 }
 
+export const GROUP_TITLES: Readonly<Record<SectionGroup, string>> = { operacion: "Operación", investigacion: "Investigación", sistema: "Sistema" };
+
 export const SECTIONS: readonly SectionInfo[] = [
-  { id: "resumen", title: "Resumen", icon: LayoutDashboard, group: "operacion" },
-  { id: "trafico", title: "Tráfico", icon: ArrowLeftRight, group: "operacion" },
-  { id: "logs", title: "Logs", icon: ScrollText, group: "operacion" },
-  { id: "usuarios", title: "Usuarios", icon: Users, group: "operacion" },
-  { id: "auditoria", title: "Auditoría", icon: ClipboardCheck, group: "operacion" },
-  { id: "laboratorio", title: "Laboratorio", icon: FlaskConical, group: "sistema" },
-  { id: "pruebas", title: "Pruebas", icon: ListChecks, group: "sistema" },
-  { id: "api", title: "API", icon: Braces, group: "sistema" },
-  { id: "configuracion", title: "Configuración", icon: SlidersHorizontal, group: "sistema" },
+  { id: "resumen", title: "Resumen", question: "¿Qué está pasando ahora?", icon: LayoutDashboard, group: "operacion" },
+  { id: "actividad", title: "Actividad", question: "¿Qué pasó con cada petición?", icon: Activity, group: "operacion" },
+  { id: "seguridad", title: "Seguridad", question: "¿Quién está atacando y cómo?", icon: ShieldAlert, group: "operacion" },
+  { id: "clientes", title: "Clientes", question: "¿Qué sabe el banco de cada cliente?", icon: Users, group: "operacion" },
+  { id: "laboratorio", title: "Laboratorio", question: "¿Qué muestran las mediciones y los experimentos?", icon: FlaskConical, group: "investigacion" },
+  { id: "pruebas", title: "Pruebas", question: "¿Qué requerimientos cubren las pruebas?", icon: ListChecks, group: "investigacion" },
+  { id: "sistema", title: "Sistema", question: "¿Con qué parámetros y rutas funciona el banco?", icon: Server, group: "sistema" },
 ];
+
+/** Enlaces viejos (#trafico, #usuarios…) llevan a la sección que hoy cuenta lo mismo. */
+const ALIASES: Readonly<Record<string, Section>> = {
+  trafico: "actividad", logs: "actividad", usuarios: "clientes", auditoria: "clientes", api: "sistema", configuracion: "sistema",
+};
 
 export const isSection = (value: string): value is Section => SECTIONS.some((s) => s.id === value);
 
 /** La sección de un hash como «#laboratorio/impostor» (lo que va tras «/» es de la propia sección). */
 export function sectionOfHash(hash: string): Section | null {
   const head = hash.replace(/^#/, "").split("/")[0];
-  return isSection(head) ? head : null;
+  return isSection(head) ? head : ALIASES[head] ?? null;
 }
 
-export const sectionByKey = (key: string): Section | null => {
-  const n = Number(key);
-  return Number.isInteger(n) && n >= 1 && n <= SECTIONS.length ? SECTIONS[n - 1].id : null;
-};
+export const sectionInfo = (id: Section): SectionInfo => SECTIONS.find((s) => s.id === id) ?? SECTIONS[0];

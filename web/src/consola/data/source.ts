@@ -9,8 +9,8 @@ import type {
   AuditEntry,
   BankEvent,
   BankMechanism,
+  RequestDetail,
   RequestRecord,
-  TelemetrySummary,
   TestReport,
 } from "../../shared/types";
 import type { ComparisonResults, ExperimentResults } from "./labTypes";
@@ -101,20 +101,16 @@ export type SourceKind = "real" | "simulada";
 /** Todo lo que la Consola lee del banco. Ambas fuentes devuelven exactamente los tipos del contrato. */
 export interface ConsoleDataSource {
   readonly kind: SourceKind;
-  summary(windowS: number): Promise<TelemetrySummary>;
   requests(since: number, limit: number): Promise<RequestRecord[]>;
+  /** Una petición con los eventos que el banco publicó al atenderla (log, función y cálculos). */
+  requestDetail(id: number): Promise<RequestDetail>;
   alerts(): Promise<Alert[]>;
   accounts(): Promise<Account[]>;
   audit(): Promise<AuditEntry[]>;
   mechanisms(): Promise<BankMechanism[]>;
   tests(): Promise<TestReport>;
   results(): Promise<LabResults>;
-  events(since: number): Promise<BankEvent[]>;
   routes(): Promise<ApiRoutes>;
-  reset(): Promise<void>;
   /** Escucha los eventos en vivo; devuelve la función para dejar de escuchar. */
   stream(onEvent: (event: BankEvent) => void, onStatus: (online: boolean) => void): () => void;
 }
-
-/** Ventana del resumen: 15 minutos, como en el boceto. */
-export const SUMMARY_WINDOW_S = 900;

@@ -3,7 +3,8 @@ import type { ApiRoute } from "./source";
 
 const LAB = "laboratorio";
 const ZKP = "ZKP · Schnorr";
-const TELEMETRY = "telemetría";
+const TELEMETRY = "observabilidad";
+const SUPPORT = "soporte";
 
 export const FALLBACK_ROUTES: readonly ApiRoute[] = [
   { method: "GET", path: "/zkp/params", summary: "Parámetros públicos (p, q, g)", tag: ZKP },
@@ -19,11 +20,9 @@ export const FALLBACK_ROUTES: readonly ApiRoute[] = [
   { method: "GET", path: "/events/stream", summary: "Eventos del banco en tiempo real (Server-Sent Events)", tag: LAB },
   { method: "GET", path: "/telemetry/summary", summary: "Resumen de la ventana: series, latencia y rutas", tag: TELEMETRY },
   { method: "GET", path: "/telemetry/requests", summary: "Peticiones recibidas con sus cuerpos", tag: TELEMETRY },
+  { method: "GET", path: "/telemetry/requests/{request_id}", summary: "Una petición con todo lo que hizo el banco", tag: TELEMETRY },
   { method: "GET", path: "/telemetry/alerts", summary: "Alertas deducidas de las peticiones", tag: TELEMETRY },
   { method: "GET", path: "/lab/tests", summary: "Resultado de las pruebas por requerimiento", tag: LAB },
-  { method: "POST", path: "/lab/reset", summary: "Reiniciar el banco (solo laboratorio)", tag: LAB },
+  { method: "POST", path: "/admin/accounts/{mechanism}/{user_id}/unlock", summary: "Desbloquear una cuenta", tag: SUPPORT },
+  { method: "DELETE", path: "/admin/accounts/{mechanism}/{user_id}", summary: "Dar de baja una cuenta", tag: SUPPORT },
 ];
-
-/** Rutas de protocolo: sus cuerpos quedan en la auditoría. */
-export const isAuditedRoute = (method: string, path: string): boolean =>
-  method === "POST" && /^\/[a-z0-9_-]+\/(register|login\/[a-z]+)$/.test(path);

@@ -1,4 +1,7 @@
-/** Auditoría: hechos (¿llegó alguna vez x?) y relación de cada cuerpo con su petición. Funciones puras. */
+/**
+ * Auditoría (GET /audit/log) y cuerpos recibidos por cuenta: qué campos llegaron alguna vez al banco
+ * y la comprobación de que x nunca viajó. Funciones puras.
+ */
 import type { AuditEntry, RequestRecord } from "../../shared/types";
 import { asRecord } from "./requests";
 
@@ -27,27 +30,11 @@ export function auditFacts(entries: readonly AuditEntry[]): AuditFacts {
   };
 }
 
-export type AuditFilter = "all" | "valid" | "invalid";
+/** Rutas cuyo cuerpo el banco guarda en la auditoría (las del protocolo). */
+export const isAuditedPath = (method: string, path: string): boolean =>
+  method === "POST" && /^\/[a-z0-9_-]+\/(register|login\/[a-z]+)$/.test(path);
 
-export function matchesAudit(entry: AuditEntry, filter: AuditFilter, endpoint: string): boolean {
-  if (filter === "valid" && !entry.valid) return false;
-  if (filter === "invalid" && entry.valid) return false;
-  return !endpoint || entry.endpoint === endpoint;
-}
-
-/**
- * El contrato no une cada cuerpo auditado con su petición: se deduce recorriendo ambas listas en
- * orden y emparejando ruta y cuerpo idénticos. Devuelve índice de entrada → petición.
- */
-export function linkAuditToRequests(entries: readonly AuditEntry[], requests: readonly RequestRecord[]): ReadonlyMap<number, RequestRecord> {
-  const pairs: Array<[number, RequestRecord]> = [];
-  let cursor = 0;
-  entries.forEach((entry, index) => {
-    const body = JSON.stringify(entry.body);
-    const at = requests.findIndex((r, i) => i >= cursor && r.path === entry.endpoint && JSON.stringify(r.request_body) === body);
-    if (at < 0) return;
-    pairs.push([index, requests[at]]);
-    cursor = at + 1;
-  });
-  return new Map(pairs);
+/** Cuerpos que llegaron al banco a nombre de la cuenta, el más reciente primero. */
+export function bodiesFor(user: string, requests: readonly RequestRecord[]): RequestRecord[] {
+  return requests.filter((r) => r.tags.user === user && isAuditedPath(r.method, r.path)).sort((a, b) => b.id - a.id);
 }

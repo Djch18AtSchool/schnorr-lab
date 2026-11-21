@@ -39,7 +39,7 @@ Otras formas de usarlo: `uvicorn api.app:app` levanta solo el banco (Swagger en 
 - **Banco:** lo que guarda (solo *y*), los parámetros públicos, la auditoría de todo cuerpo recibido (también los rechazados) y, aparte, lo que guarda el celular.
 - **Laboratorio:** ataques en vivo contra el banco que está corriendo (repetir mensajes capturados, robar la base de datos, suplantar sin *x*) y los experimentos de `attacks/`.
 - **Resultados:** gráficas y tablas de latencia y de BSGS, generadas de antemano.
-- **Consola:** los eventos del celular, el banco y el atacante en tiempo real.
+- **Consola del banco (`/consola/`):** lo que ve el banco en tiempo real. Resumen (indicadores y cada petición en el tiempo), Actividad (cada intento params → commit → respond con el log, la función y los cálculos del banco), Seguridad (alertas por dispositivo de origen con su evidencia), Clientes (lo único que guarda: *y*), Laboratorio, Pruebas y Sistema.
 - **Swagger:** la API del banco; lo que entre por ahí también aparece en la auditoría y en la consola.
 
 El selector de grupo en la barra superior reinicia el laboratorio con otro tamaño de p (de p = 23 hasta 3072 bits) para mostrar en vivo cómo cambia la latencia.

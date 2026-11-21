@@ -68,14 +68,14 @@ function recordFor(script: ScriptedAct, runId: string, index: number): ActStepRe
 function eventsFor(scripted: ScriptedExchange, exchange: Exchange, firstId: number, timestamp: number): BankEvent[] {
   const corr = exchange.correlation_id;
   const mechanism = scripted.events.map((e, i): BankEvent => ({
-    id: firstId + i, timestamp, source: "banco", kind: e.kind, title: e.title, mechanism: "zkp", correlation_id: corr, data: e.data,
+    id: firstId + i, timestamp, source: "banco", kind: e.kind, title: e.title, mechanism: "zkp", correlation_id: corr, data: e.data, request_id: null,
   }));
   const access: AccessData = {
     method: exchange.method, path: exchange.path, status: exchange.status, duration_ms: exchange.elapsed_ms, ...CLIENTS[exchange.origin],
   };
   const accessEvent: BankEvent = {
     id: firstId + mechanism.length, timestamp, source: exchange.origin === "eve" ? "atacante" : "cliente", kind: "acceso",
-    title: `${exchange.method} ${exchange.path} ${exchange.status}`, mechanism: "zkp", correlation_id: corr, data: { ...access },
+    title: `${exchange.method} ${exchange.path} ${exchange.status}`, mechanism: "zkp", correlation_id: corr, data: { ...access }, request_id: null,
   };
   return [...mechanism, accessEvent];
 }

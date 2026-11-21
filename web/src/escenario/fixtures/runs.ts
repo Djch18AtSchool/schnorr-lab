@@ -48,6 +48,7 @@ export function bankEvent(overrides: Partial<BankEvent> & Pick<BankEvent, "id" |
     title: "evento",
     mechanism: "zkp",
     correlation_id: "run:1",
+    request_id: null,
     data: {},
     ...overrides,
   };

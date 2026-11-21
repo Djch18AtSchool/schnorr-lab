@@ -1,0 +1,61 @@
+/*
+ * Tokens comunes del Escenario y la Consola: paleta por actor (Ana índigo, Eve magenta, banco verde
+ * azulado, red ámbar), superficies, tinta, sombras, terminal y tipografía Geist. Tema claro por
+ * defecto; oscuro por preferencia del sistema o por elección (data-theme).
+ */
+:root {
+  --bg: #eef1f5;
+  --dot: #d3d9e2;
+  --surface: #ffffff;
+  --surface-2: #f6f8fb;
+  --ink: #131a26;
+  --ink-2: #485366;
+  --ink-3: #828da0;
+  --line: #dce2ea;
+  --line-2: #c8d0dc;
+  --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 8px 24px -8px rgba(20, 30, 50, .14);
+  --shadow-lg: 0 2px 4px rgba(20, 30, 50, .05), 0 24px 48px -16px rgba(20, 30, 50, .22);
+  --ana: #4f5bd5;
+  --ana-soft: #e9ebfb;
+  --ana-ink: #3d47b8;
+  --net: #d4892a;
+  --net-soft: #fbf0e1;
+  --bank: #0f9d8a;
+  --bank-soft: #def4f0;
+  --bank-ink: #0b7a6b;
+  --eve: #d1437a;
+  --eve-soft: #fbe6ee;
+  --eve-ink: #b3315f;
+  --ok: #1f9d55;
+  --bad: #d64545;
+  --warn: #c98a12;
+  --term-bg: #10151d;
+  --term-bar: #1a212c;
+  --term-ink: #d6dde8;
+  --term-dim: #6f7c90;
+  --font: "Geist Sans", "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1218; --dot: #1f2631; --surface: #161c25; --surface-2: #1b222d;
+    --ink: #e7ecf4; --ink-2: #a9b3c4; --ink-3: #6e7a8e; --line: #262e3a; --line-2: #323c4b;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -8px rgba(0,0,0,.5);
+    --shadow-lg: 0 2px 4px rgba(0,0,0,.3), 0 24px 48px -16px rgba(0,0,0,.6);
+    --ana: #7b86f0; --ana-soft: #23284a; --ana-ink: #a3abf7; --net: #e3a14b; --net-soft: #33281a;
+    --bank: #2fbfa9; --bank-soft: #132f2b; --bank-ink: #5fd6c3; --eve: #ec6a9c; --eve-soft: #3a1a28; --eve-ink: #f590b6;
+    --ok: #3cc47a; --bad: #f06a6a; --term-bg: #0a0e14; --term-bar: #141a23;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1218; --dot: #1f2631; --surface: #161c25; --surface-2: #1b222d;
+  --ink: #e7ecf4; --ink-2: #a9b3c4; --ink-3: #6e7a8e; --line: #262e3a; --line-2: #323c4b;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -8px rgba(0,0,0,.5);
+  --shadow-lg: 0 2px 4px rgba(0,0,0,.3), 0 24px 48px -16px rgba(0,0,0,.6);
+  --ana: #7b86f0; --ana-soft: #23284a; --ana-ink: #a3abf7; --net: #e3a14b; --net-soft: #33281a;
+  --bank: #2fbfa9; --bank-soft: #132f2b; --bank-ink: #5fd6c3; --eve: #ec6a9c; --eve-soft: #3a1a28; --eve-ink: #f590b6;
+  --ok: #3cc47a; --bad: #f06a6a; --term-bg: #0a0e14; --term-bar: #141a23;
+  color-scheme: dark;
+}

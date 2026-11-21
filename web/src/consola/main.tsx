@@ -1,10 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "../shared/base.css";
-import "./styles/tokens.css";
-import "./styles/layout.css";
-import "./styles/views.css";
-import "./styles/extras.css";
+import "../shared/tokens.css";
+import "../escenario/styles/terminal.css";
+import "./styles/base.css";
+import "./styles/frame.css";
+import "./styles/resumen.css";
+import "./styles/actividad.css";
+import "./styles/sections.css";
 import "./styles/lab.css";
 import "./styles/responsive.css";
 import { App } from "./App";

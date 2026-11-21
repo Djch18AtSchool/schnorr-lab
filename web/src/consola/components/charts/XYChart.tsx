@@ -83,7 +83,7 @@ export function XYChart({ aria, height, margin: m, x, y, series, labels = [], re
         <text x={4} y={m.t - 12} className="lbl">{y.title}</text>
         {refs.map((r, i) => (
           <g key={i}>
-            <line x1={m.l} x2={W - m.r} y1={sy(r.y)} y2={sy(r.y)} stroke="var(--faint)" strokeWidth={1.2} strokeDasharray="2 4" />
+            <line x1={m.l} x2={W - m.r} y1={sy(r.y)} y2={sy(r.y)} stroke="var(--ink-3)" strokeWidth={1.2} strokeDasharray="2 4" />
             <text className="lbl" x={m.l + 6} y={sy(r.y) - 6}>{r.label}</text>
           </g>
         ))}

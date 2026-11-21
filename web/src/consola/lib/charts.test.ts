@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { LAB_RESULTS } from "../data/simulated/labData";
 import type { BsgsResults, LatencyResults } from "../data/source";
-import { bsgsSeries, latencyGroups, latencyPoints, linearScale, linearTicks, logDomain, logScale, niceMax, perMinute, pointTotal, powerTicks } from "./charts";
+import { bsgsSeries, latencyGroups, linearScale, linearTicks, logDomain, logScale, niceMax, powerTicks } from "./charts";
 
 const LATENCY = LAB_RESULTS.latency as LatencyResults;
 const BSGS = LAB_RESULTS.bsgs as BsgsResults;
-
-const point = (t: number, ok: number, other = 0) => ({ t, ok, rejected: 0, other, error: 0, p50_ms: ok ? 3 : 0, p95_ms: ok ? 5 : 0 });
 
 describe("escalas", () => {
   it("lineal y logarítmica llevan el dominio al rango", () => {
@@ -19,18 +17,6 @@ describe("escalas", () => {
 
   it("niceMax redondea hacia arriba a 2, 5 o 10 por potencia", () => {
     expect([3, 7, 13, 26, 61].map(niceMax)).toEqual([4, 10, 20, 50, 100]);
-  });
-});
-
-describe("series del resumen", () => {
-  it("agrupa intervalos de 30 s en minutos", () => {
-    const series = [point(0, 1, 1), point(30, 2), point(60, 0, 4), point(90, 1)];
-    expect(pointTotal(series[0])).toBe(2);
-    expect(perMinute(series, 30)).toEqual([4, 5]);
-  });
-
-  it("deja huecos (null) donde no hubo peticiones", () => {
-    expect(latencyPoints([point(0, 1), point(30, 0)])).toEqual([{ p50: 3, p95: 5 }, null]);
   });
 });
 

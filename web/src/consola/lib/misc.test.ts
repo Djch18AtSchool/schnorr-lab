@@ -1,28 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { AuditEntry, TestReport } from "../../shared/types";
 import { MECHANISMS } from "../data/simulated/fixtures";
-import { alert, commit, event, req, respond } from "../test/builders";
-import { alertFromEvent, codeSpans, defaultOpenAlert, groupAlerts, severityCounts, supSpans } from "./alerts";
-import { auditFacts, containsSecret, linkAuditToRequests, matchesAudit } from "./audit";
+import { event, req } from "../test/builders";
+import { alertFromEvent, codeSpans, supSpans } from "./alerts";
+import { auditFacts, bodiesFor, containsSecret } from "./audit";
 import { checkGroup, groupOf, modPow } from "./group";
 import { requirementFiles, requirementStatus, testsByFile } from "./lab";
-import { verificationOf } from "./verify";
 
 describe("alertas", () => {
-  const list = [
-    alert({ id: 1, title: "Cuerpo mal formado (422)", severity: "baja", timestamp: 10 }),
-    alert({ id: 2, title: "Cuerpo mal formado (422)", severity: "baja", timestamp: 20 }),
-    alert({ id: 3, title: "Respuesta repetida rechazada", severity: "alta", timestamp: 30 }),
-    alert({ id: 4, title: "Respuesta repetida rechazada", severity: "alta", timestamp: 40 }),
-  ];
-
-  it("agrupa repeticiones seguidas salvo las altas, más recientes primero", () => {
-    const groups = groupAlerts(list);
-    expect(groups.map((g) => [g.alert.id, g.times])).toEqual([[4, 1], [3, 1], [2, 2]]);
-    expect(defaultOpenAlert(groups)).toBe(4);
-    expect(severityCounts(list)).toEqual({ alta: 2, media: 0, baja: 2 });
-  });
-
   it("separa el `código` del texto", () => {
     expect(codeSpans("Origen `192.168.1.66` (httpx).")).toEqual([{ text: "Origen ", code: false }, { text: "192.168.1.66", code: true }, { text: " (httpx).", code: false }]);
   });
@@ -53,18 +38,16 @@ describe("auditoría", () => {
 
   it("resume cuerpos, inválidos y campos vistos", () => {
     expect(auditFacts(entries)).toEqual({ total: 3, invalid: 1, fields: ["user_id", "y", "t", "session_id", "s"], withSecret: 0 });
-    expect(entries.filter((e) => matchesAudit(e, "invalid", ""))).toHaveLength(1);
-    expect(entries.filter((e) => matchesAudit(e, "all", "/zkp/register"))).toHaveLength(1);
   });
 
-  it("une cada cuerpo con su petición en orden", () => {
+  it("los cuerpos de una cuenta son los del protocolo etiquetados con ella, el más reciente primero", () => {
     const requests = [
-      req({ id: 10, method: "POST", path: "/zkp/register", request_body: { user_id: "ana", y: "8" } }),
-      req({ id: 11, method: "POST", path: "/zkp/login/commit", request_body: { user_id: "ana", t: 12 } }),
-      respond(12, "s", "a:3", true),
+      req({ id: 10, method: "POST", path: "/zkp/register", request_body: { user_id: "ana", y: "8" }, tags: { user: "ana" } }),
+      req({ id: 11, method: "GET", path: "/zkp/params", tags: {} }),
+      req({ id: 12, method: "POST", path: "/zkp/login/respond", request_body: { session_id: "s", s: "4" }, tags: { user: "ana", session: "s" } }),
+      req({ id: 13, method: "POST", path: "/zkp/login/commit", request_body: { user_id: "bruno", t: "2" }, tags: { user: "bruno" } }),
     ];
-    const links = linkAuditToRequests(entries, requests);
-    expect([...links.entries()].map(([i, r]) => [i, r.id])).toEqual([[0, 10], [1, 11], [2, 12]]);
+    expect(bodiesFor("ana", requests).map((r) => r.id)).toEqual([12, 10]);
   });
 });
 
@@ -105,18 +88,5 @@ describe("pruebas por requerimiento", () => {
   it("da el estado y los archivos de cada requerimiento", () => {
     expect(report.requirements.map(requirementStatus)).toEqual(["aprobado", "fallido", "pendiente"]);
     expect(requirementFiles(report.requirements[1])).toEqual([{ file: "test_params.py", count: 1 }, { file: "test_api.py", count: 1 }]);
-  });
-});
-
-describe("verificationOf", () => {
-  it("lee la verificación de la respuesta del banco (guion del brief)", () => {
-    const r = { ...respond(1, "77991cce", "a:3", true), response_body: { accepted: true, reason: "Acceso concedido",
-      transcript: { t: "12", c: "3", s: "4" }, details: { gs: "3", yc: "6", tyc: "3", yc_inv: "4", t_rec: "12" } } };
-    expect(verificationOf(r, "8")).toMatchObject({ nizk: false, gs: "3", tyc: "3", ycInv: "4", tRec: "12", congruenceOk: true, recoveryOk: true });
-  });
-
-  it("devuelve null si la respuesta no trae verificación", () => {
-    expect(verificationOf(commit(1, "ana", "s", "a:2"), null)).toBeNull();
-    expect(verificationOf(respond(2, "s", "e:1", false), null)).toBeNull();
   });
 });

@@ -13,11 +13,6 @@ export function fmtClockMs(ts: number): string {
   return `${fmtClock(ts)}.${pad(d.getMilliseconds(), 3)}`;
 }
 
-export function fmtHM(ts: number): string {
-  const d = new Date(ts * 1000);
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 /** Tiempo relativo en español: "ahora", "hace 12 s", "hace 3 min", "hace 1 h 5 min". */
 export function rel(ts: number, now: number): string {
   const s = Math.max(0, Math.round(now - ts));
@@ -33,19 +28,10 @@ export function ago(from: number, to: number): string {
   return sec < 90 ? `${sec} s antes` : `${Math.round(sec / 60)} min antes`;
 }
 
-export function fmtMs(ms: number | null | undefined): string {
-  return ms == null || !Number.isFinite(ms) ? "–" : `${ms.toFixed(2)} ms`;
-}
-
 /** Recorta enteros grandes (p de 2048 bits) para la tabla: "3231…8719 (617 dígitos)". */
 export function shortNum(value: string, keep = 12): string {
   if (value.length <= keep * 2 + 1) return value;
   return `${value.slice(0, keep)}…${value.slice(-keep)}`;
-}
-
-export function shortId(value: string | null | undefined, keep = 8): string {
-  if (!value) return "";
-  return value.length > keep ? `${value.slice(0, keep)}…` : value;
 }
 
 const SUPERSCRIPTS: Record<string, string> = {
@@ -54,12 +40,6 @@ const SUPERSCRIPTS: Record<string, string> = {
 
 export function sup(value: number | string): string {
   return String(value).split("").map((ch) => SUPERSCRIPTS[ch] ?? ch).join("");
-}
-
-/** Notación científica compacta: 1.5·10¹⁰ (o el número tal cual si es pequeño). */
-export function sci(value: number, digits = 1): string {
-  const parts = sciParts(value, digits);
-  return parts.exponent === null ? parts.mantissa : `${parts.mantissa}·10${sup(parts.exponent)}`;
 }
 
 /** Mantisa y exponente por separado (para escribir el exponente con <sup> en HTML). */
@@ -83,11 +63,17 @@ export function fmtBytes(bytes: number): string {
   return bytes < 1000 ? `${Math.round(bytes)} B` : `${(bytes / 1000).toFixed(1)} kB`;
 }
 
-/** Milisegundos con las cifras justas: «0.56 ms», «9.1 ms», «154 ms». */
-export function fmtMsShort(ms: number): string {
-  if (ms < 1) return `${ms.toFixed(2)} ms`;
-  return ms < 10 ? `${ms.toFixed(1)} ms` : `${Math.round(ms)} ms`;
+/** Milisegundos con las cifras justas, sin unidad: «0.56», «9.1», «154». */
+export function fmtMsNumber(ms: number): string {
+  if (ms < 1) return ms.toFixed(2);
+  return ms < 10 ? ms.toFixed(1) : String(Math.round(ms));
 }
+
+/** Milisegundos con las cifras justas: «0.56 ms», «9.1 ms», «154 ms». */
+export const fmtMsShort = (ms: number): string => `${fmtMsNumber(ms)} ms`;
+
+/** Duración de un intento: «0.88 ms», «3.0 ms» o, desde un segundo, «4.5 s». */
+export const fmtElapsed = (ms: number): string => (ms < 1000 ? fmtMsShort(ms) : `${(ms / 1000).toFixed(1)} s`);
 
 /** Razón «8.6×» con una cifra decimal. */
 export const fmtTimes = (ratio: number): string => `${ratio.toFixed(ratio < 10 ? 1 : 0)}×`;
