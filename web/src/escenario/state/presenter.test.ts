@@ -18,9 +18,15 @@ describe("preferencias", () => {
   test("valida lo guardado y cae en los valores por defecto", () => {
     expect(parsePrefs(null)).toEqual(DEFAULT_PREFS);
     expect(parsePrefs("{roto")).toEqual(DEFAULT_PREFS);
-    expect(parsePrefs(JSON.stringify({ mode: "auto", speed: 3, cam: "wide", dim: false, math: "sí", theme: "dark" }))).toEqual({
-      mode: "auto", speed: 1, cam: "wide", dim: false, math: true, theme: "dark",
+    expect(parsePrefs(JSON.stringify({ mode: "auto", speed: 3, cam: "wide", dim: false, math: "sí", theme: "dark", motion: "lento" }))).toEqual({
+      mode: "auto", speed: 1, cam: "wide", dim: false, math: true, theme: "dark", motion: "full",
     });
+  });
+
+  test("las animaciones son «Completas» por defecto y se recuerdan las otras opciones", () => {
+    expect(DEFAULT_PREFS.motion).toBe("full");
+    expect(parsePrefs(JSON.stringify({ motion: "reduced" })).motion).toBe("reduced");
+    expect(parsePrefs(JSON.stringify({ motion: "system" })).motion).toBe("system");
   });
 });
 

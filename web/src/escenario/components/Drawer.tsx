@@ -1,9 +1,9 @@
-/** Drawer «Dirección»: acto, reproducción, cámara, grupo, tema, fuente, enlaces y atajos. */
+/** Drawer «Dirección»: acto, reproducción, animaciones, cámara, grupo, tema, fuente, enlaces y atajos. */
 import { useEffect, useRef } from "react";
 import type { PhoneConfig } from "../../shared/types";
 import type { SourceKind } from "../data/source";
 import type { Prefs } from "../state/prefs";
-import { ActSection, CameraSection, GroupSection, LookSection, PlaybackSection, ShortcutsSection } from "./DrawerSections";
+import { ActSection, CameraSection, GroupSection, LookSection, MotionSection, PlaybackSection, ShortcutsSection } from "./DrawerSections";
 import { CloseIcon } from "./icons";
 
 interface DrawerProps {
@@ -40,6 +40,7 @@ export function Drawer({ open, config, actId, prefs, source, onClose, onAct, onG
       <div className="body">
         <ActSection config={config} actId={actId} onAct={onAct} />
         <PlaybackSection prefs={prefs} onPrefs={onPrefs} />
+        <MotionSection prefs={prefs} onPrefs={onPrefs} />
         <CameraSection prefs={prefs} onPrefs={onPrefs} />
         <GroupSection config={config} onGroup={onGroup} />
         <LookSection prefs={prefs} onPrefs={onPrefs} source={source} onSource={onSource} consoleUrl={config?.console_url ?? null} />

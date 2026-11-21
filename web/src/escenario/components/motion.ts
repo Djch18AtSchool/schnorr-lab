@@ -1,6 +1,6 @@
 /**
  * Animaciones de entrada con Motion (Web Animations), escaladas por la velocidad elegida y
- * anuladas si el sistema pide menos movimiento.
+ * omitidas en modo reducido (preferencia «Animaciones» del drawer, ver state/useMotion).
  */
 import { animate } from "motion";
 import { createContext, useContext } from "react";
@@ -14,10 +14,6 @@ export const MotionContext = createContext<MotionSettings>({ speed: 1, reduced: 
 
 export function useMotionSettings(): MotionSettings {
   return useContext(MotionContext);
-}
-
-export function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 type Keyframes = Record<string, string[] | number[]>;

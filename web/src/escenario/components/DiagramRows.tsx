@@ -10,8 +10,8 @@ type MsgRow = Extract<DiagramRow, { type: "msg" }>;
 type LocalRow = Extract<DiagramRow, { type: "local" }>;
 type SrvRow = Extract<DiagramRow, { type: "srv" }>;
 
-const ARROW_DRAW_MS = 620;
-const PACKET_MS = 720;
+const ARROW_DRAW_MS = 700;
+const PACKET_MS = 800;
 /** La cámara llega primero; después viaja el mensaje. */
 const LEAD_MS = 450;
 

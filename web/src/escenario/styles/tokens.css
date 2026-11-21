@@ -1,5 +1,7 @@
 /* Tokens, base y barra superior del Escenario (portado del boceto E «Foco y secuencia»). */
 :root {
+  /* Factor de las animaciones narrativas: 1 / velocidad (lo fija state/useMotion). */
+  --tempo: 1;
   --bg: #eef1f5;
   --dot: #d3d9e2;
   --surface: #ffffff;

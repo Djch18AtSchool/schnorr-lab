@@ -1,10 +1,17 @@
 /** Secciones del drawer «Dirección». */
 import type { PhoneConfig } from "../../shared/types";
 import type { SourceKind } from "../data/source";
+import type { MotionPref } from "../model/motion";
 import { SPEEDS, type Prefs } from "../state/prefs";
 import { Seg, Switch } from "./Controls";
 
 const CAST_LABEL: Readonly<Record<string, string>> = { ana: "Ana", red: "La red", banco: "Banco", eve: "Eve" };
+
+const MOTION_OPTIONS: ReadonlyArray<{ value: MotionPref; label: string }> = [
+  { value: "full", label: "Completas" },
+  { value: "reduced", label: "Reducidas" },
+  { value: "system", label: "Según el sistema" },
+];
 
 const SHORTCUTS: ReadonlyArray<[string[], string]> = [
   [["→", "Espacio"], "Siguiente paso, o reproducir y pausar en automático"],
@@ -49,6 +56,16 @@ export function PlaybackSection({ prefs, onPrefs }: PrefsProps) {
         <span>Velocidad</span>
         <Seg label="Velocidad" value={prefs.speed} onChange={(speed) => onPrefs({ speed })} options={SPEEDS.map((s) => ({ value: s, label: `${String(s).replace(".", ",")}×` }))} />
       </div>
+    </section>
+  );
+}
+
+export function MotionSection({ prefs, onPrefs }: PrefsProps) {
+  return (
+    <section>
+      <h3>Animaciones</h3>
+      <Seg label="Animaciones" value={prefs.motion} onChange={(motion) => onPrefs({ motion })} options={MOTION_OPTIONS} />
+      <p className="muted">«Completas» anima igual en cualquier equipo, aunque el sistema pida menos movimiento. «Reducidas» quita los movimientos de cámara y lo que se repite en bucle.</p>
     </section>
   );
 }

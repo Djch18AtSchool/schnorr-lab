@@ -7,6 +7,7 @@ import { Diagram } from "./Diagram";
 import { EveLaptop } from "./EveLaptop";
 import { rightColumn } from "./layout";
 import { NoteCard } from "./NoteCard";
+import { useMotionSettings } from "./motion";
 import { Phone } from "./Phone";
 import { useCamera } from "./useCamera";
 
@@ -44,12 +45,13 @@ export function Stage({ scene, group, bankOnline, wide, speed, reviewN, animate,
   const link = useRef<SVGSVGElement>(null);
   const refs = useMemo(() => ({ stage, world, phone, termInner, note, brackets, link }), []);
   const termRefs = useMemo(() => ({ actor: termActor, inner: termInner }), []);
+  const { reduced } = useMotionSettings();
 
   const rows = useMemo(
     () => new Map<string, DiagramRow>(scene.diagram.phases.flatMap((p) => p.rows.map((r) => [r.row.id, r.row] as const))),
     [scene.diagram],
   );
-  const notePos = useCamera(refs, { shot: scene.shot, focus: scene.focus, reviewN, rows, hasEve: scene.hasEve, speed });
+  const notePos = useCamera(refs, { shot: scene.shot, focus: scene.focus, reviewN, rows, hasEve: scene.hasEve, speed, reduced });
   const col = rightColumn(scene.hasEve);
   const dim = dimmed(scene, wide);
   const linkRowId = scene.shot.kind === "focus" ? scene.shot.linkRowId : null;

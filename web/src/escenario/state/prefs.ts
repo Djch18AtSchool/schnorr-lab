@@ -1,6 +1,7 @@
 /** Preferencias de dirección (por espectador, en localStorage si está disponible). */
 import { useCallback, useEffect, useState } from "react";
 import type { CamMode } from "../model/camera";
+import type { MotionPref } from "../model/motion";
 
 export type PlayMode = "step" | "auto";
 export type Theme = "light" | "dark" | "system";
@@ -12,10 +13,11 @@ export interface Prefs {
   dim: boolean;
   math: boolean;
   theme: Theme;
+  motion: MotionPref;
 }
 
 export const SPEEDS: readonly number[] = [0.5, 1, 1.5, 2];
-export const DEFAULT_PREFS: Prefs = { mode: "step", speed: 1, cam: "follow", dim: true, math: true, theme: "light" };
+export const DEFAULT_PREFS: Prefs = { mode: "step", speed: 1, cam: "follow", dim: true, math: true, theme: "light", motion: "full" };
 const STORAGE_KEY = "schnorr-lab.escenario.prefs";
 
 /** Valida lo guardado (puede venir de otra versión o estar corrupto). */
@@ -32,6 +34,7 @@ export function parsePrefs(raw: string | null): Prefs {
       dim: typeof d.dim === "boolean" ? d.dim : DEFAULT_PREFS.dim,
       math: typeof d.math === "boolean" ? d.math : DEFAULT_PREFS.math,
       theme: d.theme === "dark" || d.theme === "system" ? d.theme : "light",
+      motion: d.motion === "reduced" || d.motion === "system" ? d.motion : "full",
     };
   } catch {
     return DEFAULT_PREFS;

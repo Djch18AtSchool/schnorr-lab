@@ -2,7 +2,7 @@
 import { Fragment, useEffect, useRef } from "react";
 import type { FrameModel } from "../model/storyboard";
 import { FrameSvg } from "./FrameSvg";
-import { prefersReducedMotion } from "./motion";
+import { useMotionSettings } from "./motion";
 
 interface BoardProps {
   actTitle: string;
@@ -29,10 +29,11 @@ function playLabel({ auto, playing, atEnd, pending }: Pick<BoardProps, "auto" | 
 export function Board(props: BoardProps) {
   const { actTitle, frames, index, hasEve, pending, atEnd, auto, playing, holdMs, onPrev, onPlay, onRestart, onJump } = props;
   const strip = useRef<HTMLElement>(null);
+  const { reduced } = useMotionSettings();
   useEffect(() => {
     const current = strip.current?.querySelector<HTMLElement>(".frame.cur");
-    current?.scrollIntoView({ block: "nearest", inline: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
-  }, [index, frames.length]);
+    current?.scrollIntoView({ block: "nearest", inline: "center", behavior: reduced ? "auto" : "smooth" });
+  }, [index, frames.length, reduced]);
   return (
     <footer className="board">
       <div className="transport">

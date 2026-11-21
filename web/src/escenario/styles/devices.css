@@ -10,7 +10,7 @@
 .island { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 92px; height: 26px; border-radius: 20px; background: #0b0d11; z-index: 3; }
 .statusbar { position: absolute; top: 0; left: 0; right: 0; height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 4px 26px 0 30px; font-size: 14px; font-weight: 600; z-index: 2; }
 .statusbar svg { height: 11px; width: auto; margin-left: 5px; }
-.scr { position: absolute; inset: 0; padding: 58px 20px 22px; display: flex; flex-direction: column; opacity: 0; transition: opacity .45s ease; pointer-events: none; }
+.scr { position: absolute; inset: 0; padding: 58px 20px 22px; display: flex; flex-direction: column; opacity: 0; transition: opacity calc(.45s * var(--tempo)) ease; pointer-events: none; }
 .scr.active { opacity: 1; }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
 .brand-mark { width: 24px; height: 24px; border-radius: 7px; background: #4f5bd5; display: grid; place-items: center; }
@@ -26,7 +26,7 @@
 .fp svg.ring circle { fill: none; stroke: #4f5bd5; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 289; stroke-dashoffset: 289; }
 .fp .check { position: absolute; inset: 0; border-radius: 50%; background: #1f9d55; display: grid; place-items: center; opacity: 0; transform: scale(.6); transition: opacity .3s, transform .35s cubic-bezier(.3, 1.4, .6, 1); }
 .fp .check svg { width: 36px; height: 36px; }
-.fp[data-fp="scan"] svg.ring circle { animation: fpScan 1.1s ease-out forwards; }
+.fp[data-fp="scan"] svg.ring circle { animation: fpScan calc(1.1s * var(--tempo)) ease-out forwards; }
 .fp[data-fp="ok"] svg.ring circle { stroke-dashoffset: 0; }
 .fp[data-fp="ok"] .check { opacity: 1; transform: scale(1); }
 @keyframes fpScan { to { stroke-dashoffset: 0; } }
@@ -65,7 +65,7 @@
 .tabbar .cur { color: #4f5bd5; font-weight: 600; }
 .welcome-toast { position: absolute; left: 14px; right: 14px; top: 50px; background: #13202a; color: #fff; font-size: 12.5px; border-radius: 12px; padding: 9px 12px; display: flex; gap: 8px; align-items: center; opacity: 0; z-index: 4; pointer-events: none; }
 .welcome-toast svg { width: 14px; height: 14px; color: #3cc47a; flex: none; }
-.scr.active .welcome-toast { animation: toast 3.2s ease .4s both; }
+.scr.active .welcome-toast { animation: toast calc(3.2s * var(--tempo)) ease calc(.4s * var(--tempo)) both; }
 @keyframes toast { 0% { opacity: 0; transform: translateY(-8px); } 12%, 82% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
 
 /* ---------- Eve laptop ---------- */
@@ -79,8 +79,8 @@
 .lap-term .p { color: #ec6a9c; } .lap-term .o { color: #9aa6b8; } .lap-term .cap { color: #e8edf5; }
 .lap-term .hl { background: rgba(236, 106, 156, .2); color: #fff; border-radius: 3px; }
 .lap-term .err { color: #ff8a8a; }
-.lap-term .fresh { animation: logIn .45s ease .45s both; }
-.lap-term .cap.fresh { animation-delay: 1s; }
+.lap-term .fresh { animation: logIn calc(.45s * var(--tempo)) ease calc(.45s * var(--tempo)) both; }
+.lap-term .cap.fresh { animation-delay: calc(1s * var(--tempo)); }
 @keyframes logIn { from { opacity: 0; transform: translateY(6px); } }
 .lap-base { position: absolute; left: 0; right: 0; top: 292px; height: 18px; border-radius: 2px 2px 12px 12px; background: linear-gradient(#3a3e47, #2a2d34); }
 .lap-base::before { content: ""; position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 90px; height: 6px; border-radius: 0 0 6px 6px; background: #1e2127; }

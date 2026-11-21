@@ -17,7 +17,7 @@
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   padding: 12px 20px 26px; border-radius: 26px 26px 0 0; background: #fff;
   box-shadow: 0 -12px 40px -12px rgba(20, 30, 60, .35);
-  transform: translateY(105%); transition: transform .5s var(--ease-cam);
+  transform: translateY(105%); transition: transform calc(.5s * var(--tempo)) var(--ease-cam);
 }
 .bio-sheet.up { transform: none; }
 .bio-sheet::before {
@@ -49,5 +49,5 @@
 .result-mid h4 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.015em; max-width: 230px; line-height: 1.25; }
 .result-mid p { margin: 0; font-size: 13.5px; color: #6a7386; max-width: 230px; }
 .result-mid p.extra { color: #2c3446; font-weight: 500; }
-.scr.active .result-icon { animation: popIn .45s cubic-bezier(.3, 1.4, .6, 1) .15s both; }
+.scr.active .result-icon { animation: popIn calc(.45s * var(--tempo)) cubic-bezier(.3, 1.4, .6, 1) calc(.15s * var(--tempo)) both; }
 @keyframes popIn { from { opacity: 0; transform: scale(.6); } }

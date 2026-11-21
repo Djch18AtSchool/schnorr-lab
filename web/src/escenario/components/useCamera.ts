@@ -4,13 +4,11 @@
  */
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { bestFit, type CardPos, type Fit, type Rect, type Shot } from "../model/camera";
+import { cameraMs } from "../model/motion";
 import type { DiagramRow, Focus } from "../model/types";
 import { anchorPhone, rectIn, rowEl, shotGeometry, type WorldEls } from "./cameraDom";
 import { LANE_X, rightColumn } from "./layout";
-import { prefersReducedMotion } from "./motion";
 
-const CAM_MS = 900;
-const MIN_CAM_MS = 380;
 const LINK_TOP_MIN = 54;
 const LINK_BOTTOM_GAP = 30;
 const LINK_ELBOW = 34;
@@ -32,6 +30,8 @@ export interface CameraInput {
   rows: ReadonlyMap<string, DiagramRow>;
   hasEve: boolean;
   speed: number;
+  /** Modo reducido: la cámara corta en lugar de desplazarse. */
+  reduced: boolean;
 }
 
 const BRACKET_INFO: Readonly<Record<string, { label: string; color: string }>> = {
@@ -99,9 +99,10 @@ function frameShot(refs: CameraRefs, input: CameraInput, phoneY: number, instant
   const els = worldEls(refs);
   const stage = refs.stage.current;
   if (!els || !stage) return null;
-  const quick = instant || prefersReducedMotion();
+  const camMs = instant ? 0 : cameraMs(input.speed, input.reduced);
+  const quick = camMs === 0;
   stage.classList.toggle("no-anim", quick);
-  stage.style.setProperty("--cam-ms", `${quick ? 0 : Math.max(MIN_CAM_MS, CAM_MS / Math.sqrt(input.speed))}ms`);
+  stage.style.setProperty("--cam-ms", `${camMs}ms`);
   const y = anchorPhone(els, input.shot, phoneY);
   if (refs.phone.current) refs.phone.current.style.top = `${y}px`;
   const geo = shotGeometry(els, input.shot, input.rows, input.hasEve, y);
