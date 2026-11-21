@@ -2,8 +2,14 @@
 
 Cada prueba lleva el marcador ``@pytest.mark.req("Rn")``. Al terminar la ejecución se
 imprime la trazabilidad de la Tabla 7 del escrito: primero cada prueba y después un
-resumen por requerimiento. Las pruebas marcadas ``xfail`` corresponden a funcionalidades
-que el escrito deja para el informe final (esqueletos).
+resumen por requerimiento. Los identificadores Cn (C1–C5) son los de la comparación con
+otros mecanismos de autenticación y se listan después de los Rn:
+    C1  registro e inicio de sesión de contraseña, TOTP y SRP (credenciales correctas e incorrectas)
+    C2  qué guarda el banco por usuario y qué viaja por la red
+    C3  validación de entradas y bloqueo por intentos fallidos
+    C4  repetición de mensajes capturados, reuso de códigos y verificación mutua
+    C5  experimento de comparación (benchmark/compare.py)
+Al terminar una ejecución completa se guarda results/tests.json, que muestra la Consola del banco.
 """
 
 import json
@@ -28,10 +34,16 @@ REQUIREMENTS = {
     "R9": "Validar entradas y bloquear tras tres intentos fallidos",
     "R10": "Laboratorio de ataques controlados",
     "R11": "Interfaz de revisión: paso a paso, API y laboratorio en vivo",
+    "C1": "Comparación: registro e inicio de sesión de contraseña, TOTP y SRP",
+    "C2": "Comparación: qué guarda el banco y qué viaja por la red",
+    "C3": "Comparación: validación de entradas y bloqueo por intentos",
+    "C4": "Comparación: repetición, reuso de códigos y verificación mutua",
+    "C5": "Comparación: experimento de medición",
 }
 _files: dict[str, str] = {}
 _started = time.time()
-_REQ_PATTERN = re.compile(r"^R(\d+)$")
+_REQ_PATTERN = re.compile(r"^([RC])(\d+)$")
+_PREFIX_ORDER = {"R": 0, "C": 1}           # primero los del escrito, luego los de la comparación
 _rows: list[tuple[str, str, str]] = []
 
 
@@ -44,10 +56,12 @@ def _outcome_label(report: pytest.TestReport) -> str:
     return report.outcome
 
 
-def _sort_key(row: tuple[str, str, str]) -> tuple[int, str]:
-    """Ordena R1, R2, ..., R11 numéricamente (no alfabéticamente)."""
+def _sort_key(row: tuple[str, str, str]) -> tuple[int, int, str]:
+    """Ordena R1, ..., R11 y después C1, ..., C5, numéricamente (no alfabéticamente)."""
     match = _REQ_PATTERN.match(row[0])
-    return (int(match.group(1)) if match else 99, row[1])
+    if not match:
+        return (len(_PREFIX_ORDER), 0, row[1])
+    return (_PREFIX_ORDER[match.group(1)], int(match.group(2)), row[1])
 
 
 @pytest.hookimpl(wrapper=True)

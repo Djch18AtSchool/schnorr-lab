@@ -16,6 +16,9 @@ Diseño de la medición:
 - Razón medida: contra el tamaño anterior de la misma estructura y el mismo backend. Los grupos
   RFC 3526 también son primos seguros, así que safe-256 → safe-512 → safe-1024 → rfc-2048 →
   rfc-3072 forman una serie (incluye la duplicación 1024 → 2048 del escrito); los de Schnorr, otra.
+  Los grupos ffdhe del RFC 7919 (también primos seguros, g = 2) forman una serie aparte para no
+  romper la anterior: ffdhe-2048 → ffdhe-3072. Su nivel de seguridad es el que declara el RFC
+  (103 y 125 bits), no el de la tabla de NIST.
 - En los grupos de Schnorr el exponente tiene los bits de q (224 o 256), no k: el costo es del
   orden de (bits de q)·k², por eso son más rápidos con la misma seguridad.
 
@@ -33,6 +36,7 @@ import time
 import warnings
 from pathlib import Path
 
+from core.params import declared_security_bits
 from protocol import ARITHMETIC_BACKENDS, GroupParams, get_group, use_backend
 from protocol.bank import Bank
 from protocol.client import Client
@@ -43,13 +47,15 @@ WARMUP_AUTHS = 1
 USER_ID = "cliente01"
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 GROUPS_TO_MEASURE = ("safe-256", "safe-512", "safe-1024", "rfc-2048", "rfc-3072",
-                     "schnorr-2048", "schnorr-3072")
+                     "ffdhe-2048", "ffdhe-3072", "schnorr-2048", "schnorr-3072")
 DEFAULT_BACKENDS = ARITHMETIC_BACKENDS
 SCHOOLBOOK_EXPONENT = 3                       # predicción del escrito: k³
 KARATSUBA_EXPONENT = 1 + math.log2(3)         # ≈ 2.585
 NIST_SECURITY_BITS = {1024: 80, 2048: 112, 3072: 128}   # definición 10 (Barker, 2020)
 BELOW_MIN_SECURITY = "<80"
-SAFE_SERIES, SCHNORR_SERIES = "primo seguro", "schnorr"
+SAFE_SERIES, SCHNORR_SERIES, FFDHE_SERIES = "primo seguro", "schnorr", "ffdhe (RFC 7919)"
+SERIES_ORDER = (SAFE_SERIES, FFDHE_SERIES, SCHNORR_SERIES)
+FFDHE_FAMILY = "ffdhe"
 CSV_FIELDS = ("name", "family", "series", "bits_p", "bits_q", "security_bits", "backend", "reps",
               "median_s", "previous", "ratio", "pred_k3", "pred_karatsuba", "err_k3", "err_karatsuba")
 
@@ -102,8 +108,17 @@ def family_of(name: str) -> str:
     return name.split("-")[0]
 
 
-def _series(gp: GroupParams) -> str:
+def series_of(name: str, gp: GroupParams) -> str:
+    """Serie de la comparación: ffdhe (RFC 7919), primo seguro o schnorr. Cubre R7."""
+    if family_of(name) == FFDHE_FAMILY:
+        return FFDHE_SERIES
     return SAFE_SERIES if gp.is_safe_prime else SCHNORR_SERIES
+
+
+def _security(name: str, gp: GroupParams) -> int | str:
+    """El nivel que declara la fuente del grupo (RFC 7919) o, si no hay, el de la definición 10."""
+    declared = declared_security_bits(name)
+    return declared if declared is not None else security_bits(gp.bits, gp.q.bit_length())
 
 
 def _relative_error(measured: float, predicted: float) -> float:
@@ -123,7 +138,7 @@ def _comparison(row: dict, previous: dict | None) -> dict:
 
 def add_predictions(rows: list[dict]) -> list[dict]:
     """Ordena por serie y tamaño y agrega razón, predicciones y error relativo a cada fila. Cubre R7."""
-    ordered = sorted(rows, key=lambda r: (r["series"] != SAFE_SERIES, r["bits_p"]))
+    ordered = sorted(rows, key=lambda r: (SERIES_ORDER.index(r["series"]), r["bits_p"]))
     last_seen: dict[tuple[str, str], dict] = {}
     result = []
     for row in ordered:
@@ -147,8 +162,8 @@ def _usable_backends(backends: tuple[str, ...] | list[str]) -> list[str]:
 
 def _measure_group(name: str, backends: list[str], reps: int) -> list[dict]:
     gp = get_group(name)
-    base = {"name": name, "family": family_of(name), "series": _series(gp), "bits_p": gp.bits,
-            "bits_q": gp.q.bit_length(), "security_bits": security_bits(gp.bits, gp.q.bit_length())}
+    base = {"name": name, "family": family_of(name), "series": series_of(name, gp), "bits_p": gp.bits,
+            "bits_q": gp.q.bit_length(), "security_bits": _security(name, gp)}
     rows = []
     for backend in backends:
         with use_backend(backend):
@@ -162,8 +177,8 @@ def measure(groups: list[str] | None = None, reps: int = DEFAULT_REPS,
     """Una fila por (grupo, backend): name, family, bits_p, bits_q, security_bits, backend, mediana,
     razón con el tamaño anterior y predicciones k³ y k^2.585 con su error relativo. Cubre R7.
 
-    Por defecto mide safe-256, safe-512, safe-1024, rfc-2048, rfc-3072, schnorr-2048 y
-    schnorr-3072 con los tres backends. Guarda results/latency.csv y results/latency.json
+    Por defecto mide safe-256, safe-512, safe-1024, rfc-2048, rfc-3072, ffdhe-2048, ffdhe-3072,
+    schnorr-2048 y schnorr-3072 con los tres backends. Guarda results/latency.csv y results/latency.json
     (con results_dir=None no guarda nada).
     """
     usable = _usable_backends(backends)

@@ -3,7 +3,9 @@
 Ejecutable como ``python -m core.params --generate 256 512 1024 schnorr-2048 schnorr-3072``
 para generar una sola vez los primos seguros y los grupos de Schnorr y guardarlos en
 ``core/groups.json`` (el archivo se sube al repositorio). Los grupos del RFC 3526 no se generan:
-se copian del RFC (``core/rfc3526.py``). SymPy se usa aquí solo para la primalidad y para elegir
+se copian del RFC (``core/rfc3526.py``). Los del RFC 7919 (ffdhe2048 y ffdhe3072) tampoco: sus
+primos se copiaron del apéndice A del RFC a ``core/groups.json``, con el nivel de seguridad que
+el RFC les asigna. SymPy se usa aquí solo para la primalidad y para elegir
 el primo q de los grupos de Schnorr; las potencias modulares usan ``mod_pow``.
 """
 
@@ -28,6 +30,9 @@ SMALL_PRIME_LIMIT = 2000         # criba rápida antes de la prueba de primalida
 SMALL_PRIMES = tuple(sympy.primerange(3, SMALL_PRIME_LIMIT))
 SAFE_GROUP_BITS = (256, 512, 1024)
 RFC_GROUP_BITS = (2048, 3072)
+FFDHE_GROUP_BITS = (2048, 3072)  # RFC 7919, apéndices A.1 y A.2
+FFDHE_GROUP_NAMES = tuple(f"ffdhe-{bits}" for bits in FFDHE_GROUP_BITS)
+SECURITY_BITS_KEY = "security_bits"
 SCHNORR_GROUP_SIZES = {"schnorr-2048": (2048, 224), "schnorr-3072": (3072, 256)}  # NIST: 112 y 128 bits
 MIN_Q_BITS = 2
 MIN_COFACTOR_BITS = 2            # p necesita al menos 2 bits más que q para que exista un j par
@@ -37,6 +42,7 @@ GROUP_NAMES = (
     "toy",
     *(f"safe-{bits}" for bits in SAFE_GROUP_BITS),
     *(f"rfc-{bits}" for bits in RFC_GROUP_BITS),
+    *FFDHE_GROUP_NAMES,
     *SCHNORR_GROUP_SIZES,
 )
 
@@ -229,12 +235,40 @@ def _cached_group(name: str, build: Callable[[], GroupParams], cache_path: Path)
     return group
 
 
+def load_ffdhe_group(name: str, cache_path: Path = GROUPS_FILE) -> GroupParams:
+    """Grupos ffdhe2048 y ffdhe3072 del RFC 7919 (Gillmor, 2016), leídos de core/groups.json. Cubre R7.
+
+    p se copió del apéndice A del RFC (p = 2^k − 2^(k − 64) + (⌊2^(k − 130)·e⌋ + X)·2^64 − 1),
+    g = 2 y q = (p − 1)/2: son primos seguros (definición 2). No se generan nunca: si faltan en
+    el archivo, ValueError.
+    """
+    cache = _load_cache(cache_path)
+    if name not in FFDHE_GROUP_NAMES or name not in cache:
+        raise ValueError(f"El grupo {name} del RFC 7919 no está en {cache_path.name}: se copia del RFC, "
+                         "no se genera.")
+    return _group_from_entry(name, cache[name])
+
+
+def declared_security_bits(name: str, cache_path: Path = GROUPS_FILE) -> int | None:
+    """Nivel de seguridad declarado por la fuente del grupo en core/groups.json, si lo hay. Cubre R7.
+
+    El RFC 7919 estima 103 bits para ffdhe2048 y 125 para ffdhe3072 (definición 10); los demás
+    grupos no declaran uno y se clasifican con la tabla de NIST (None).
+    """
+    entry = _load_cache(cache_path).get(name)
+    if not isinstance(entry, dict) or SECURITY_BITS_KEY not in entry:
+        return None
+    return int(entry[SECURITY_BITS_KEY])
+
+
 def _build_group(name: str, cache_path: Path) -> GroupParams:
     if name == "toy":
         return TOY_GROUP
     kind, bits_text = name.split("-")
     if kind == "rfc":
         return load_rfc_group(int(bits_text))
+    if kind == "ffdhe":
+        return load_ffdhe_group(name, cache_path)
     if kind == "safe":
         return _cached_group(name, partial(safe_prime_group, int(bits_text)), cache_path)
     return _cached_group(name, partial(schnorr_group, *SCHNORR_GROUP_SIZES[name]), cache_path)
@@ -244,9 +278,9 @@ def get_group(name: str, cache_path: Path = GROUPS_FILE) -> GroupParams:
     """Punto de entrada único para obtener (p, q, g). Cubre R1 y R7.
 
     Nombres: "toy", "safe-256", "safe-512", "safe-1024", "rfc-2048", "rfc-3072",
-    "schnorr-2048" (q de 224 bits) y "schnorr-3072" (q de 256 bits).
+    "ffdhe-2048", "ffdhe-3072", "schnorr-2048" (q de 224 bits) y "schnorr-3072" (q de 256 bits).
     Los primos seguros y los grupos de Schnorr se leen de core/groups.json; si faltan, se generan
-    y se guardan. Los grupos RFC se copian del RFC 3526. El grupo siempre pasa por
+    y se guardan. Los grupos rfc se copian del RFC 3526 y los ffdhe del RFC 7919. El grupo siempre pasa por
     validate_params (los de Schnorr con require_safe_prime=False); si hay fallas, lanza
     ValueError con la lista.
     """

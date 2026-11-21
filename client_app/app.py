@@ -89,15 +89,20 @@ class PhoneState:
             self.gateway.clear()
             self.eve_gateway.clear()
         self.events.publish("sistema", "log", "Laboratorio reiniciado: banco y celular desde cero")
-        return str(response.json()[0]["server"].get("group_id", ""))
+        return _zkp_group(response.json())
 
     def active_group(self) -> str:
         """El grupo que usa el banco ahora (id de opción), o «desconocido» si no responde."""
         try:
-            mechanisms = self.http.get("/mechanisms").json()
-            return str(mechanisms[0]["server"].get("group_id", ""))
+            return _zkp_group(self.http.get("/mechanisms").json())
         except (httpx.HTTPError, ValueError, LookupError):
             return "desconocido"
+
+
+def _zkp_group(mechanisms: list[dict[str, Any]]) -> str:
+    """El grupo (id de opción) que usa el ZKP del banco, según /mechanisms o /lab/reset."""
+    zkp = next(m for m in mechanisms if m["id"] == "zkp")
+    return str(zkp["server"].get("group_id", ""))
 
 
 def get_phone(request: Request) -> PhoneState:

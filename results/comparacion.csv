@@ -1,0 +1,7 @@
+key,label,mechanism,group,security_bits,register_ms,login_ms,login_without_params_ms,login_round_trips,login_posts,login_sent_bytes,login_received_bytes,register_round_trips,register_sent_bytes,register_received_bytes,stored_fields,stored_bytes,secret_travels_login,secret_travels_register,replay_accepted,offline_dictionary_log10_years,offline_random8_log10_years
+password,Contraseña (Argon2id),password,,—,21.342290987377055,21.084059990243986,21.084059990243986,1,1,53,63,1,53,141,hash,109,True,True,True,-3.284555142117091,6.1994376910165165
+totp,Contraseña + TOTP,totp,,—,24.843950988724828,26.31944701715838,26.31944701715838,1,1,69,63,2,92,495,hash last_step status totp_secret,205,True,True,False,-3.284555142117091,6.1994376910165165
+srp,SRP-6a (2048 bits),srp,,112,10.155590993235819,30.587132976506837,27.087287031463347,3,2,751,1516,2,689,1383,salt v,670,False,False,False,-4.074764231809777,5.409228601323831
+zkp-rfc-2048,ZKP Schnorr · rfc-2048,zkp,rfc-2048,112,100.84320200257935,153.75450499414,102.9031189827947,3,2,1303,7038,2,647,1949,y,626,False,False,False,,294.20240396814256
+zkp-schnorr-2048,ZKP Schnorr · schnorr-2048,zkp,schnorr-2048,112,30.12115799356252,35.65093102224637,18.72029298101552,3,2,754,5460,2,645,2014,y,624,False,False,False,,19.813562920423664
+zkp-nizk-schnorr-2048,ZKP Fiat-Shamir · schnorr-2048,zkp,schnorr-2048,112,27.180300996406004,34.26010701514315,16.16492500761524,2,1,738,5354,2,647,2016,y,626,False,False,False,,19.813562920423664

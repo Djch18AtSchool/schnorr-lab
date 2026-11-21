@@ -8,6 +8,15 @@ from collections.abc import Callable, Mapping
 
 from infra.server_context import ServerContext
 from mechanisms.base import ClientMechanism, MechanismInfo, ServerMechanism
+from mechanisms.password import client as password_client
+from mechanisms.password import server as password_server
+from mechanisms.password.info import INFO as PASSWORD_INFO
+from mechanisms.srp import client as srp_client
+from mechanisms.srp import server as srp_server
+from mechanisms.srp.info import INFO as SRP_INFO
+from mechanisms.totp import client as totp_client
+from mechanisms.totp import server as totp_server
+from mechanisms.totp.info import INFO as TOTP_INFO
 from mechanisms.zkp import client as zkp_client
 from mechanisms.zkp import server as zkp_server
 from mechanisms.zkp.info import INFO as ZKP_INFO
@@ -15,9 +24,17 @@ from mechanisms.zkp.info import INFO as ZKP_INFO
 ServerFactory = Callable[[ServerContext, Mapping[str, str]], ServerMechanism]
 ClientFactory = Callable[[], ClientMechanism]
 
-SERVER_FACTORIES: dict[str, ServerFactory] = {ZKP_INFO.id: zkp_server.create_server}
-CLIENT_FACTORIES: dict[str, ClientFactory] = {ZKP_INFO.id: zkp_client.create_client}
-INFOS: dict[str, MechanismInfo] = {ZKP_INFO.id: ZKP_INFO}
+# (descripción, fábrica del banco, fábrica del celular); el ZKP va primero: es el mecanismo principal.
+MECHANISMS: tuple[tuple[MechanismInfo, ServerFactory, ClientFactory], ...] = (
+    (ZKP_INFO, zkp_server.create_server, zkp_client.create_client),
+    (PASSWORD_INFO, password_server.create_server, password_client.create_client),
+    (TOTP_INFO, totp_server.create_server, totp_client.create_client),
+    (SRP_INFO, srp_server.create_server, srp_client.create_client),
+)
+
+SERVER_FACTORIES: dict[str, ServerFactory] = {info.id: server for info, server, _ in MECHANISMS}
+CLIENT_FACTORIES: dict[str, ClientFactory] = {info.id: client for info, _, client in MECHANISMS}
+INFOS: dict[str, MechanismInfo] = {info.id: info for info, _, _ in MECHANISMS}
 
 
 def create_servers(ctx: ServerContext, settings: Mapping[str, str]) -> dict[str, ServerMechanism]:

@@ -1,8 +1,8 @@
 {
- "generated_at": 1795248484.849807,
- "duration_s": 19.57,
- "total": 296,
- "passed": 296,
+ "generated_at": 1795248933.9521313,
+ "duration_s": 30.67,
+ "total": 380,
+ "passed": 380,
  "failed": 0,
  "skipped": 0,
  "requirements": [
@@ -402,6 +402,16 @@
    "title": "Cambiar el tamaño en bits de p y comparar la velocidad",
    "tests": [
     {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[ffdhe-2048]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[ffdhe-3072]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_autenticacion_honesta_con_cada_tamano_de_p[rfc-2048]",
      "file": "tests/test_protocol.py",
      "outcome": "passed"
@@ -457,6 +467,11 @@
      "outcome": "passed"
     },
     {
+     "name": "test_ffdhe_forma_su_propia_serie_con_la_seguridad_del_rfc_7919",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_generate_acepta_tamanos_y_nombres_de_grupos",
      "file": "tests/test_params.py",
      "outcome": "passed"
@@ -503,6 +518,31 @@
     },
     {
      "name": "test_grupo_de_schnorr_tiene_los_tamanos_pedidos_y_es_valido[64-32]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_ffdhe_declara_el_nivel_de_seguridad_del_rfc[ffdhe-2048]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_ffdhe_declara_el_nivel_de_seguridad_del_rfc[ffdhe-3072]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_ffdhe_es_primo_seguro_con_g_2_y_valido[ffdhe-2048]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_ffdhe_es_primo_seguro_con_g_2_y_valido[ffdhe-3072]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_ffdhe_no_se_genera_si_falta_en_el_archivo",
      "file": "tests/test_params.py",
      "outcome": "passed"
     },
@@ -639,6 +679,16 @@
     {
      "name": "test_opcion_5_muestra_la_latencia_medida_y_las_predicciones",
      "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_primo_ffdhe_coincide_con_la_formula_de_e_del_rfc_7919[ffdhe-2048]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_primo_ffdhe_coincide_con_la_formula_de_e_del_rfc_7919[ffdhe-3072]",
+     "file": "tests/test_params.py",
      "outcome": "passed"
     },
     {
@@ -1548,6 +1598,411 @@
     {
      "name": "test_veredicto_no_afirma_ausencia_de_x_si_hubo_coincidencias",
      "file": "tests/test_api.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "C1",
+   "title": "Comparación: registro e inicio de sesión de contraseña, TOTP y SRP",
+   "tests": [
+    {
+     "name": "test_codigo_coincide_con_el_vector_del_rfc_6238",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_contrasena_codigo_incorrectos_o_cuenta_sin_confirmar_se_rechazan[code]",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_contrasena_codigo_incorrectos_o_cuenta_sin_confirmar_se_rechazan[password]",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_contrasena_codigo_incorrectos_o_cuenta_sin_confirmar_se_rechazan[pending]",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_contrasena_incorrecta_se_rechaza_sin_m2",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_contrasena_o_usuario_incorrectos_se_rechazan_con_el_mismo_mensaje[correcto-caballo-bateria-fantasma]",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_contrasena_o_usuario_incorrectos_se_rechazan_con_el_mismo_mensaje[otra-contrasena-cliente01]",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_enrolamiento_devuelve_el_qr_y_activa_con_el_primer_codigo",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_flujos_del_celular_enrolan_e_inician_sesion",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_flujos_del_celular_registran_e_inician_sesion",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_flujos_del_celular_registran_e_inician_sesion",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_de_2048_bits_es_primo_seguro_y_g_tiene_orden_q",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hash_argon2id_usa_los_parametros_de_owasp_y_verifica",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_iniciar_sesion_sin_cuenta_en_el_celular_termina_con_error",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_inicio_de_sesion_con_contrasena_y_codigo_del_siguiente_paso",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_matematica_coincide_con_los_vectores_del_rfc_5054",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_misma_contrasena_produce_hashes_distintos_por_la_sal",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_e_inicio_de_sesion_por_la_api",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_e_inicio_de_sesion_por_la_api_con_verificacion_mutua",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_ventana_de_tolerancia_acepta_un_paso_antes_o_despues",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "C2",
+   "title": "Comparación: qué guarda el banco y qué viaja por la red",
+   "tests": [
+    {
+     "name": "test_describe_publica_los_parametros_de_argon2id",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_banco_guarda_hash_y_secreto_k_y_k_viaja_solo_al_enrolar",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_banco_guarda_sal_y_verificador_y_la_contrasena_no_viaja",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_banco_guarda_solo_el_hash_y_la_contrasena_viaja",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "C3",
+   "title": "Comparación: validación de entradas y bloqueo por intentos",
+   "tests": [
+    {
+     "name": "test_a_congruente_con_cero_modulo_n_se_rechaza[0]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_a_congruente_con_cero_modulo_n_se_rechaza[1]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_a_congruente_con_cero_modulo_n_se_rechaza[2]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_codigo_mal_formado_se_rechaza_con_422[12 456]",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_codigo_mal_formado_se_rechaza_con_422[1234567]",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_codigo_mal_formado_se_rechaza_con_422[12345]",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_codigo_mal_formado_se_rechaza_con_422[abcdef]",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_confirmacion_con_codigo_incorrecto_suma_fallo",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cuerpos_invalidos_se_rechazan_y_quedan_auditados[body0]",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cuerpos_invalidos_se_rechazan_y_quedan_auditados[body1]",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cuerpos_invalidos_se_rechazan_y_quedan_auditados[body2]",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cuerpos_invalidos_se_rechazan_y_quedan_auditados[body3]",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_celular_aborta_si_b_es_congruente_con_cero",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_celular_aborta_si_b_esta_fuera_de_rango[-5]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_celular_aborta_si_b_esta_fuera_de_rango[bad_b0]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_celular_rechaza_un_grupo_que_no_es_el_del_rfc",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_invalidas_se_rechazan[/srp/login/start-body0-400]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_invalidas_se_rechazan[/srp/login/start-body1-404]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_invalidas_se_rechazan[/srp/login/start-body7-422]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_invalidas_se_rechazan[/srp/login/verify-body6-422]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_invalidas_se_rechazan[/srp/register-body2-400]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_invalidas_se_rechazan[/srp/register-body3-400]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_invalidas_se_rechazan[/srp/register-body4-400]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_invalidas_se_rechazan[/srp/register-body5-422]",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_peticiones_en_paralelo_no_esquivan_el_bloqueo",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_repetido_se_rechaza",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_repetido_y_confirmacion_sin_enrolamiento_se_rechazan",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_reiniciar_el_laboratorio_borra_usuarios_y_bloqueos",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_reservar_y_devolver_intentos",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_tres_fallos_bloquean_aun_con_la_contrasena_correcta",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_tres_fallos_bloquean_la_cuenta",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_tres_pruebas_incorrectas_bloquean_la_cuenta",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_un_acceso_correcto_reinicia_los_fallos",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_un_enrolamiento_pendiente_se_puede_rehacer_y_confirmar_reinicia_los_fallos",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_un_inicio_nuevo_reemplaza_la_sesion_pendiente",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "C4",
+   "title": "Comparación: repetición, reuso de códigos y verificación mutua",
+   "tests": [
+    {
+     "name": "test_el_codigo_del_enrolamiento_no_sirve_para_iniciar_sesion",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_mismo_codigo_en_paralelo_solo_entra_una_vez",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_mismo_codigo_no_sirve_dos_veces_y_no_suma_fallo",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_repetir_el_mensaje_capturado_se_rechaza_dentro_y_fuera_de_la_ventana",
+     "file": "tests/test_totp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_repetir_el_mensaje_capturado_si_entra",
+     "file": "tests/test_password.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_repetir_los_mensajes_capturados_no_permite_entrar",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_un_banco_falso_que_no_conoce_v_es_detectado_por_m2",
+     "file": "tests/test_srp.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "C5",
+   "title": "Comparación: experimento de medición",
+   "tests": [
+    {
+     "name": "test_base_robada_argon2id_cuesta_mas_por_intento_que_el_verificador_srp",
+     "file": "tests/test_compare.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cli_mide_un_escenario_y_guarda_resultados",
+     "file": "tests/test_compare.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_guarda_json_csv_y_tres_graficas",
+     "file": "tests/test_compare.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_idas_y_vueltas_y_bytes_por_inicio_de_sesion",
+     "file": "tests/test_compare.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_lo_que_guarda_el_banco_por_mecanismo",
+     "file": "tests/test_compare.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_8_del_menu_muestra_la_comparacion",
+     "file": "tests/test_compare.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_solo_contrasena_y_totp_envian_el_secreto",
+     "file": "tests/test_compare.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_solo_la_contrasena_acepta_la_repeticion",
+     "file": "tests/test_compare.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_tabla_de_texto_y_errores_de_uso",
+     "file": "tests/test_compare.py",
      "outcome": "passed"
     }
    ]
