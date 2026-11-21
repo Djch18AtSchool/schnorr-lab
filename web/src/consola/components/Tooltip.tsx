@@ -44,20 +44,3 @@ export function TipProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export interface TipRow {
-  color: string;
-  label: string;
-  value: ReactNode;
-}
-
-export function TipBody({ title, rows, footer }: { title: string; rows: readonly TipRow[]; footer?: TipRow }) {
-  return (
-    <>
-      <b>{title}</b>
-      {rows.map((row) => (
-        <div className="row" key={row.label}><span><i style={{ background: row.color }} />{row.label}</span><em>{row.value}</em></div>
-      ))}
-      {footer ? <div className="row"><span>{footer.label}</span><em>{footer.value}</em></div> : null}
-    </>
-  );
-}

@@ -77,5 +77,3 @@ export function useWidth<T extends HTMLElement>(fallback: number): [RefObject<T 
   }, []);
   return [ref, width];
 }
-
-export const prefersReducedMotion = (): boolean => window.matchMedia("(prefers-reduced-motion: reduce)").matches;

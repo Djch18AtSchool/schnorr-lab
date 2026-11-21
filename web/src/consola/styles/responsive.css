@@ -3,6 +3,8 @@
   .resumen-grid, .security { grid-template-columns: minmax(0, 1fr); }
   .activity { grid-template-columns: minmax(0, 1fr) minmax(0, 500px); }
   .kpi-value b { font-size: 23px; }
+  .account-b { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .account-b > section:last-child { grid-column: 1 / -1; }
   .attempt-reqs { padding-left: 40px; }
 }
 @media (max-width: 1180px) {
@@ -37,8 +39,8 @@
   .req-line { grid-template-columns: minmax(0, 1fr) auto; }
   .req-line .outcome, .req-line .ms { display: none; }
   .bodies, .account-b { grid-template-columns: minmax(0, 1fr); }
-  .raw-line { grid-template-columns: 90px 40px minmax(200px, 1fr) 60px; }
-  .raw-line .ip, .raw-line .res { display: none; }
+  .raw-line { grid-template-columns: 90px minmax(0, 1fr) 56px; padding: 4px 10px; }
+  .raw-line .res { display: none; }
   .pips { margin-left: 0; }
 }
 @media (max-width: 520px) {

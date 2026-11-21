@@ -62,8 +62,6 @@ export interface LatencyGroup {
   ms: Readonly<Record<string, number>>;
 }
 
-export const BACKENDS = ["propia", "nativa", "gmpy2"] as const;
-
 /** Filas por grupo con la mediana en milisegundos de cada aritmética, en el orden del archivo. */
 export function latencyGroups(results: LatencyResults): LatencyGroup[] {
   const order: string[] = [];

@@ -53,9 +53,13 @@ function Point({ r, sx, sy, onOpen }: { r: RequestRecord; sx: Scale; sy: Scale; 
   const info = deviceInfo(r.device);
   const tone = requestOutcome(r).tone;
   const label = `${r.method} ${r.path}, ${requestOutcome(r).label}, ${fmtMsShort(r.duration_ms)}, ${info.label}`;
+  const open = (): void => {
+    tip.hide(); // el punto desaparece al cambiar de sección: su tooltip no debe quedar flotando
+    onOpen(r.id);
+  };
   return (
-    <g className="pt" role="button" tabIndex={0} aria-label={label} onClick={() => onOpen(r.id)}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onOpen(r.id); }} {...tipHandlers(tip, <Tip r={r} />)}>
+    <g className="pt" role="button" tabIndex={0} aria-label={label} onClick={open}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") open(); }} {...tipHandlers(tip, <Tip r={r} />)}>
       <circle className="hit" cx={x} cy={y} r={HIT_R} />
       <Marker shape={info.shape} cx={x} cy={y} color={TONE_COLOR[tone]} hollow={tone === "neutral"} size={4.5} />
     </g>

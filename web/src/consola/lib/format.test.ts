@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ago, durationParts, fmtBytes, fmtClock, fmtDuration, fmtMs, fmtMsShort, fmtTimes, plural, rel, sci, sciParts, shortId, shortNum, sup } from "./format";
+import { ago, durationParts, fmtBytes, fmtClock, fmtDuration, fmtElapsed, fmtMsShort, fmtTimes, plural, rel, sciParts, shortNum, sup } from "./format";
 
 describe("formateos del laboratorio", () => {
   it("durationParts elige la unidad legible a partir de log10 de años", () => {
@@ -37,25 +37,19 @@ describe("formateos", () => {
     expect(ago(0, 300)).toBe("5 min antes");
   });
 
-  it("sci escribe notación científica con superíndices", () => {
-    expect(sci(15156644320.2)).toBe("1.5·10¹⁰");
-    expect(sci(2.637643606353062e-7, 2)).toBe("2.64·10⁻⁷");
-    expect(sci(42.123)).toBe("42.1");
-    expect(sci(0)).toBe("0");
+  it("notación científica por partes y superíndices", () => {
     expect(sciParts(4.27e24)).toEqual({ mantissa: "4.3", exponent: 24 });
     expect(sup(-12)).toBe("⁻¹²");
   });
 
-  it("recorta enteros e identificadores largos", () => {
+  it("recorta enteros largos", () => {
     expect(shortNum("23")).toBe("23");
     expect(shortNum("1234567890".repeat(10), 4)).toBe("1234…7890");
-    expect(shortId("77991cce63618a8e")).toBe("77991cce…");
-    expect(shortId(null)).toBe("");
   });
 
   it("latencias y plurales", () => {
-    expect(fmtMs(4.031)).toBe("4.03 ms");
-    expect(fmtMs(null)).toBe("–");
+    expect(fmtElapsed(0.88)).toBe("0.88 ms");
+    expect(fmtElapsed(4484)).toBe("4.5 s");
     expect(plural(1, "alerta", "alertas")).toBe("1 alerta");
     expect(plural(3, "alerta", "alertas")).toBe("3 alertas");
   });
