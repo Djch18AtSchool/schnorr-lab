@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = ROOT / "results"
 TEST_REPORT = RESULTS_DIR / "tests.json"
 RESULT_SUFFIXES = (".json", ".png", ".csv")
-UNOBSERVED_PREFIXES = ("/events", "/telemetry", "/mechanisms", "/consola", "/results", "/docs", "/openapi.json", "/redoc",
+UNOBSERVED_PREFIXES = ("/events", "/telemetry", "/mechanisms", "/audit", "/bank/accounts", "/consola", "/results", "/docs", "/openapi.json", "/redoc",
                        "/lab/tests", "/lab/results", "/favicon")
 FORWARDED_HEADER = "X-Forwarded-For"
 DEVICE_HEADER = "X-Device"
