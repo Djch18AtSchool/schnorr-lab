@@ -57,6 +57,19 @@ def test_razon_y_predicciones_usan_el_tamano_anterior_de_la_misma_serie_y_backen
 
 
 @pytest.mark.req("R7")
+def test_ffdhe_forma_su_propia_serie_con_la_seguridad_del_rfc_7919(monkeypatch):
+    monkeypatch.setattr(latency, "measure_auth", lambda gp, reps: gp.bits / 1e6)
+    rows = latency.measure(groups=["rfc-2048", "ffdhe-3072", "ffdhe-2048"], reps=1, backends=("propia",),
+                           results_dir=None)
+    assert [r["name"] for r in rows] == ["rfc-2048", "ffdhe-2048", "ffdhe-3072"]
+    ffdhe_2048, ffdhe_3072 = rows[1], rows[2]
+    assert ffdhe_2048["series"] == ffdhe_3072["series"] == latency.FFDHE_SERIES
+    assert (ffdhe_2048["security_bits"], ffdhe_3072["security_bits"]) == (103, 125)
+    assert ffdhe_2048["previous"] is None and ffdhe_3072["previous"] == "ffdhe-2048"
+    assert rows[0]["security_bits"] == 112
+
+
+@pytest.mark.req("R7")
 def test_measure_guarda_tabla_y_graficas(tmp_path):
     rows = latency.measure(groups=FAST_GROUPS, reps=3, backends=FAST_BACKENDS, results_dir=tmp_path)
     latency.plot(rows, tmp_path)

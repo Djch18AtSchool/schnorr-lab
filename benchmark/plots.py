@@ -11,7 +11,7 @@ from benchmark.latency import KARATSUBA_EXPONENT, SAFE_SERIES, SCHOOLBOOK_EXPONE
 
 SURFACE, TEXT, TEXT_MUTED, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df"
 BACKEND_COLORS = {"propia": "#2a78d6", "nativa": "#eb6834", "gmpy2": "#1baf7a"}
-SERIES_STYLES = {"primo seguro": ("-", "o"), "schnorr": ("--", "D")}
+SERIES_STYLES = {"primo seguro": ("-", "o"), "schnorr": ("--", "D"), "ffdhe (RFC 7919)": ((0, (6, 2, 1, 2)), "s")}
 REFERENCE_BACKEND = "propia"         # las rectas k³ y k^2.585 parten de su primer punto
 BASELINE_BACKEND = "nativa"          # en backends.png los tiempos se expresan relativos a pow
 MARKER_SIZE = 8
@@ -69,7 +69,7 @@ def _reference_lines(ax, rows: list[dict]) -> None:
 
 
 def _bits_ticks(ax, rows: list[dict]) -> None:
-    """Marcas del eje x en los tamaños medidos, con las familias de cada tamaño debajo."""
+    """Marcas del eje x en los tamaños medidos, con las familias de cada tamaño debajo (una por línea)."""
     families: dict[int, list[str]] = {}
     for row in rows:
         names = families.setdefault(row["bits_p"], [])
@@ -77,7 +77,7 @@ def _bits_ticks(ax, rows: list[dict]) -> None:
             names.append(row["family"])
     ticks = sorted(families)
     ax.set_xticks(ticks)
-    ax.set_xticklabels([f"{k}\n{' · '.join(families[k])}" for k in ticks])
+    ax.set_xticklabels(["\n".join((str(k), *families[k])) for k in ticks])
     ax.minorticks_off()
 
 
