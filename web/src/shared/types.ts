@@ -163,9 +163,9 @@ export interface AccessData {
 export interface CodeSpan {
   file: string;             // "protocol/bank.py"
   function: string;         // "Bank._decide"
-  start: number;            // número de la primera línea de `lines`
-  lines: string[];
-  highlight: number[];      // números de línea absolutos resaltados
+  /** Líneas con su número real en el archivo; si hay un salto entre números, se dibuja «…». */
+  lines: Array<{ n: number; text: string }>;
+  highlight: number[];      // números de línea resaltados
   tone: "ok" | "bad";
 }
 
