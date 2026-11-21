@@ -1,0 +1,3 @@
+node_modules/
+*.tsbuildinfo
+dist/   # se versiona al publicar la versión final (ver plan)
