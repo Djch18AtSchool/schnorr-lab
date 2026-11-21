@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Banner } from "./components/Banner";
 import { Board } from "./components/Board";
 import { Drawer } from "./components/Drawer";
-import { IconSprite } from "./components/icons";
 import { MotionContext } from "./components/motion";
 import { Stage } from "./components/Stage";
 import { TopBar } from "./components/TopBar";
@@ -37,7 +36,6 @@ export function Scenario({ source, onSource, onRetry }: ScenarioProps) {
 
   return (
     <MotionContext.Provider value={motion}>
-      <IconSprite />
       <div className={appClass}>
         <TopBar cast={state.run?.cast ?? []} hasEve={scene?.hasEve ?? false} focus={scene?.focus ?? "wide"} simulated={source.kind === "simulada"} drawerOpen={drawerOpen} onDirection={keys.toggleDrawer} />
         {scene ? (

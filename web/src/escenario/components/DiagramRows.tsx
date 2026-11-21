@@ -1,7 +1,8 @@
 /** Filas del diagrama: mensaje entre carriles, cálculo en un carril y actividad del banco. */
+import { CircleCheck, CircleX } from "lucide-react";
 import { useLayoutEffect, useRef, type CSSProperties, type RefObject } from "react";
 import type { DiagramRow, RowView } from "../model/types";
-import { Icon } from "./icons";
+import { MARK_ICON } from "./icons";
 import { isRightward, LANE_COLOR, LANE_INK, LANE_X, midX } from "./layout";
 import { MathText } from "./MathText";
 import { play, useMotionSettings } from "./motion";
@@ -43,7 +44,7 @@ function Packet({ row }: { row: MsgRow }) {
       <span className="badge">copiado por Eve</span>
       {row.verdict && (
         <div className={`verdict ${row.verdict.ok ? "ok" : "bad"}`}>
-          <Icon name={row.verdict.ok ? "check" : "x"} />
+          {row.verdict.ok ? <CircleCheck /> : <CircleX />}
           {row.verdict.text}
         </div>
       )}
@@ -122,6 +123,7 @@ export function LocalRowView({ view, compact }: { view: RowView; compact: boolea
     return play(ref.current?.querySelector(".mark, .c-side") ?? null, { opacity: [0, 1], transform: ["translateY(-6px)", "none"] }, { ms: 340, delayMs: LEAD_MS }, settings);
   }, [view.fresh, settings]);
   const style = { "--c": LANE_COLOR[row.at], "--c-ink": LANE_INK[row.at] } as CSSProperties;
+  const MarkIcon = MARK_ICON[row.icon];
   return (
     <div ref={ref} className={rowClass("row local", view, compact)} style={style} data-row={row.id}>
       {compact ? (
@@ -131,7 +133,7 @@ export function LocalRowView({ view, compact }: { view: RowView; compact: boolea
         </div>
       ) : (
         <div className={`mark at-${row.at}`}>
-          <Icon name={row.icon} />
+          <MarkIcon />
           {row.label}
           {row.fact && row.fact !== row.label && <b>{row.fact}</b>}
         </div>

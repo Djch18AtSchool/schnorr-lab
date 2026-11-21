@@ -1,6 +1,7 @@
 /** Pantallas de la app de Banco Lab. Solo lo que vería una clienta: nada técnico. */
+import { Check, FingerprintPattern, Lock, X } from "lucide-react";
 import type { PhoneView } from "../model/types";
-import { BrandMark, FingerprintIcon, LockIcon } from "./icons";
+import { BrandMark } from "./icons";
 
 export type FingerprintState = "idle" | "scan" | "ok";
 
@@ -17,9 +18,9 @@ function Fingerprint({ state }: { state: FingerprintState }) {
   return (
     <div className="fp" data-fp={state}>
       <svg className="ring" viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="46" /></svg>
-      <FingerprintIcon className="fpi" />
+      <FingerprintPattern className="fpi" strokeWidth={1.5} />
       <div className="check">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 12.5l4 4 8-9" /></svg>
+        <Check color="#fff" strokeWidth={2.6} />
       </div>
     </div>
   );
@@ -42,7 +43,7 @@ export function LoginScreen({ active, sheet, fp }: { active: boolean; sheet: boo
       </div>
       <div className="fp-wrap">
         <div className="fp-btn">
-          <FingerprintIcon className="fpi-sm" />
+          <FingerprintPattern className="fpi-sm" strokeWidth={1.75} />
           Entrar con huella
         </div>
         <div className="fp-alt">Usar código de acceso</div>
@@ -68,7 +69,7 @@ export function VerifyingScreen({ active, title, text }: { active: boolean; titl
         <h4>{title}</h4>
         <p>{text}</p>
       </div>
-      <div className="lock-note"><LockIcon />Su clave nunca sale de este teléfono</div>
+      <div className="lock-note"><Lock />Su clave nunca sale de este teléfono</div>
     </section>
   );
 }
@@ -98,9 +99,18 @@ export function SignupScreen({ active }: { active: boolean }) {
   );
 }
 
+type ResultTone = "ok" | "bad" | "lock";
+
+const RESULT_ICON = { ok: Check, bad: X, lock: Lock } as const;
+
+function ResultIcon({ tone }: { tone: ResultTone }) {
+  const ToneIcon = RESULT_ICON[tone];
+  return <ToneIcon strokeWidth={tone === "lock" ? 2 : 2.6} />;
+}
+
 export function ResultScreen({ active, tone, title, text, extra, action }: {
   active: boolean;
-  tone: "ok" | "bad" | "lock";
+  tone: ResultTone;
   title: string;
   text: string;
   extra?: string;
@@ -111,11 +121,7 @@ export function ResultScreen({ active, tone, title, text, extra, action }: {
       <Brand centered />
       <div className={`result-mid ${tone}`}>
         <div className="result-icon">
-          {tone === "lock" ? <LockIcon /> : (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {tone === "ok" ? <path d="M6 12.5l4 4 8-9" /> : <path d="M8 8l8 8M16 8l-8 8" />}
-            </svg>
-          )}
+          <ResultIcon tone={tone} />
         </div>
         <h4>{title}</h4>
         <p>{text}</p>

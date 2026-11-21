@@ -1,4 +1,5 @@
 /** Secciones del drawer «Dirección». */
+import { ExternalLink } from "lucide-react";
 import type { PhoneConfig } from "../../shared/types";
 import type { SourceKind } from "../data/source";
 import type { MotionPref } from "../model/motion";
@@ -113,7 +114,7 @@ export function LookSection({ prefs, onPrefs, source, onSource, consoleUrl }: Pr
         <h3>Fuente de datos</h3>
         <Seg label="Fuente de datos" value={source} onChange={onSource} options={[{ value: "real", label: "Banco en vivo" }, { value: "simulada", label: "Simulación" }]} />
         <div className="links">
-          {consoleUrl && <a href={consoleUrl} target="_blank" rel="noreferrer">Consola del banco ↗</a>}
+          {consoleUrl && <a href={consoleUrl} target="_blank" rel="noreferrer">Consola del banco <ExternalLink /></a>}
           <a href="/clasico">Interfaz clásica</a>
         </div>
       </section>

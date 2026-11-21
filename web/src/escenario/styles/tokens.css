@@ -105,7 +105,7 @@ sup { font-size: .72em; line-height: 0; }
   transition: background .35s, border-color .35s, color .35s, opacity .45s, max-width .5s, padding .5s, margin .5s;
   max-width: 160px; overflow: hidden;
 }
-.chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.chip svg { width: 14px; height: 14px; color: var(--c); flex: none; }
 .chip.on { background: var(--soft); border-color: color-mix(in srgb, var(--c) 45%, transparent); color: var(--ink); font-weight: 500; }
 .chip.out { max-width: 0; padding: 0; border-width: 0; opacity: 0; margin-left: -6px; }
 .chip[data-a="ana"] { --c: var(--ana); --soft: var(--ana-soft); }

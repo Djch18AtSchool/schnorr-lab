@@ -9,7 +9,8 @@
 .phone-screen { position: relative; height: 100%; border-radius: 42px; overflow: hidden; background: #f7f8fc; color: #121826; font-family: var(--font); }
 .island { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 92px; height: 26px; border-radius: 20px; background: #0b0d11; z-index: 3; }
 .statusbar { position: absolute; top: 0; left: 0; right: 0; height: 46px; display: flex; align-items: center; justify-content: space-between; padding: 4px 26px 0 30px; font-size: 14px; font-weight: 600; z-index: 2; }
-.statusbar svg { height: 11px; width: auto; margin-left: 5px; }
+.statusbar > span { display: inline-flex; align-items: center; gap: 4px; color: #121826; }
+.statusbar svg { width: 15px; height: 15px; }
 .scr { position: absolute; inset: 0; padding: 58px 20px 22px; display: flex; flex-direction: column; opacity: 0; transition: opacity calc(.45s * var(--tempo)) ease; pointer-events: none; }
 .scr.active { opacity: 1; }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; letter-spacing: -.01em; }

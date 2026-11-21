@@ -1,16 +1,26 @@
 /** Diagrama de secuencia vivo: carriles, cabeceras y fases (las anteriores, compactas). */
 import type { CSSProperties, KeyboardEvent } from "react";
 import type { DiagramView, Lane, PhaseView, RowView } from "../model/types";
-import { Icon, type IconName } from "./icons";
+import { LANE_ICON } from "./icons";
 import { DIAGRAM_W, LANE_ORDER, LANE_X } from "./layout";
 import { LocalRowView, MessageRow, ServerRowView } from "./DiagramRows";
 
-const LANE_HEAD: Readonly<Record<Lane, { label: string; icon: IconName }>> = {
-  ana: { label: "Celular de Ana", icon: "phone" },
-  net: { label: "Red", icon: "net" },
-  bank: { label: "Servidor del banco", icon: "bank" },
-  eve: { label: "Eve", icon: "laptop" },
+const LANE_LABEL: Readonly<Record<Lane, string>> = {
+  ana: "Celular de Ana",
+  net: "Red",
+  bank: "Servidor del banco",
+  eve: "Eve",
 };
+
+function LaneHead({ lane, on }: { lane: Lane; on: boolean }) {
+  const LaneIcon = LANE_ICON[lane];
+  return (
+    <div className={`head ${lane}${on ? "" : " off"}`}>
+      <LaneIcon />
+      {LANE_LABEL[lane]}
+    </div>
+  );
+}
 
 interface DiagramProps {
   view: DiagramView;
@@ -64,10 +74,7 @@ export function Diagram({ view, linkRowId, onReview }: DiagramProps) {
       </div>
       <div className="heads">
         {LANE_ORDER.map((lane) => (
-          <div key={lane} className={`head ${lane}${lanes.includes(lane) ? "" : " off"}`}>
-            <Icon name={LANE_HEAD[lane].icon} />
-            {LANE_HEAD[lane].label}
-          </div>
+          <LaneHead key={lane} lane={lane} on={lanes.includes(lane)} />
         ))}
       </div>
       {view.showEmpty && (

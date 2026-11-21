@@ -32,6 +32,8 @@
   box-shadow: var(--shadow-lg); animation: noteIn .3s ease both; font-size: 13.5px;
 }
 .banner.offline { border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); }
+.banner-icon { width: 18px; height: 18px; flex: none; color: var(--bad); }
+.banner.offline .banner-icon { color: var(--warn); }
 .banner-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; color: var(--ink-2); }
 .banner-text b { color: var(--ink); font-weight: 600; }
 .banner-actions { display: flex; gap: 6px; flex: none; }
@@ -42,7 +44,8 @@
 .banner-actions button.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 
 .drawer .links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 13.5px; }
-.drawer .links a { color: var(--ana-ink); text-decoration: none; }
+.drawer .links a { color: var(--ana-ink); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+.drawer .links a svg { width: 13px; height: 13px; }
 .drawer .links a:hover { text-decoration: underline; }
 .group-list { display: flex; flex-direction: column; gap: 4px; }
 .keys .key-row { display: contents; }

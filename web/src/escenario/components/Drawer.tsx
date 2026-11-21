@@ -3,8 +3,8 @@ import { useEffect, useRef } from "react";
 import type { PhoneConfig } from "../../shared/types";
 import type { SourceKind } from "../data/source";
 import type { Prefs } from "../state/prefs";
+import { X } from "lucide-react";
 import { ActSection, CameraSection, GroupSection, LookSection, MotionSection, PlaybackSection, ShortcutsSection } from "./DrawerSections";
-import { CloseIcon } from "./icons";
 
 interface DrawerProps {
   open: boolean;
@@ -35,7 +35,7 @@ export function Drawer({ open, config, actId, prefs, source, onClose, onAct, onG
     <aside id="drawer" ref={panel} className={`drawer${open ? " open" : ""}`} aria-label="Dirección" aria-hidden={!open} inert={!open}>
       <header>
         <h2>Dirección</h2>
-        <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar dirección (D)"><CloseIcon /></button>
+        <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar dirección (D)"><X /></button>
       </header>
       <div className="body">
         <ActSection config={config} actId={actId} onAct={onAct} />
