@@ -1,0 +1,212 @@
+{
+ "generated_at": 1795273417.151457,
+ "duration_s": 6.9,
+ "python": "3.12.13",
+ "impostor": {
+  "q": 11,
+  "trials": 20000,
+  "expected": 0.09090909090909091,
+  "before_lockout": 0.24868519909842235,
+  "max_attempts": 3,
+  "convergence": [
+   {
+    "n": 10,
+    "rate": 0.0
+   },
+   {
+    "n": 30,
+    "rate": 0.03333333333333333
+   },
+   {
+    "n": 100,
+    "rate": 0.09
+   },
+   {
+    "n": 300,
+    "rate": 0.07
+   },
+   {
+    "n": 1000,
+    "rate": 0.096
+   },
+   {
+    "n": 3000,
+    "rate": 0.09066666666666667
+   },
+   {
+    "n": 10000,
+    "rate": 0.0915
+   },
+   {
+    "n": 20000,
+    "rate": 0.0915
+   }
+  ],
+  "by_q": [
+   {
+    "p": 23,
+    "q": 11,
+    "q_bits": 4,
+    "trials": 20000,
+    "rate": 0.09235,
+    "expected": 0.09090909090909091
+   },
+   {
+    "p": 179,
+    "q": 89,
+    "q_bits": 7,
+    "trials": 20000,
+    "rate": 0.0128,
+    "expected": 0.011235955056179775
+   },
+   {
+    "p": 983,
+    "q": 491,
+    "q_bits": 9,
+    "trials": 20000,
+    "rate": 0.0019,
+    "expected": 0.002036659877800407
+   },
+   {
+    "p": 3803,
+    "q": 1901,
+    "q_bits": 11,
+    "trials": 20000,
+    "rate": 0.00055,
+    "expected": 0.0005260389268805891
+   },
+   {
+    "p": 14243,
+    "q": 7121,
+    "q_bits": 13,
+    "trials": 20000,
+    "rate": 0.00015,
+    "expected": 0.0001404297149276787
+   }
+  ]
+ },
+ "simulador": {
+  "q": 11,
+  "x": 7,
+  "y": 8,
+  "real": 110,
+  "simulated": 110,
+  "identical": true,
+  "all_simulated_verify": true,
+  "example": {
+   "t": 2,
+   "c": 2,
+   "s": 9
+  },
+  "by_t": [
+   {
+    "t": 2,
+    "real": 11,
+    "simulated": 11
+   },
+   {
+    "t": 3,
+    "real": 11,
+    "simulated": 11
+   },
+   {
+    "t": 4,
+    "real": 11,
+    "simulated": 11
+   },
+   {
+    "t": 6,
+    "real": 11,
+    "simulated": 11
+   },
+   {
+    "t": 8,
+    "real": 11,
+    "simulated": 11
+   },
+   {
+    "t": 9,
+    "real": 11,
+    "simulated": 11
+   },
+   {
+    "t": 12,
+    "real": 11,
+    "simulated": 11
+   },
+   {
+    "t": 13,
+    "real": 11,
+    "simulated": 11
+   },
+   {
+    "t": 16,
+    "real": 11,
+    "simulated": 11
+   },
+   {
+    "t": 18,
+    "real": 11,
+    "simulated": 11
+   }
+  ]
+ },
+ "r_repetido": {
+  "example": {
+   "t": 12,
+   "c1": 3,
+   "s1": 4,
+   "c2": 5,
+   "s2": 7,
+   "x_real": 7,
+   "x_extracted": 7,
+   "recovered": true,
+   "both_accepted": true
+  },
+  "random": {
+   "group": "safe-256",
+   "q_bits": 255,
+   "trials": 200,
+   "recovered": 200
+  }
+ },
+ "repeticion": {
+  "window": 30,
+  "replay_delay": 5,
+  "stale_delay": 31,
+  "plain_t": 6,
+  "plain_s": 6,
+  "plain_c": 1,
+  "original_accepted_without_protection": true,
+  "accepted_without_protection": true,
+  "reason_without_protection": "Acceso concedido",
+  "m": 1795273419,
+  "t": 2,
+  "s": 6,
+  "c": 0,
+  "original_accepted_with_protection": true,
+  "accepted_with_protection": false,
+  "reason_with_protection": "Prueba ya utilizada",
+  "accepted_stale": false,
+  "reason_stale": "Marca de tiempo fuera de la ventana permitida",
+  "victim_locked": false
+ },
+ "aleatoriedad": {
+  "group": "safe-512",
+  "q_bits": 511,
+  "logins": 1000,
+  "accepted": 1000,
+  "distinct_t": 1000,
+  "distinct_c": 1000
+ },
+ "aritmetica": {
+  "cases": 1000,
+  "bits": 512,
+  "mod_pow_matches": 1000,
+  "mod_inverse_matches": 1000,
+  "examples": {
+   "4^7 mod 23": 8,
+   "6^-1 mod 23": 4
+  }
+ }
+}

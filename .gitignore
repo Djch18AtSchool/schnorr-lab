@@ -19,6 +19,7 @@ results/*
 !results/bsgs.json
 !results/bsgs.png
 !results/tests.json
+!results/experimentos.json
 # Comparación con otros mecanismos (C5): python -m benchmark.compare
 !results/comparacion.csv
 !results/comparacion.json
