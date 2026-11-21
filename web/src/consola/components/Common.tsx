@@ -1,7 +1,7 @@
 /** Piezas pequeñas reutilizadas por varias secciones. */
 import type { ReactNode } from "react";
 import type { Alert } from "../../shared/types";
-import { codeSpans } from "../lib/alerts";
+import { codeSpans, supSpans } from "../lib/alerts";
 import { sciParts } from "../lib/format";
 import { statusClass, type Outcome } from "../lib/requests";
 import { Icon } from "./Icons";
@@ -27,9 +27,13 @@ export function Result({ outcome, text }: { outcome: Outcome; text: string }) {
   return <span className={`res ${outcome}`} title={text}>{text}</span>;
 }
 
-/** Texto plano con `código` resaltado (el detalle de las alertas viene así del banco). */
+function MathText({ text }: { text: string }) {
+  return <>{supSpans(text).map((part, i) => (part.sup ? <sup key={i}>{part.text}</sup> : <span key={i}>{part.text}</span>))}</>;
+}
+
+/** Texto plano con `código` y exponentes (g^s) resaltados: así llega el detalle de las alertas. */
 export function CodeText({ text }: { text: string }) {
-  return <>{codeSpans(text).map((part, i) => (part.code ? <code key={i}>{part.text}</code> : <span key={i}>{part.text}</span>))}</>;
+  return <>{codeSpans(text).map((part, i) => (part.code ? <code key={i}>{part.text}</code> : <MathText key={i} text={part.text} />))}</>;
 }
 
 /** Número en notación científica con el exponente en <sup> (texto HTML, no SVG). */

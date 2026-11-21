@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AuditEntry, TestReport } from "../../shared/types";
 import { MECHANISMS } from "../data/simulated/fixtures";
 import { alert, commit, event, req, respond } from "../test/builders";
-import { alertFromEvent, codeSpans, defaultOpenAlert, groupAlerts, severityCounts } from "./alerts";
+import { alertFromEvent, codeSpans, defaultOpenAlert, groupAlerts, severityCounts, supSpans } from "./alerts";
 import { auditFacts, containsSecret, linkAuditToRequests, matchesAudit } from "./audit";
 import { checkGroup, groupOf, modPow } from "./group";
 import { requirementFiles, requirementStatus, testsByFile } from "./lab";
@@ -25,6 +25,10 @@ describe("alertas", () => {
 
   it("separa el `código` del texto", () => {
     expect(codeSpans("Origen `192.168.1.66` (httpx).")).toEqual([{ text: "Origen ", code: false }, { text: "192.168.1.66", code: true }, { text: " (httpx).", code: false }]);
+  });
+
+  it("convierte g^s y 4^3 en superíndices", () => {
+    expect(supSpans("g^s = 4^3 mod 23")).toEqual([{ text: "g", sup: false }, { text: "s", sup: true }, { text: " = 4", sup: false }, { text: "3", sup: true }, { text: " mod 23", sup: false }]);
   });
 
   it("valida la alerta que llega en un evento", () => {

@@ -4,7 +4,7 @@ import { PanelHead, Sci } from "../../components/Common";
 import { XYChart, type Shape, type XYLabel, type XYSeries } from "../../components/charts/XYChart";
 import type { BsgsResults, LatencyResults } from "../../data/source";
 import { BACKENDS, bsgsSeries, latencyGroups, latencySeries, type LatencyGroup } from "../../lib/charts";
-import { fmtInt, sci } from "../../lib/format";
+import { fmtInt, sciParts } from "../../lib/format";
 
 const STYLE: Readonly<Record<string, { color: string; shape: Shape; label: string; dy: number }>> = {
   propia: { color: "var(--s1)", shape: "circle", label: "propia (mod_pow)", dy: -2 },
@@ -12,6 +12,12 @@ const STYLE: Readonly<Record<string, { color: string; shape: Shape; label: strin
   gmpy2: { color: "var(--s3)", shape: "diamond", label: "gmpy2", dy: 4 },
 };
 const YEAR_S = 365.25 * 24 * 3600;
+/** Notación científica dentro de SVG: el exponente como tspan elevado (las fuentes no traen ⁰–⁹ parejos). */
+function SciSvg({ value, suffix }: { value: number; suffix: string }) {
+  const { mantissa, exponent } = sciParts(value);
+  if (exponent === null) return <>{mantissa}{suffix}</>;
+  return <>{mantissa}·10<tspan dy={-5} fontSize={8.5}>{exponent}</tspan><tspan dy={5}>{suffix}</tspan></>;
+}
 const Pow10 = ({ v }: { v: number }) => (v === 1 ? <>1</> : <>10<tspan dy={-5} fontSize={8.5}>{Math.round(Math.log10(v))}</tspan></>);
 
 function tipFor(g: LatencyGroup, backend: string): ReactNode {
@@ -71,11 +77,11 @@ export function BsgsPanel({ results }: { results: BsgsResults }) {
   const xy: XYSeries[] = [
     { key: "fit", color: "var(--s1)", points: s.fitSolid },
     { key: "extra", color: "var(--s1)", dash: "5 5", points: s.fitDashed },
-    { key: "measured", color: "var(--s1)", shape: "circle", line: false, points: results.rows.map((r) => ({ x: r.q_bits, y: r.seconds, tip: <><b>q de {r.q_bits} bits</b> (medido)<br />{fmtInt(r.operations)} operaciones<br />{sci(r.seconds, 2)} s</> })) },
-    { key: "pred", color: "var(--s1)", shape: "circle", hollow: true, line: false, points: s.predicted.map((p) => ({ ...p, tip: <><b>q de {p.x} bits</b> (extrapolado)<br />{sci(p.y, 2)} s ≈ {sci(p.years)} años</> })) },
+    { key: "measured", color: "var(--s1)", shape: "circle", line: false, points: results.rows.map((r) => ({ x: r.q_bits, y: r.seconds, tip: <><b>q de {r.q_bits} bits</b> (medido)<br />{fmtInt(r.operations)} operaciones<br /><Sci value={r.seconds} digits={2} /> s</> })) },
+    { key: "pred", color: "var(--s1)", shape: "circle", hollow: true, line: false, points: s.predicted.map((p) => ({ ...p, tip: <><b>q de {p.x} bits</b> (extrapolado)<br /><Sci value={p.y} digits={2} /> s ≈ <Sci value={p.years} /> años</> })) },
   ];
   const labels: XYLabel[] = [
-    ...s.predicted.map((p, i) => ({ x: p.x, y: p.y, text: `${sci(p.years)} años`, dx: -11, dy: i === 0 ? -9 : 4, anchor: "end" as const, strong: i === 0 })),
+    ...s.predicted.map((p, i) => ({ x: p.x, y: p.y, text: <SciSvg value={p.years} suffix=" años" />, dx: -11, dy: i === 0 ? -9 : 4, anchor: "end" as const, strong: i === 0 })),
     ...(lastMeasured ? [{ x: lastMeasured.x, y: lastMeasured.y, text: `medido hasta q = ${lastMeasured.x}`, dx: 10, dy: 4 }] : []),
   ];
   return (
@@ -92,8 +98,8 @@ export function BsgsPanel({ results }: { results: BsgsResults }) {
           por operación.{first ? <> Con q = {first.q_bits} ya harían falta <b><Sci value={first.years} /> años</b>, más que la edad del universo.</> : null} El grupo de
           ejemplo (q = 11) cae en 0.03 ms; con rfc-2048 serían ~2<sup>1023</sup> operaciones, unos 1.6·10<sup>294</sup> años.</p>
         <DataTable head={["bits q", "operaciones", "segundos", "Origen"]}
-          rows={[...results.rows.map((r) => [r.q_bits, fmtInt(r.operations), sci(r.seconds, 2), r.x_found === r.x_real ? "medido, x encontrado = x real" : "medido"]),
-            ...results.predictions.map((p) => [p.q_bits, sci(p.seconds / s.secondsPerOp, 2), sci(p.seconds, 2), `extrapolado: ${sci(p.years, 1)} años`])]} />
+          rows={[...results.rows.map((r) => [r.q_bits, fmtInt(r.operations), <Sci value={r.seconds} digits={2} />, r.x_found === r.x_real ? "medido, x encontrado = x real" : "medido"]),
+            ...results.predictions.map((p) => [p.q_bits, <Sci value={p.seconds / s.secondsPerOp} digits={2} />, <Sci value={p.seconds} digits={2} />, <>extrapolado: <Sci value={p.years} /> años</>])]} />
       </div>
     </div>
   );

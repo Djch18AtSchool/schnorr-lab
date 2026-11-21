@@ -56,3 +56,8 @@ export function alertFromEvent(event: BankEvent): Alert | null {
 export function codeSpans(text: string): Array<{ text: string; code: boolean }> {
   return text.split("`").map((part, i) => ({ text: part, code: i % 2 === 1 })).filter((part) => part.text !== "");
 }
+
+/** Parte un texto con exponentes "g^s" o "4^3" en tramos normales y superíndices. */
+export function supSpans(text: string): Array<{ text: string; sup: boolean }> {
+  return text.split(/\^([\w−-]+)/).map((part, i) => ({ text: part, sup: i % 2 === 1 })).filter((part) => part.text !== "");
+}
