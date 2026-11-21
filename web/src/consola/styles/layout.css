@@ -45,9 +45,6 @@
 .side .foot { margin-top: auto; display: grid; gap: 10px; padding: 12px 10px 4px; border-top: 1px solid var(--line-2); font-size: 12px; color: var(--faint); }
 .groupchip { display: grid; gap: 2px; padding: 10px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
 .groupchip b { font-family: var(--mono); font-weight: 550; color: var(--fg); font-size: 12.5px; }
-.sketch { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.sketch a { color: var(--muted); text-decoration: none; }
-.sketch a:hover { color: var(--fg); text-decoration: underline; }
 
 main { min-width: 0; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 .view { padding: 22px 26px 40px; display: grid; gap: 18px; max-width: 1600px; }

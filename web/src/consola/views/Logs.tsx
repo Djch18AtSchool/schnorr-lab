@@ -1,8 +1,8 @@
 /** Sección Logs: la salida de uvicorn y de los registradores del banco, como en `tail -f`. */
+import { Pause, Play } from "lucide-react";
 import { useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { BankEvent } from "../../shared/types";
 import { ViewHead } from "../components/Common";
-import { Icon } from "../components/Icons";
 import { fmtClock, fmtClockMs } from "../lib/format";
 import { LEVELS, countLevels, eventToLogLine, highlight, matchesLog, sourcesOf, type Level, type LogLine, type LogQuery } from "../lib/logs";
 
@@ -68,7 +68,7 @@ export function Logs({ events, startedAt, searchRef }: LogsProps) {
             value={query.text} onChange={(e) => setQuery({ ...query, text: e.target.value })} />
           <span className="spacer" />
           <button type="button" className="btn" aria-pressed={follow} onClick={() => setFollow(!follow)}>
-            <Icon name={follow ? "pause" : "play"} /><span>{follow ? "Pausar seguimiento" : "Seguir al final"}</span>
+            {follow ? <Pause className="i" aria-hidden="true" /> : <Play className="i" aria-hidden="true" />}<span>{follow ? "Pausar seguimiento" : "Seguir al final"}</span>
           </button>
         </div>
         <div className="tail" ref={tail} role="log" aria-live="off" onScroll={onScroll}>

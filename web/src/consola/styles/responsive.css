@@ -39,14 +39,13 @@
   .ll { grid-template-columns: 70px 60px minmax(0, 1fr); }
   .ll .src { display: none; }
   .tbl-scroll { max-height: 60vh; }
-  .sketchcorner { display: flex !important; }
 }
-.sketchcorner { display: none; gap: 10px; justify-content: space-between; font-size: 12px; color: var(--faint); padding: 0 2px; }
-.sketchcorner a { color: var(--muted); }
 @media (max-width: 480px) {
   .env { display: none; }
   .vhead h1 { font-size: 19px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  /* El anillo del indicador es la única animación infinita: con movimiento reducido no existe. */
+  .pulse::after { display: none; }
 }

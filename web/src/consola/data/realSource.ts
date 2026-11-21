@@ -4,9 +4,10 @@
  */
 import { ApiError, api, listen } from "../../shared/api";
 import type { Account, Alert, AuditEntry, BankEvent, BankMechanism, RequestRecord, TelemetrySummary, TestReport } from "../../shared/types";
-import { parseBsgs, parseLatency, parseOpenApi } from "../lib/results";
+import { buildLabResults, LAB_FILES, listedFiles, rawBody, type RawLabFile } from "../lib/labFiles";
+import { parseOpenApi } from "../lib/results";
 import { FALLBACK_ROUTES } from "./routes";
-import type { ApiRoutes, ConsoleDataSource, LabResults } from "./source";
+import type { ApiRoutes, ConsoleDataSource, LabFileKey, LabResults } from "./source";
 
 /** Máximo que acepta GET /events por página (MAX_EVENTS_PAGE en api/app.py). */
 const EVENTS_PAGE = 5000;
@@ -35,13 +36,22 @@ async function list<T>(url: string): Promise<T[]> {
   return body as T[];
 }
 
-/** Un archivo de resultados que puede no existir todavía: null si falta, error si está mal formado. */
-async function optionalJson(url: string): Promise<unknown> {
+/** Un archivo de resultados que puede no existir todavía: ausente si da 404, error si no se puede leer. */
+async function optionalJson(url: string): Promise<RawLabFile> {
   try {
-    return await api<unknown>(url);
+    return rawBody(await api<unknown>(url));
   } catch (error: unknown) {
-    if (error instanceof ApiError && error.status === 404) return null;
-    throw new Error(describeFailure("GET", url, error), { cause: error });
+    if (error instanceof ApiError && error.status === 404) return { kind: "missing" };
+    return { kind: "error", detail: describeFailure("GET", url, error) };
+  }
+}
+
+/** Nombres que lista GET /lab/results; null si no se pudo leer (entonces se piden todos). */
+async function listResults(): Promise<ReadonlySet<string> | null> {
+  try {
+    return listedFiles(await api<unknown>("/lab/results"));
+  } catch {
+    return null;
   }
 }
 
@@ -76,9 +86,14 @@ export class RealSource implements ConsoleDataSource {
     return call<TestReport>("/lab/tests");
   }
 
+  /** Solo pide los archivos que el banco lista (así un archivo sin generar no produce un 404). */
   async results(): Promise<LabResults> {
-    const [latency, bsgs] = await Promise.all([optionalJson("/results/latency.json"), optionalJson("/results/bsgs.json")]);
-    return { latency: parseLatency(latency), bsgs: parseBsgs(bsgs) };
+    const listed = await listResults();
+    const raws = await Promise.all(LAB_FILES.map(async ({ key, file }): Promise<[LabFileKey, RawLabFile]> => {
+      if (listed && !listed.has(file)) return [key, { kind: "missing" }];
+      return [key, await optionalJson(`/results/${file}`)];
+    }));
+    return buildLabResults(Object.fromEntries(raws) as Record<LabFileKey, RawLabFile>);
   }
 
   events(since: number): Promise<BankEvent[]> {

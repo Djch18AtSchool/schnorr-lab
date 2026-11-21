@@ -1,7 +1,7 @@
 /** Sección API: enlace a Swagger (/docs) y a /openapi.json, y las rutas con su uso en la ventana. */
+import { ExternalLink } from "lucide-react";
 import type { RequestRecord, RouteStats } from "../../shared/types";
 import { Method, Status, ViewHead } from "../components/Common";
-import { Icon } from "../components/Icons";
 import { isAuditedRoute } from "../data/routes";
 import type { ApiRoutes } from "../data/source";
 import { rel } from "../lib/format";
@@ -32,7 +32,7 @@ export function Api({ routes, stats, requests, now, simulated }: ApiProps) {
         </div>
         <div className="tools">
           <a className="btn" href="/openapi.json" target="_blank" rel="noopener">openapi.json</a>
-          <a className="btn primary" href="/docs" target="_blank" rel="noopener">Abrir Swagger<Icon name="ext" /></a>
+          <a className="btn primary" href="/docs" target="_blank" rel="noopener">Abrir Swagger<ExternalLink className="i" aria-hidden="true" /></a>
         </div>
       </div>
       <div className="panel">

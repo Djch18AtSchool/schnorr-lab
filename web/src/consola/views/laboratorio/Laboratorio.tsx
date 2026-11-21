@@ -1,70 +1,127 @@
-/** Sección Laboratorio: resultados medidos de los experimentos y trazabilidad R1–R11. */
-import type { TestReport } from "../../../shared/types";
-import { PanelHead, Unavailable, ViewHead } from "../../components/Common";
-import { Icon } from "../../components/Icons";
-import { tipHandlers, useTip } from "../../components/Tooltip";
+/**
+ * Sección Laboratorio: todos los experimentos y mediciones del proyecto, uno por pantalla, con un
+ * índice agrupado (lista lateral en pantallas anchas, selector en las angostas). La subsección va en
+ * el hash (#laboratorio/impostor) y ← / → pasan al experimento anterior o siguiente.
+ */
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Unavailable, ViewHead } from "../../components/Common";
 import type { LabResults } from "../../data/source";
-import { fmtClock, plural } from "../../lib/format";
-import { REQUIREMENT_SOURCES, requirementFiles, requirementStatus, testsByFile, type RequirementStatus } from "../../lib/lab";
-import { BsgsPanel, LatencyPanel } from "./LabCharts";
+import { labFile } from "../../lib/labFiles";
+import { EXPERIMENTS, experimentById, groupTitle, LAB_GROUPS, type ExperimentMeta } from "./catalog";
+import { ExperimentView } from "./registry";
 
 interface LaboratorioProps {
   results: LabResults | null;
   resultsError: string | undefined;
-  tests: TestReport | null;
-  testsError: string | undefined;
+  simulated: boolean;
 }
 
-const STATUS_TEXT: Readonly<Record<RequirementStatus, string>> = { aprobado: "Aprobado", fallido: "Con fallos", omitido: "Omitido", pendiente: "Sin pruebas" };
+const PREFIX = "#laboratorio/";
 
-function TestsPanel({ report }: { report: TestReport }) {
-  const tip = useTip();
-  const files = testsByFile(report);
-  const allPassed = report.failed === 0;
+function idFromHash(): string {
+  const hash = window.location.hash;
+  const id = hash.startsWith(PREFIX) ? decodeURIComponent(hash.slice(PREFIX.length)) : "";
+  return experimentById(id) ? id : EXPERIMENTS[0].id;
+}
+
+/** Experimento activo, sincronizado con el hash (sobrevive a recargar y a compartir el enlace). */
+function useExperimentRoute(): [string, (id: string) => void] {
+  const [id, setId] = useState(idFromHash);
+  useEffect(() => {
+    const onHash = (): void => setId(idFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const go = useCallback((next: string) => {
+    window.history.replaceState(null, "", `${PREFIX}${next}`);
+    setId(next);
+    document.querySelector("main")?.scrollTo({ top: 0 });
+  }, []);
+  return [id, go];
+}
+
+/** ← y → recorren los experimentos (salvo con el foco en un campo o un selector). */
+function useArrowKeys(onStep: (delta: number) => void): void {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("input, select, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "ArrowRight") onStep(1);
+      if (e.key === "ArrowLeft") onStep(-1);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onStep]);
+}
+
+function LabIndex({ current, onGo }: { current: string; onGo: (id: string) => void }) {
   return (
-    <div className="panel">
-      <PanelHead title="Pruebas automatizadas"><span className="muted">pytest, ejecución de las {fmtClock(report.generated_at)} ({report.duration_s.toFixed(1)} s)</span></PanelHead>
-      <div className="pb runline">
-        <span className={`big${allPassed ? "" : " bad"}`}>{report.passed}</span>
-        <span><b style={{ fontWeight: 600 }}>pruebas aprobadas</b><br /><span className="muted">{report.failed} fallidas, {report.skipped} omitidas, {plural(files.length, "archivo", "archivos")}</span></span>
-        <div className="testbar" title="Una franja por archivo, proporcional a sus pruebas">
-          {files.map((f) => <i key={f.file} className={f.passed < f.total ? "bad" : ""} style={{ flex: f.total }} {...tipHandlers(tip, <><b>{f.file}</b><br />{f.passed} de {f.total} aprobadas</>)} />)}
+    <nav className="labidx" aria-label="Experimentos">
+      {LAB_GROUPS.map((g) => (
+        <div key={g.id} className="labgrp">
+          <div className="labgrp-t">{g.title}</div>
+          {EXPERIMENTS.filter((e) => e.group === g.id).map((e) => (
+            <a key={e.id} href={`${PREFIX}${e.id}`} aria-current={e.id === current ? "page" : undefined}
+              onClick={(ev) => { ev.preventDefault(); onGo(e.id); }}>{e.title}</a>
+          ))}
         </div>
-      </div>
-      <div className="tablewrap">
-        <table className="t reqs">
-          <thead><tr><th>Req.</th><th>Qué se exige</th><th>Dónde está</th><th>Pruebas</th><th>Estado</th></tr></thead>
-          <tbody>
-            {report.requirements.map((req) => {
-              const status = requirementStatus(req);
-              return (
-                <tr key={req.id}>
-                  <td>{req.id}</td><td>{req.title}</td>
-                  <td className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>{REQUIREMENT_SOURCES[req.id] ?? "—"}</td>
-                  <td><div className="files">{requirementFiles(req).map((f) => <code key={f.file}>{f.file}<b>{f.count}</b></code>)}</div></td>
-                  <td><span className={`passed ${status}`}>{status === "aprobado" ? <Icon name="check" /> : <Icon name="media" />}{STATUS_TEXT[status]}</span></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      ))}
+    </nav>
+  );
+}
+
+function LabSelect({ current, onGo }: { current: string; onGo: (id: string) => void }) {
+  return (
+    <label className="labsel">
+      <span className="sr">Experimento</span>
+      <select className="field" value={current} onChange={(e) => onGo(e.target.value)}>
+        {LAB_GROUPS.map((g) => (
+          <optgroup key={g.id} label={g.title}>
+            {EXPERIMENTS.filter((e) => e.group === g.id).map((e) => <option key={e.id} value={e.id}>{e.title}</option>)}
+          </optgroup>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function Pager({ index, onGo }: { index: number; onGo: (id: string) => void }) {
+  const prev: ExperimentMeta | undefined = EXPERIMENTS[index - 1];
+  const next: ExperimentMeta | undefined = EXPERIMENTS[index + 1];
+  return (
+    <div className="pager">
+      {prev ? <button type="button" className="btn" onClick={() => onGo(prev.id)} title="Experimento anterior (←)"><ChevronLeft className="i" aria-hidden="true" />{prev.title}</button> : <span />}
+      <span className="muted mono">{index + 1} / {EXPERIMENTS.length}</span>
+      {next ? <button type="button" className="btn" onClick={() => onGo(next.id)} title="Experimento siguiente (→)">{next.title}<ChevronRight className="i" aria-hidden="true" /></button> : <span />}
     </div>
   );
 }
 
-export function Laboratorio({ results, resultsError, tests, testsError }: LaboratorioProps) {
+export function Laboratorio({ results, resultsError, simulated }: LaboratorioProps) {
+  const [id, go] = useExperimentRoute();
+  const index = Math.max(0, EXPERIMENTS.findIndex((e) => e.id === id));
+  const meta = EXPERIMENTS[index];
+  const step = useCallback((delta: number) => {
+    const next = EXPERIMENTS[index + delta];
+    if (next) go(next.id);
+  }, [index, go]);
+  useArrowKeys(step);
+  const groupIndex = EXPERIMENTS.filter((e) => e.group === meta.group).findIndex((e) => e.id === meta.id) + 1;
+  const ctx = { meta, eyebrow: `${groupTitle(meta.group)} · ${groupIndex} de ${EXPERIMENTS.filter((e) => e.group === meta.group).length}`, file: labFile(meta.file), simulated };
   return (
     <>
-      <ViewHead title="Laboratorio">
-        Resultados medidos de los experimentos del repositorio (<span className="mono">results/latency.json</span> y <span className="mono">results/bsgs.json</span>
-        {results?.latency?.python ? `, Python ${results.latency.python}` : ""}) y trazabilidad de requerimientos.
+      <ViewHead title="Laboratorio" tools={<LabSelect current={id} onGo={go} />}>
+        Resultados de las mediciones y los experimentos del proyecto: la comparación con otros mecanismos, el rendimiento según el tamaño de p, los ataques y las
+        verificaciones. Cada uno con la pregunta que responde, sus datos reales y la conclusión. Use ← y → para recorrerlos.
       </ViewHead>
-      <div className="lab2">
-        {results?.latency ? <LatencyPanel results={results.latency} /> : <Unavailable what="results/latency.json" error={resultsError ?? (results ? "archivo ausente o mal formado" : undefined)} />}
-        {results?.bsgs ? <BsgsPanel results={results.bsgs} /> : <Unavailable what="results/bsgs.json" error={resultsError ?? (results ? "archivo ausente o mal formado" : undefined)} />}
+      <div className="labx">
+        <LabIndex current={id} onGo={go} />
+        <div className="labmain">
+          {results ? <ExperimentView key={id} id={id} results={results} ctx={ctx} /> : <Unavailable what="Los resultados del laboratorio" error={resultsError} />}
+          <Pager index={index} onGo={go} />
+        </div>
       </div>
-      {tests ? <TestsPanel report={tests} /> : <Unavailable what="El informe de pruebas (GET /lab/tests)" error={testsError} />}
     </>
   );
 }

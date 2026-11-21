@@ -1,6 +1,6 @@
 /** Barra superior: entorno, estado del servicio, En vivo/Pausado, fecha y hora, tema y operador. */
+import { Landmark, SunMoon } from "lucide-react";
 import { fmtClock } from "../lib/format";
-import { BrandMark, Icon } from "./Icons";
 
 interface TopBarProps {
   online: boolean;
@@ -24,7 +24,7 @@ export function TopBar({ online, startedAt, now, live, pending, onToggleLive, on
   const liveText = live ? "En vivo" : pending ? `Pausado · ${pending} nuevas` : "Pausado";
   return (
     <header className="top">
-      <div className="brand"><BrandMark /><b>Banco Lab</b><span className="muted">Consola</span></div>
+      <div className="brand"><span className="brandmark" aria-hidden="true"><Landmark /></span><b>Banco Lab</b><span className="muted">Consola</span></div>
       <span className="env" title={simulated ? "Datos generados en el navegador (?fuente=simulada)" : "Entorno"}>
         banco-lab · {simulated ? "datos simulados" : "simulación"}
       </span>
@@ -38,7 +38,7 @@ export function TopBar({ online, startedAt, now, live, pending, onToggleLive, on
         <span className="ld" /><span>{liveText}</span>
       </button>
       <span className="clock mono"><span className="d">{date}, </span>{fmtClock(now)}</span>
-      <button type="button" className="iconbtn" onClick={onToggleTheme} title="Cambiar tema (T)" aria-label="Cambiar tema"><Icon name="theme" /></button>
+      <button type="button" className="iconbtn" onClick={onToggleTheme} title="Cambiar tema (T)" aria-label="Cambiar tema"><SunMoon className="i" aria-hidden="true" /></button>
       <div className="op" title="Sesión de operador">
         <span className="avatar">MR</span>
         <span className="who">M. Rojas<small>operadora de turno</small></span>

@@ -25,7 +25,7 @@ interface KeyActions {
   focusSearch: () => boolean;
 }
 
-/** Atajos: 1–8 secciones, P pausa, T tema, / buscar, Escape sale de un campo. */
+/** Atajos: 1–9 secciones, P pausa, T tema, / buscar, Escape sale de un campo. */
 function useKeyboard(actions: KeyActions): void {
   const ref = useRef(actions);
   useEffect(() => { ref.current = actions; });
@@ -104,7 +104,7 @@ export function App({ source }: { source: ConsoleDataSource }) {
       <div className="app">
         <TopBar online={state.online} startedAt={state.summary?.started_at ?? null} now={now} live={live} pending={pending}
           onToggleLive={() => setLive(!live)} onToggleTheme={toggleTheme} simulated={simulated} />
-        <SideNav current={section} onGo={nav.navigate} unseenAlerts={ui.unseen} group={group} simulated={simulated} />
+        <SideNav current={section} onGo={nav.navigate} unseenAlerts={ui.unseen} group={group} />
         <main ref={nav.main}>
           <section className="view" aria-label={title}>
             {failure && !simulated ? <SourceNotice error={failure} /> : null}

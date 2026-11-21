@@ -1,13 +1,12 @@
 /** Hooks de la interfaz: sección en el hash, tema, reloj y ancho de un elemento. */
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import { isSection, type Section } from "./sections";
+import { sectionOfHash, type Section } from "./sections";
 
 const THEME_KEY = "consola-theme";
 const CLOCK_MS = 1000;
 
 function sectionFromHash(): Section {
-  const hash = window.location.hash.slice(1);
-  return isSection(hash) ? hash : "resumen";
+  return sectionOfHash(window.location.hash) ?? "resumen";
 }
 
 export function useHashRoute(): [Section, (section: Section) => void] {
@@ -18,7 +17,8 @@ export function useHashRoute(): [Section, (section: Section) => void] {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
   const go = useCallback((next: Section) => {
-    if (window.location.hash !== `#${next}`) window.history.replaceState(null, "", `#${next}`);
+    // #laboratorio/impostor ya es la sección laboratorio: se conserva la subsección.
+    if (sectionOfHash(window.location.hash) !== next) window.history.replaceState(null, "", `#${next}`);
     setSection(next);
   }, []);
   return [section, go];

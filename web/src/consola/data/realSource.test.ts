@@ -43,6 +43,30 @@ describe("RealSource", () => {
     const results = await new RealSource().results();
     expect(results.latency?.rows).toHaveLength(1);
     expect(results.bsgs).toBeNull();
+    expect(results.files.bsgs.status).toBe("falta");
+    expect(results.files.latency.status).toBe("ok");
+  });
+
+  it("no pide los archivos que GET /lab/results no lista", async () => {
+    const calls = stubFetch({
+      "/lab/results": { status: 200, body: ["experimentos.json", "latency.png"] },
+      "/results/experimentos.json": { status: 200, body: { aleatoriedad: { logins: 3, distinct_t: 3, distinct_c: 3 } } },
+    });
+    const results = await new RealSource().results();
+    expect(calls).toEqual(["GET /lab/results", "GET /results/experimentos.json"]);
+    expect(results.experimentos?.randomness?.logins).toBe(3);
+    expect(results.files.comparacion.status).toBe("falta");
+  });
+
+  it("marca como inválido un archivo que llega con otra forma o con error del servidor", async () => {
+    stubFetch({
+      "/results/comparacion.json": { status: 200, body: { rows: "no" } },
+      "/results/bsgs.json": { status: 500, body: { detail: "falló" } },
+    });
+    const results = await new RealSource().results();
+    expect(results.files.comparacion).toEqual({ status: "invalido", detail: "el archivo no tiene la forma esperada" });
+    expect(results.files.bsgs.status).toBe("invalido");
+    expect(results.files.bsgs.detail).toContain("GET /results/bsgs.json → 500");
   });
 
   it("usa la lista conocida si /openapi.json no responde", async () => {

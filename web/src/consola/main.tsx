@@ -5,6 +5,7 @@ import "./styles/tokens.css";
 import "./styles/layout.css";
 import "./styles/views.css";
 import "./styles/extras.css";
+import "./styles/lab.css";
 import "./styles/responsive.css";
 import { App } from "./App";
 import { RealSource } from "./data/realSource";

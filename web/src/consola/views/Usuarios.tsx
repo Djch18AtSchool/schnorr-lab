@@ -1,7 +1,7 @@
 /** Sección Usuarios: todo lo que el banco guarda de cada cliente (id y clave pública y). */
+import { Lock } from "lucide-react";
 import type { Account, RequestRecord } from "../../shared/types";
 import { Fact, PanelHead, Unavailable, ViewHead } from "../components/Common";
-import { Icon } from "../components/Icons";
 import { JsonView } from "../components/JsonView";
 import { fmtClock, rel, shortNum } from "../lib/format";
 import { outcomeOf } from "../lib/requests";
@@ -44,7 +44,7 @@ function AccountRow({ a, logins, maxAttempts, now, onTraffic }: { a: Account; lo
       <td>{a.last_login_at ? <span title={fmtClock(a.last_login_at)}>{rel(a.last_login_at, now)}</span> : <span className="faint">nunca</span>}</td>
       <td className="r mono">{logins}</td>
       <td><Attempts left={a.attempts_left} max={maxAttempts} /></td>
-      <td>{a.status === "bloqueada" ? <span className="state lock"><Icon name="lock" />Bloqueada</span> : <span className="state on">Activa</span>}</td>
+      <td>{a.status === "bloqueada" ? <span className="state lock"><Lock className="i" aria-hidden="true" />Bloqueada</span> : <span className="state on">Activa</span>}</td>
       <td><button type="button" className="linkbtn" onClick={() => onTraffic(a.user_id)}>Ver tráfico</button></td>
     </tr>
   );

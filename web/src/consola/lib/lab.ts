@@ -1,5 +1,6 @@
-/** Laboratorio: resumen de pruebas por archivo y por requerimiento (R1–R11). Funciones puras. */
+/** Pruebas: resumen por archivo y por requerimiento (R1–R11 y C1–C5). Funciones puras. */
 import type { TestReport } from "../../shared/types";
+import { asRecord } from "./requests";
 
 export interface FileCount {
   file: string;
@@ -57,4 +58,35 @@ export const REQUIREMENT_SOURCES: Readonly<Record<string, string>> = {
   R9: "protocol/bank.py, api/validation.py",
   R10: "attacks/, client_app/lab.py",
   R11: "client_app/, api/, demo.py, http_client.py",
+  C1: "mechanisms/password/, mechanisms/totp/, mechanisms/srp/",
+  C2: "mechanisms/*/server.py",
+  C3: "mechanisms/*/schemas.py, mechanisms/common.py",
+  C4: "mechanisms/totp/otp.py, mechanisms/srp/srp6a.py",
+  C5: "benchmark/compare.py, benchmark/compare_attacks.py",
 };
+
+const OUTCOMES = new Set(["passed", "failed", "skipped"]);
+
+function testCase(value: unknown): TestCase | null {
+  const t = asRecord(value);
+  if (!t || typeof t.name !== "string" || typeof t.file !== "string" || typeof t.outcome !== "string" || !OUTCOMES.has(t.outcome)) return null;
+  return { name: t.name, file: t.file, outcome: t.outcome as TestCase["outcome"] };
+}
+
+function requirement(value: unknown): Requirement | null {
+  const r = asRecord(value);
+  if (!r || typeof r.id !== "string" || typeof r.title !== "string" || !Array.isArray(r.tests)) return null;
+  return { id: r.id, title: r.title, tests: r.tests.map(testCase).filter((t): t is TestCase => t !== null) };
+}
+
+/** results/tests.json validado (lo escribe pytest al terminar). */
+export function parseTestReport(value: unknown): TestReport | null {
+  const r = asRecord(value);
+  if (!r || !Array.isArray(r.requirements)) return null;
+  const count = (key: string): number => (typeof r[key] === "number" ? (r[key] as number) : 0);
+  return {
+    generated_at: count("generated_at"), duration_s: count("duration_s"), total: count("total"),
+    passed: count("passed"), failed: count("failed"), skipped: count("skipped"),
+    requirements: r.requirements.map(requirement).filter((q): q is Requirement => q !== null),
+  };
+}

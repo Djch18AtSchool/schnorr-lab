@@ -77,3 +77,44 @@ export function plural(count: number, one: string, many: string): string {
 export function fmtInt(value: number): string {
   return value.toLocaleString("es-CR");
 }
+
+/** Bytes legibles en base 10: «751 B», «8.3 kB». */
+export function fmtBytes(bytes: number): string {
+  return bytes < 1000 ? `${Math.round(bytes)} B` : `${(bytes / 1000).toFixed(1)} kB`;
+}
+
+/** Milisegundos con las cifras justas: «0.56 ms», «9.1 ms», «154 ms». */
+export function fmtMsShort(ms: number): string {
+  if (ms < 1) return `${ms.toFixed(2)} ms`;
+  return ms < 10 ? `${ms.toFixed(1)} ms` : `${Math.round(ms)} ms`;
+}
+
+/** Razón «8.6×» con una cifra decimal. */
+export const fmtTimes = (ratio: number): string => `${ratio.toFixed(ratio < 10 ? 1 : 0)}×`;
+
+const YEAR_S = 365.25 * 24 * 3600;
+const SPANS: ReadonlyArray<readonly [number, string, number]> = [[60, "s", 1], [3600, "min", 60], [48 * 3600, "h", 3600], [YEAR_S, "días", 86400]];
+const MAX_PLAIN_YEARS = 1e4;
+
+export interface DurationParts {
+  mantissa: string;
+  exponent: number | null;
+  unit: string;
+}
+
+/** Duración dada como log10 de años, en la unidad legible: «4.6 h», «18 días», «1.6·10⁶ años» (por partes). */
+export function durationParts(log10Years: number): DurationParts {
+  const years = 10 ** log10Years;
+  const seconds = years * YEAR_S;
+  const span = SPANS.find(([limit]) => seconds < limit);
+  if (span) return { mantissa: String(Number((seconds / span[2]).toPrecision(2))), exponent: null, unit: span[1] };
+  if (years < MAX_PLAIN_YEARS) return { mantissa: String(Number(years.toPrecision(2))), exponent: null, unit: "años" };
+  const exponent = Math.floor(log10Years);
+  return { mantissa: (10 ** (log10Years - exponent)).toFixed(1), exponent, unit: "años" };
+}
+
+/** Lo mismo como texto plano con exponente Unicode (para tooltips y títulos). */
+export function fmtDuration(log10Years: number): string {
+  const d = durationParts(log10Years);
+  return d.exponent === null ? `${d.mantissa} ${d.unit}` : `${d.mantissa}·10${sup(d.exponent)} ${d.unit}`;
+}

@@ -1,10 +1,11 @@
-/** Gráfica xy con eje y logarítmico (y x lineal o logarítmico) para los resultados del laboratorio. */
+/** Gráfica xy (ejes lineales o logarítmicos) para los resultados del laboratorio, con tooltip por punto. */
 import type { ReactNode } from "react";
-import { linearScale, logScale, type XY } from "../../lib/charts";
+import { linearScale, logScale, type Scale, type XY } from "../../lib/charts";
 import { useWidth } from "../../state/hooks";
 import { tipHandlers, useTip } from "../Tooltip";
+import { Marker, type Shape } from "./marks";
 
-export type Shape = "circle" | "square" | "diamond";
+export type { Shape } from "./marks";
 
 export interface XYSeries {
   key: string;
@@ -42,35 +43,46 @@ export interface XYChartProps {
   y: Axis;
   series: readonly XYSeries[];
   labels?: readonly XYLabel[];
-  refs?: ReadonlyArray<{ y: number; label: string }>;
+  refs?: ReadonlyArray<{ y: number; label: ReactNode }>;
 }
 
-function Marker({ shape, cx, cy, color, hollow }: { shape: Shape; cx: number; cy: number; color: string; hollow?: boolean }) {
-  const paint = { fill: hollow ? "var(--surface)" : color, stroke: hollow ? color : "var(--surface)", strokeWidth: 2 };
-  if (shape === "square") return <rect x={cx - 4.5} y={cy - 4.5} width={9} height={9} rx={1.5} {...paint} />;
-  if (shape === "diamond") return <path d={`M${cx},${cy - 6}L${cx + 6},${cy}L${cx},${cy + 6}L${cx - 6},${cy}Z`} {...paint} />;
-  return <circle cx={cx} cy={cy} r={4.8} {...paint} />;
+/** Radio del área sensible al puntero alrededor de cada marcador (más grande que la marca). */
+const HIT_R = 13;
+
+const scaleFor = (axis: Axis, range: readonly [number, number]): Scale => (axis.log ? logScale : linearScale)(axis.domain, range);
+
+function Points({ series, sx, sy }: { series: readonly XYSeries[]; sx: Scale; sy: Scale }) {
+  const tip = useTip();
+  return (
+    <>
+      {series.filter((s) => s.shape).map((s) => s.points.map((p) => (
+        <g key={`m${s.key}${p.x}`} {...(p.tip ? tipHandlers(tip, p.tip) : {})}>
+          {p.tip ? <circle className="hit" cx={sx(p.x)} cy={sy(p.y)} r={HIT_R} /> : null}
+          <Marker shape={s.shape ?? "circle"} cx={sx(p.x)} cy={sy(p.y)} color={s.color} hollow={s.hollow} />
+        </g>
+      )))}
+    </>
+  );
 }
 
 export function XYChart({ aria, height, margin: m, x, y, series, labels = [], refs = [] }: XYChartProps) {
   const [ref, width] = useWidth<HTMLDivElement>(480);
-  const tip = useTip();
   const W = Math.max(280, width);
   const H = height;
-  const sx = (x.log ? logScale : linearScale)(x.domain, [m.l, W - m.r]);
-  const sy = logScale(y.domain, [H - m.b, m.t]);
+  const sx = scaleFor(x, [m.l, W - m.r]);
+  const sy = scaleFor(y, [H - m.b, m.t]);
   return (
     <div ref={ref}>
       <svg className="chart" viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label={aria}>
         <g className="grid">
-          {y.ticks.map((v) => <g key={`y${v}`}><line x1={m.l} x2={W - m.r} y1={sy(v)} y2={sy(v)} /><text x={m.l - 7} y={sy(v) + 3.5} textAnchor="end">{y.fmt(v)}</text></g>)}
-          {x.ticks.map((v) => <text key={`x${v}`} x={sx(v)} y={H - m.b + 16} textAnchor="middle">{x.fmt(v)}</text>)}
+          {y.ticks.map((v) => <g key={`y${v}`}><line x1={m.l} x2={W - m.r} y1={sy(v)} y2={sy(v)} /><text x={m.l - 7} y={sy(v) + 4} textAnchor="end">{y.fmt(v)}</text></g>)}
+          {x.ticks.map((v) => <text key={`x${v}`} x={sx(v)} y={H - m.b + 18} textAnchor="middle">{x.fmt(v)}</text>)}
         </g>
         <line className="axis" x1={m.l} x2={W - m.r} y1={H - m.b} y2={H - m.b} />
         <text x={m.l + (W - m.l - m.r) / 2} y={H - 4} textAnchor="middle" className="lbl">{x.title}</text>
-        <text x={m.l - 7} y={m.t - 8} textAnchor="end" className="lbl">{y.title}</text>
-        {refs.map((r) => (
-          <g key={r.label}>
+        <text x={4} y={m.t - 12} className="lbl">{y.title}</text>
+        {refs.map((r, i) => (
+          <g key={i}>
             <line x1={m.l} x2={W - m.r} y1={sy(r.y)} y2={sy(r.y)} stroke="var(--faint)" strokeWidth={1.2} strokeDasharray="2 4" />
             <text className="lbl" x={m.l + 6} y={sy(r.y) - 6}>{r.label}</text>
           </g>
@@ -79,11 +91,7 @@ export function XYChart({ aria, height, margin: m, x, y, series, labels = [], re
           <path key={`l${s.key}`} d={s.points.map((p, i) => `${i ? "L" : "M"}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join("")}
             fill="none" stroke={s.color} strokeWidth={2} strokeDasharray={s.dash} strokeLinejoin="round" />
         ))}
-        {series.filter((s) => s.shape).map((s) => s.points.map((p) => (
-          <g key={`m${s.key}${p.x}`} {...(p.tip ? tipHandlers(tip, p.tip) : {})}>
-            <Marker shape={s.shape ?? "circle"} cx={sx(p.x)} cy={sy(p.y)} color={s.color} hollow={s.hollow} />
-          </g>
-        )))}
+        <Points series={series} sx={sx} sy={sy} />
         {labels.map((l, i) => (
           <text key={i} className={`lbl${l.strong ? " strong" : ""}`} x={sx(l.x) + (l.dx ?? 0)} y={sy(l.y) + (l.dy ?? 0)} textAnchor={l.anchor ?? "start"}>{l.text}</text>
         ))}
