@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 import webbrowser
+from pathlib import Path
 
 import httpx
 
@@ -70,8 +71,13 @@ def main(argv: list[str] | None = None) -> int:
         print("No se pudo arrancar el laboratorio (¿los puertos ya están en uso?).")
         _stop(processes)
         return EXIT_FAILURE
-    print(f"Banco:   {bank_url}   (Swagger: {bank_url}/docs)", flush=True)
-    print(f"Celular: {client_url}   ← abra esta dirección", flush=True)
+    compiled = (Path(__file__).resolve().parent / "web" / "dist" / "escenario.html").is_file()
+    print(f"Escenario (proyectar):  {client_url}/", flush=True)
+    print(f"Consola del banco:      {bank_url}/consola/" + ("" if compiled else "  (falta compilar la web)"), flush=True)
+    print(f"Swagger del banco:      {bank_url}/docs", flush=True)
+    print(f"Interfaz clásica:       {client_url}/clasico", flush=True)
+    if not compiled:
+        print("Para la interfaz nueva:  cd web && npm ci && npm run build", flush=True)
     print("Ctrl+C para detener.", flush=True)
     if args.open:
         webbrowser.open(client_url)

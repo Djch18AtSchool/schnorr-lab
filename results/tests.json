@@ -1,8 +1,8 @@
 {
- "generated_at": 1795248009.7850165,
- "duration_s": 16.86,
- "total": 284,
- "passed": 284,
+ "generated_at": 1795248484.849807,
+ "duration_s": 19.57,
+ "total": 296,
+ "passed": 296,
  "failed": 0,
  "skipped": 0,
  "requirements": [
@@ -144,6 +144,11 @@
     {
      "name": "test_registro_guarda_solo_id_y_clave_publica",
      "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_parte_de_un_banco_vacio_y_crea_la_cuenta",
+     "file": "tests/test_acts.py",
      "outcome": "passed"
     },
     {
@@ -373,6 +378,11 @@
     {
      "name": "test_ejemplo_del_escrito_12_3_4_es_aceptado",
      "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_inicio_de_sesion_paso_a_paso_con_calculos_y_trazas_del_banco",
+     "file": "tests/test_acts.py",
      "outcome": "passed"
     },
     {
@@ -723,6 +733,11 @@
      "outcome": "passed"
     },
     {
+     "name": "test_inicio_sin_interaccion_en_un_mensaje",
+     "file": "tests/test_acts.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_la_prueba_solo_lleva_datos_publicos_y_el_reto_es_el_hash",
      "file": "tests/test_fiat_shamir.py",
      "outcome": "passed"
@@ -924,6 +939,11 @@
      "outcome": "passed"
     },
     {
+     "name": "test_impostor_bloquea_la_cuenta_y_despues_ana_no_puede_entrar",
+     "file": "tests/test_acts.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_rechaza_claves_publicas_invalidas[y=1]",
      "file": "tests/test_protocol.py",
      "outcome": "passed"
@@ -1045,6 +1065,11 @@
      "outcome": "passed"
     },
     {
+     "name": "test_celular_que_repite_r_permite_a_eve_despejar_x_y_entrar",
+     "file": "tests/test_acts.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_cliente_defectuoso_repite_el_compromiso",
      "file": "tests/test_attacks.py",
      "outcome": "passed"
@@ -1052,6 +1077,16 @@
     {
      "name": "test_enumeracion_se_niega_con_q_mayor_que_2_a_la_12",
      "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_espia_copia_el_inicio_de_sesion_y_su_repeticion_es_rechazada",
+     "file": "tests/test_acts.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_espia_repite_la_prueba_no_interactiva_y_el_banco_la_reconoce",
+     "file": "tests/test_acts.py",
      "outcome": "passed"
     },
     {
@@ -1192,6 +1227,16 @@
     {
      "name": "test_robar_la_base_solo_entrega_claves_publicas",
      "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_robo_de_base_con_2048_bits_no_permite_despejar_x",
+     "file": "tests/test_acts.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_robo_de_base_con_p_23_despeja_x_y_eve_entra",
+     "file": "tests/test_acts.py",
      "outcome": "passed"
     },
     {
@@ -1341,6 +1386,11 @@
      "outcome": "passed"
     },
     {
+     "name": "test_el_catalogo_trae_los_ocho_actos_con_su_elenco",
+     "file": "tests/test_acts.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_entradas_mal_formadas_devuelven_422[body0]",
      "file": "tests/test_api.py",
      "outcome": "passed"
@@ -1363,6 +1413,11 @@
     {
      "name": "test_errores_de_uso_de_la_api_del_celular",
      "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_errores_de_uso_de_los_actos",
+     "file": "tests/test_acts.py",
      "outcome": "passed"
     },
     {
@@ -1403,6 +1458,11 @@
     {
      "name": "test_los_eventos_del_banco_traen_traza_de_codigo_y_calculos",
      "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_los_mensajes_de_ana_y_eve_llegan_al_banco_con_su_dispositivo",
+     "file": "tests/test_acts.py",
      "outcome": "passed"
     },
     {
