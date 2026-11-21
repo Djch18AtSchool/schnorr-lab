@@ -18,6 +18,7 @@ results/*
 !results/bsgs.csv
 !results/bsgs.json
 !results/bsgs.png
+!results/tests.json
 
 # Editor / sistema
 .vscode/

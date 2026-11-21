@@ -6,11 +6,31 @@ resumen por requerimiento. Las pruebas marcadas ``xfail`` corresponden a funcion
 que el escrito deja para el informe final (esqueletos).
 """
 
+import json
 import re
+import time
+from pathlib import Path
 
 import pytest
 
 NO_REQ = "—"
+REPORT_PATH = Path(__file__).resolve().parent.parent / "results" / "tests.json"
+MIN_FULL_RUN = 250              # solo una ejecución completa reemplaza el reporte de la Consola
+REQUIREMENTS = {
+    "R1": "Generar y validar los parámetros públicos (p, q, g)",
+    "R2": "Registrar al cliente guardando solo su clave pública y",
+    "R3": "Generar r y c nuevos en cada inicio de sesión",
+    "R4": "Potencia modular rápida",
+    "R5": "Inverso modular con el algoritmo extendido de Euclides",
+    "R6": "Verificar la congruencia g^s ≡ t·y^c (mod p)",
+    "R7": "Cambiar el tamaño en bits de p y comparar la velocidad",
+    "R8": "Variante no interactiva (Fiat-Shamir) con marca de tiempo",
+    "R9": "Validar entradas y bloquear tras tres intentos fallidos",
+    "R10": "Laboratorio de ataques controlados",
+    "R11": "Interfaz de revisión: paso a paso, API y laboratorio en vivo",
+}
+_files: dict[str, str] = {}
+_started = time.time()
 _REQ_PATTERN = re.compile(r"^R(\d+)$")
 _rows: list[tuple[str, str, str]] = []
 
@@ -43,6 +63,7 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     if not (is_call or is_setup_problem):
         return
     test_name = report.nodeid.split("::")[-1]
+    _files[test_name] = report.nodeid.split("::")[0]
     for req in getattr(report, "req_ids", ()) or (NO_REQ,):
         _rows.append((req, test_name, _outcome_label(report)))
 
@@ -75,3 +96,26 @@ def pytest_terminal_summary(terminalreporter) -> None:
         by_req.setdefault(req, []).append(result)
     for req, results in by_req.items():
         terminalreporter.write_line(_summary_line(req, results))
+
+
+def _report_outcome(result: str) -> str:
+    return result if result in ("passed", "failed", "skipped") else "failed"
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Guarda results/tests.json (lo muestra la Consola del banco) tras una ejecución completa."""
+    if session.testscollected < MIN_FULL_RUN or not _rows:
+        return
+    by_req: dict[str, list[dict[str, str]]] = {}
+    for req, name, result in sorted(_rows, key=_sort_key):
+        by_req.setdefault(req, []).append({"name": name, "file": _files.get(name, ""),
+                                           "outcome": _report_outcome(result)})
+    unique = {(name, result) for _, name, result in _rows}
+    outcomes = [_report_outcome(result) for _, result in unique]
+    report = {"generated_at": time.time(), "duration_s": round(time.time() - _started, 2),
+              "total": len(unique), "passed": outcomes.count("passed"), "failed": outcomes.count("failed"),
+              "skipped": outcomes.count("skipped"),
+              "requirements": [{"id": req, "title": REQUIREMENTS.get(req, "Sin requerimiento"), "tests": tests}
+                               for req, tests in by_req.items()]}
+    REPORT_PATH.parent.mkdir(exist_ok=True)
+    REPORT_PATH.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")

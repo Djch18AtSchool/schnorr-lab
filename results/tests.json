@@ -1,0 +1,1496 @@
+{
+ "generated_at": 1795248009.7850165,
+ "duration_s": 16.86,
+ "total": 284,
+ "passed": 284,
+ "failed": 0,
+ "skipped": 0,
+ "requirements": [
+  {
+   "id": "R1",
+   "title": "Generar y validar los parámetros públicos (p, q, g)",
+   "tests": [
+    {
+     "name": "test_exige_p_igual_a_2q_mas_1_salvo_que_se_indique_lo_contrario",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_generador_exige_que_q_divida_a_p_menos_1",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_generador_se_obtiene_como_h_al_cuadrado_en_un_primo_seguro",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_get_group_devuelve_el_ejemplo_y_rechaza_nombres_desconocidos",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_get_group_genera_y_guarda_si_falta_en_el_archivo",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_get_group_rechaza_un_archivo_mal_formado",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_get_group_rechaza_un_grupo_alterado_en_el_archivo",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_de_ejemplo_23_11_4_es_valido",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_parametros_incorrectos_se_rechazan[21-10-4]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_parametros_incorrectos_se_rechazan[23-11-1]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_parametros_incorrectos_se_rechazan[23-11-23]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_parametros_incorrectos_se_rechazan[23-11-5]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_parametros_incorrectos_se_rechazan[23-7-4]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_parametros_incorrectos_se_rechazan[24-11-4]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_pertenencia_al_subgrupo_de_orden_q",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_primo_seguro_rechaza_tamanos_demasiado_pequenos",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_primos_seguros_pequenos_son_validos[128]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_primos_seguros_pequenos_son_validos[16]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_primos_seguros_pequenos_son_validos[32]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_primos_seguros_pequenos_son_validos[5]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_primos_seguros_pequenos_son_validos[64]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_validacion_explica_cada_falla_en_espanol",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R2",
+   "title": "Registrar al cliente guardando solo su clave pública y",
+   "tests": [
+    {
+     "name": "test_el_banco_nunca_contiene_x_ni_despues_de_iniciar_sesion",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_vista_de_usuarios_no_permite_modificar_el_banco",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_las_cuentas_muestran_solo_y_y_la_actividad_observada",
+     "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_guarda_solo_id_y_clave_publica",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_x_queda_en_el_celular_y_nunca_llega_al_banco",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R3",
+   "title": "Generar r y c nuevos en cada inicio de sesión",
+   "tests": [
+    {
+     "name": "test_cliente_rechaza_x_fuera_de_rango[-1]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cliente_rechaza_x_fuera_de_rango[0]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cliente_rechaza_x_fuera_de_rango[11]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_cliente_borra_r_despues_de_responder",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_r_y_c_no_se_repiten_en_1000_inicios_de_sesion",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_x_aleatoria_queda_en_el_rango_1_a_q_menos_1",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R4",
+   "title": "Potencia modular rápida",
+   "tests": [
+    {
+     "name": "test_cada_backend_coincide_con_pow_en_casos_aleatorios[gmpy2]",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cada_backend_coincide_con_pow_en_casos_aleatorios[nativa]",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cada_backend_coincide_con_pow_en_casos_aleatorios[propia]",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_con_traza_siempre_usa_la_implementacion_propia[gmpy2]",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_con_traza_siempre_usa_la_implementacion_propia[nativa]",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_validacion_no_depende_del_backend[gmpy2]",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_validacion_no_depende_del_backend[nativa]",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_validacion_no_depende_del_backend[propia]",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_coincide_con_pow_en_1000_casos_aleatorios",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_rechaza_exponente_negativo_o_modulo_menor_que_2[-1-23]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_rechaza_exponente_negativo_o_modulo_menor_que_2[3--5]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_rechaza_exponente_negativo_o_modulo_menor_que_2[3-0]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_rechaza_exponente_negativo_o_modulo_menor_que_2[3-1]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_reduce_bases_negativas_como_pow",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_traza_un_paso_por_bit_del_exponente",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_valores_de_referencia_del_escrito[4-11-23-1]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_valores_de_referencia_del_escrito[4-5-23-12]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_valores_de_referencia_del_escrito[4-7-23-8]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_valores_de_referencia_del_escrito[5-0-23-1]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_pow_valores_de_referencia_del_escrito[8-3-23-6]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R5",
+   "title": "Inverso modular con el algoritmo extendido de Euclides",
+   "tests": [
+    {
+     "name": "test_extended_gcd_cumple_identidad_de_bezout_en_casos_aleatorios",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_extended_gcd_ejemplo_del_escrito",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_coincide_con_sympy_en_1000_casos_aleatorios",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_lanza_error_si_no_existe_inverso[0-23]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_lanza_error_si_no_existe_inverso[23-23]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_lanza_error_si_no_existe_inverso[3-1]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_lanza_error_si_no_existe_inverso[4-22]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_traza_divisiones_y_despeje",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_valores_de_referencia[-2-11-5]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_valores_de_referencia[18-23-9]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_valores_de_referencia[6-23-4]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_mod_inverse_valores_de_referencia[9-11-5]",
+     "file": "tests/test_modular.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R6",
+   "title": "Verificar la congruencia g^s ≡ t·y^c (mod p)",
+   "tests": [
+    {
+     "name": "test_completitud_todo_cliente_honesto_es_aceptado",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_ejemplo_del_escrito_12_3_4_es_aceptado",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_quien_no_conoce_x_es_rechazado_con_reto_distinto_al_adivinado",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_respuesta_falsa_s_5_es_rechazada",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R7",
+   "title": "Cambiar el tamaño en bits de p y comparar la velocidad",
+   "tests": [
+    {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[rfc-2048]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[rfc-3072]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[safe-1024]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[safe-256]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[safe-512]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[schnorr-2048]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[schnorr-3072]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_autenticacion_honesta_con_cada_tamano_de_p[toy]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_backend_desconocido_lanza_error_en_espanol",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cli_imprime_la_tabla_y_guarda_resultados",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_backend_por_defecto_es_el_propio",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_generate_acepta_tamanos_y_nombres_de_grupos",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_get_group_genera_y_guarda_un_grupo_de_schnorr_si_falta",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_get_group_rfc_usa_el_rfc_y_rechaza_otros_tamanos",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_gmpy2_sin_instalar_lanza_error_claro",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_de_schnorr_rechaza_tamanos_imposibles[10-1]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_de_schnorr_rechaza_tamanos_imposibles[16-16]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_de_schnorr_rechaza_tamanos_imposibles[17-16]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_de_schnorr_tiene_los_tamanos_pedidos_y_es_valido[18-16]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_de_schnorr_tiene_los_tamanos_pedidos_y_es_valido[512-160]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_de_schnorr_tiene_los_tamanos_pedidos_y_es_valido[64-32]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_rfc_tiene_el_tamano_y_es_primo_seguro_con_g_2[2048]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_rfc_tiene_el_tamano_y_es_primo_seguro_con_g_2[3072]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupos_de_schnorr_del_repositorio_tienen_q_de_224_y_256_bits[schnorr-2048]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupos_de_schnorr_del_repositorio_tienen_q_de_224_y_256_bits[schnorr-3072]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupos_rfc_y_de_schnorr_son_validos[rfc-2048]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupos_rfc_y_de_schnorr_son_validos[rfc-3072]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupos_rfc_y_de_schnorr_son_validos[schnorr-2048]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupos_rfc_y_de_schnorr_son_validos[schnorr-3072]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupos_seguros_del_repositorio_son_validos[safe-1024]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupos_seguros_del_repositorio_son_validos[safe-256]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupos_seguros_del_repositorio_son_validos[safe-512]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hexadecimal_del_rfc_coincide_con_su_formula_de_pi[2048]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hexadecimal_del_rfc_coincide_con_su_formula_de_pi[3072]",
+     "file": "tests/test_params.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_variable_de_entorno_elige_el_backend",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_latencia_mide_una_autenticacion_completa",
+     "file": "tests/test_contracts.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_measure_auth_rechaza_cero_repeticiones",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_measure_guarda_tabla_y_graficas",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_measure_omite_gmpy2_con_aviso_si_no_esta_instalado",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_nivel_de_seguridad_de_la_definicion_10[1024-1023-80]",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_nivel_de_seguridad_de_la_definicion_10[2048-160-80]",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_nivel_de_seguridad_de_la_definicion_10[2048-2047-112]",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_nivel_de_seguridad_de_la_definicion_10[2048-224-112]",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_nivel_de_seguridad_de_la_definicion_10[256-None-<80]",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_nivel_de_seguridad_de_la_definicion_10[3072-256-128]",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_nivel_de_seguridad_de_la_definicion_10[3072-3071-128]",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_nivel_de_seguridad_de_la_definicion_10[512-511-<80]",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_5_muestra_la_latencia_medida_y_las_predicciones",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_razon_y_predicciones_usan_el_tamano_anterior_de_la_misma_serie_y_backend",
+     "file": "tests/test_latency.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_reiniciar_con_un_grupo_desconocido_devuelve_400",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_reiniciar_el_laboratorio_cambia_el_grupo_y_borra_secretos",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_use_backend_restaura_el_anterior_incluso_si_hay_error",
+     "file": "tests/test_backends.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R8",
+   "title": "Variante no interactiva (Fiat-Shamir) con marca de tiempo",
+   "tests": [
+    {
+     "name": "test_cambiar_cualquier_dato_cambia_el_reto",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_codificacion_canonica_con_p_23_reconstruida_byte_a_byte",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_con_proteccion_se_exige_la_marca_de_tiempo",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_el_prefijo_de_longitud_evita_confundir_el_id_con_m",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_enteros_con_longitud_fija_de_p",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hash_rechaza_entradas_fuera_de_rango[m<0]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hash_rechaza_entradas_fuera_de_rango[m=2^64]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hash_rechaza_entradas_fuera_de_rango[t<0]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hash_rechaza_entradas_fuera_de_rango[t=0]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hash_rechaza_entradas_fuera_de_rango[t=p]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hash_rechaza_entradas_fuera_de_rango[y=0]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_hash_rechaza_entradas_fuera_de_rango[y=p]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_inicio_de_sesion_no_interactivo_en_un_solo_mensaje",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_prueba_solo_lleva_datos_publicos_y_el_reto_es_el_hash",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_los_rechazos_por_frescura_no_cuentan_como_fallos",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_m_none_se_omite_de_la_codificacion",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_motivos_de_rechazo_por_frescura",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_3_inicia_sesion_sin_interaccion_y_rechaza_repeticiones[None]",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_3_inicia_sesion_sin_interaccion_y_rechaza_repeticiones[safe-256]",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_prueba_con_m_fuera_de_la_ventana_es_rechazada",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_prueba_con_s_alterado_es_rechazada_y_no_se_registra",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_prueba_de_usuario_no_registrado_es_rechazada",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_prueba_no_interactiva_valida_es_aceptada",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_prueba_presentada_con_otro_usuario_es_rechazada",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_prueba_repetida_es_rechazada",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_prueba_valida_aceptada_y_registrada[safe-512]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_prueba_valida_aceptada_y_registrada[toy]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_de_pruebas_usadas",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_reto_hash_es_deterministico_y_menor_que_q",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_s_fuera_de_rango_es_rechazado[-1]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_s_fuera_de_rango_es_rechazado[11]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_sin_proteccion_la_misma_prueba_se_acepta_dos_veces",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_sin_proteccion_no_se_usa_m_ni_el_registro",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_t_fuera_del_subgrupo_es_rechazado_y_cuenta_un_fallo[-4]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_t_fuera_del_subgrupo_es_rechazado_y_cuenta_un_fallo[0]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_t_fuera_del_subgrupo_es_rechazado_y_cuenta_un_fallo[23]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_t_fuera_del_subgrupo_es_rechazado_y_cuenta_un_fallo[5]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_tres_pruebas_fallidas_bloquean_la_cuenta",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_una_prueba_aceptada_reinicia_los_fallos",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_ventana_negativa_es_uso_incorrecto",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_verify_proof_con_el_ejemplo_del_escrito_usa_la_misma_matematica",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_verify_proof_entrega_la_y_guardada_al_calcular_el_reto",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_verify_proof_no_calcula_el_reto_si_la_entrada_es_invalida[t-fuera-del-subgrupo]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_verify_proof_no_calcula_el_reto_si_la_entrada_es_invalida[usuario-inexistente]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_verify_proof_no_toca_las_sesiones_interactivas",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_verify_proof_rechaza_un_reto_fuera_de_rango_como_uso_incorrecto[-1]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_verify_proof_rechaza_un_reto_fuera_de_rango_como_uso_incorrecto[11]",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_verify_proof_respeta_el_bloqueo",
+     "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R9",
+   "title": "Validar entradas y bloquear tras tres intentos fallidos",
+   "tests": [
+    {
+     "name": "test_abandonar_retos_para_esperar_el_adivinado_no_evita_el_bloqueo",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_banco_rechaza_reto_fijo_fuera_de_rango",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_bloquea_al_tercer_fallo_y_rechaza_el_cuarto_intento_aunque_sea_valido",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cada_sesion_se_usa_una_sola_vez",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_claves_publicas_invalidas[y=1]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_claves_publicas_invalidas[y=23]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_claves_publicas_invalidas[y=5]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_registro_repetido_e_identificadores_invalidos",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_s_fuera_de_rango[-1]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_s_fuera_de_rango[100]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_s_fuera_de_rango[11]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_t_fuera_del_subgrupo[-4]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_t_fuera_del_subgrupo[0]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_t_fuera_del_subgrupo[23]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_rechaza_t_fuera_del_subgrupo[5]",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_reto_para_usuario_inexistente_se_rechaza",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_tres_pruebas_invalidas_bloquean_y_la_alerta_lo_explica",
+     "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_un_acceso_exitoso_reinicia_el_contador_de_fallos",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_un_reto_nuevo_descarta_la_sesion_pendiente_y_cuenta_un_fallo",
+     "file": "tests/test_protocol.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R10",
+   "title": "Laboratorio de ataques controlados",
+   "tests": [
+    {
+     "name": "test_ajustes_de_costo_por_operacion_y_crecimiento",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_ataque_fuera_de_linea_devuelve_resultado_y_reporte",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_bsgs_cuenta_4_pasos_de_bebe_y_2_de_gigante_en_el_ejemplo",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_bsgs_encuentra_x_7_con_m_4",
+     "file": "tests/test_contracts.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_bsgs_recupera_todos_los_logaritmos_del_grupo_de_ejemplo",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_bsgs_recupera_x_aleatorias[schnorr-64-28]",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_bsgs_recupera_x_aleatorias[seguro-32]",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_bsgs_sin_solucion_lanza_error",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cliente_defectuoso_repite_el_compromiso",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_enumeracion_se_niega_con_q_mayor_que_2_a_la_12",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_experimento_guarda_csv_json_y_grafica",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_experimento_rechaza_q_demasiado_grande",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_extraccion_con_formula_del_escrito",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_extraccion_exige_retos_distintos",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_impostor_en_vivo_es_rechazado_y_consume_intentos",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_impostor_no_gana_con_q_grande",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_impostor_reporta_la_probabilidad_antes_del_bloqueo",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_repeticion_inmediata_cae_dentro_de_la_ventana",
+     "file": "tests/test_replay.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_repeticion_tambien_funciona_sin_proteccion_en_un_grupo_grande",
+     "file": "tests/test_replay.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_victima_entra_en_ambos_bancos_antes_del_ataque",
+     "file": "tests/test_replay.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_m_es_el_techo_de_la_raiz_de_q[1-1]",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_m_es_el_techo_de_la_raiz_de_q[1099511627776-1048576]",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_m_es_el_techo_de_la_raiz_de_q[11-4]",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_m_es_el_techo_de_la_raiz_de_q[16-4]",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_m_es_el_techo_de_la_raiz_de_q[17-5]",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_m_es_el_techo_de_la_raiz_de_q[4-2]",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_m_es_el_techo_de_la_raiz_de_q[5-3]",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_motivos_de_cada_intento_del_espia",
+     "file": "tests/test_replay.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_6_recupera_x_con_bsgs_y_rechaza_q_grandes",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_prediccion_extrapola_raiz_de_q_en_anios",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_repeticion_se_acepta_sin_proteccion_y_se_rechaza_con_proteccion",
+     "file": "tests/test_contracts.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_repetir_la_prueba_no_interactiva_capturada_es_rechazado",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_repetir_la_respuesta_capturada_es_rechazado",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_repetir_la_respuesta_desde_otro_dispositivo_genera_una_alerta_con_evidencia",
+     "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_reutilizar_r_permite_recuperar_x_7",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_reutilizar_r_tambien_rompe_un_grupo_grande",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_robar_la_base_de_un_grupo_real_no_permite_despejar_x",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_robar_la_base_solo_entrega_claves_publicas",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_run_con_q_grande_explica_que_es_inviable",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_run_del_menu_imprime_tabla_y_predicciones",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_run_del_simulador_resume_la_comparacion",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_run_imprime_el_reporte_en_espanol",
+     "file": "tests/test_replay.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_run_roba_y_del_banco_y_recupera_x_7",
+     "file": "tests/test_bsgs.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_simulador_ejemplo_c_2_s_9_da_t_2",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_simulador_no_genera_t_igual_a_1",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_tasa_del_impostor_se_acerca_a_1_entre_q",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_tiempo_de_bsgs_crece_como_raiz_de_q",
+     "file": "tests/test_contracts.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_transcripciones_reales_y_simuladas_tienen_la_misma_distribucion",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_transcripciones_simuladas_cumplen_la_verificacion_del_banco",
+     "file": "tests/test_attacks.py",
+     "outcome": "passed"
+    }
+   ]
+  },
+  {
+   "id": "R11",
+   "title": "Interfaz de revisión: paso a paso, API y laboratorio en vivo",
+   "tests": [
+    {
+     "name": "test_banco_solo_guarda_y",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_bitacora_asigna_ids_crecientes_y_devuelve_los_nuevos",
+     "file": "tests/test_infra.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_bitacora_rechaza_fuentes_desconocidas_y_copia_la_correlacion",
+     "file": "tests/test_infra.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cada_paso_muestra_sus_valores_y_la_traza_con_p_pequeno",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cada_peticion_queda_registrada_con_origen_dispositivo_y_senal",
+     "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cliente_de_demostracion_devuelve_x_pero_no_entra_al_banco_ni_a_la_auditoria",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cliente_http_con_grupo_de_ejemplo_no_envia_campos_secretos",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cliente_http_informa_si_la_api_no_esta_disponible",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cliente_http_inicia_sesion_y_x_no_aparece_en_ningun_mensaje",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cliente_http_usa_otro_id_si_el_usuario_ya_existe",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_compromiso_rechaza_usuario_inexistente_t_invalido_y_cuenta_bloqueada",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_configuracion_y_pagina_principal",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cuerpo_mal_formado_genera_alerta_baja",
+     "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cuerpo_que_no_es_json_tambien_se_audita",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_cuerpo_rechazado_queda_en_la_auditoria_y_la_respuesta_no_repite_la_entrada",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_detector_marca_campos_no_publicos_y_valores_de_x_con_q_grande",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_detector_solo_anota_coincidencias_con_q_pequeno",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_mal_formadas_devuelven_422[body0]",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_mal_formadas_devuelven_422[body1]",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_mal_formadas_devuelven_422[body2]",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_entradas_mal_formadas_devuelven_422[body3]",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_errores_de_uso_de_la_api_del_celular",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_flujo_completo_con_el_ejemplo_del_escrito",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_formato_sse_y_flujo_de_eventos",
+     "file": "tests/test_infra.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_grupo_desconocido_en_la_variable_de_entorno_falla_al_iniciar",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_iniciar_sesion_sin_cuenta_termina_con_error_explicado",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_consola_no_se_observa_a_si_misma",
+     "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_la_traza_omite_el_docstring_y_falla_si_el_texto_no_existe",
+     "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_los_eventos_del_banco_se_correlacionan_con_los_pasos_del_celular",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_los_eventos_del_banco_traen_traza_de_codigo_y_calculos",
+     "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_menu_interactivo_termina_con_la_opcion_0",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_1_reproduce_exactamente_la_transcripcion_del_escrito",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_1_verbose_muestra_pasos_de_mod_pow_y_euclides",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_2_autentica_con_el_grupo_rfc_de_2048_bits",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_2_autentica_y_muestra_el_bloqueo[safe-256]",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_2_autentica_y_muestra_el_bloqueo[toy]",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_opcion_4_ejecuta_el_laboratorio_de_ataques",
+     "file": "tests/test_demo.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_params_muestra_el_grupo_de_ejemplo_como_cadenas",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_de_mecanismos_describe_flujos_y_pasos",
+     "file": "tests/test_infra.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_e_inicio_de_sesion_paso_a_paso",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_invalido_devuelve_400_con_motivo[1]",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_invalido_devuelve_400_con_motivo[5]",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_repetido_devuelve_400",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_registro_repetido_termina_rechazado",
+     "file": "tests/test_client_app.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_respuesta_fuera_de_rango_y_sesion_reutilizada",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_resumen_con_totales_series_y_rutas",
+     "file": "tests/test_observability.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_veredicto_no_afirma_ausencia_de_x_si_hubo_coincidencias",
+     "file": "tests/test_api.py",
+     "outcome": "passed"
+    }
+   ]
+  }
+ ]
+}
