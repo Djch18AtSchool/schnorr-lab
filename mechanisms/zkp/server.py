@@ -10,8 +10,11 @@ from typing import Any
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 
+from infra import telemetry
 from infra.server_context import ServerContext
+from infra.spans import code_span
 from mechanisms.common import ErrorResponse, error_response
+from mechanisms.zkp import observe
 from mechanisms.zkp.info import INFO, MECHANISM_ID
 from mechanisms.zkp.schemas import (
     CommitRequest,
@@ -29,13 +32,15 @@ from protocol import GroupParams, get_group
 from protocol.bank import Bank
 from protocol.client import Client
 from protocol.fiat_shamir import NizkProof, verify_nizk
-from protocol.transcript import Reason, VerifyResult
+from protocol.transcript import Reason, Transcript, VerifyResult
 
 PREFIX = "/zkp"
 TAG = "ZKP · Schnorr"
 GROUP_SETTING = "zkp_group"
 DEFAULT_GROUP = "toy"
 MAX_TRACE_BITS = 64                 # con p más grande la traza bit a bit es ilegible
+LOGGER = "banco.zkp"
+MAX_REMEMBERED_SESSIONS = 10_000    # sesiones consumidas que se recuerdan para reconocer repeticiones
 COMMIT_ERROR_STATUS = {
     Reason.USER_NOT_FOUND: status.HTTP_404_NOT_FOUND,
     Reason.ACCOUNT_LOCKED: status.HTTP_423_LOCKED,
@@ -68,6 +73,8 @@ class ZkpServer:
     def __init__(self, ctx: ServerContext, settings: Mapping[str, str]) -> None:
         self._ctx = ctx
         self._bank = Bank(get_group(settings.get(GROUP_SETTING, DEFAULT_GROUP)))
+        self._session_users: dict[str, str] = {}     # sesión → usuario (para la telemetría)
+        self._consumed: dict[str, str] = {}          # sesiones ya usadas → usuario
 
     @property
     def gp(self) -> GroupParams:
@@ -78,6 +85,8 @@ class ZkpServer:
         bank = Bank(get_group(settings.get(GROUP_SETTING, self.gp.name)))
         with self._ctx.lock:
             self._bank = bank
+            self._session_users.clear()
+            self._consumed.clear()
 
     def describe(self) -> dict[str, Any]:
         """Grupo en uso, para el encabezado de la interfaz. Cubre R7 y R11."""
@@ -90,8 +99,27 @@ class ZkpServer:
         with self._ctx.lock:
             return {user_id: {"y": str(y)} for user_id, y in self._bank.users.items()}
 
-    def _event(self, kind: str, title: str, data: Mapping[str, Any]) -> None:
-        self._ctx.events.publish("banco", kind, title, mechanism=MECHANISM_ID, data=data)
+    def account_status(self) -> dict[str, dict[str, Any]]:
+        """Estado de cada cuenta: activa o bloqueada y los intentos que le quedan. Cubre R9."""
+        with self._ctx.lock:
+            return {user_id: {"status": "bloqueada" if self._bank.is_locked(user_id) else "activa",
+                              "attempts_left": self._bank.attempts_left(user_id)}
+                    for user_id in self._bank.users}
+
+    def _event(self, kind: str, title: str, data: Mapping[str, Any], *, span: dict[str, Any] | None = None,
+               math: list[str] | None = None, signals: tuple[str, ...] | list[str] = (),
+               user_id: str | None = None, evidence: Mapping[str, str] | None = None) -> None:
+        """Publica una línea de log estructurada (con traza y cálculos) y avisa a la telemetría."""
+        payload: dict[str, Any] = {"logger": LOGGER, **data}
+        if span is not None:
+            payload["span"] = span
+        if math:
+            payload["math"] = math
+        if signals:
+            payload["signal"] = signals[-1]
+        for name in signals:
+            telemetry.signal(name, user_id, MECHANISM_ID, evidence)
+        self._ctx.events.publish("banco", kind, title, mechanism=MECHANISM_ID, data=payload)
 
     def _trace(self) -> list[str] | None:
         return [] if self.gp.bits <= MAX_TRACE_BITS else None
@@ -101,6 +129,8 @@ class ZkpServer:
     def read_params(self) -> ParamsResponse:
         """Parámetros públicos del grupo (p, q, g). Cubre R1 y R11."""
         gp = self.gp
+        self._event("paso", "params", {"grupo": gp.name, "bits": str(gp.bits)},
+                    span=code_span(ZkpServer.read_params, ("return ParamsResponse",)))
         return ParamsResponse(name=gp.name, p=str(gp.p), q=str(gp.q), g=str(gp.g), bits=gp.bits)
 
     def register(self, body: RegisterRequest) -> RegisterResponse | JSONResponse:
@@ -109,44 +139,85 @@ class ZkpServer:
         Cubre R2, R9 y R11.
         """
         self._ctx.audit(f"{PREFIX}/register", body.model_dump(), MECHANISM_ID)
-        self._event("registro", "El banco recibe una clave pública", {"user_id": body.user_id, "y": body.y})
+        y = int(body.y)
         with self._ctx.lock:
-            result = self._bank.register(body.user_id, int(body.y))
+            result = self._bank.register(body.user_id, y)
+        fields = {"user": body.user_id, "y": observe.short(y)}
+        math = observe.subgroup_math("y", y, self.gp)
+        span = observe.register_span(result.reason)
         if not result.accepted:
-            self._event("error", f"Registro rechazado: {result.reason}", {"user_id": body.user_id})
+            self._event("error", "register", {**fields, "accepted": "false", "reason": str(result.reason)},
+                        span=span, math=math, signals=["account.rejected"], user_id=body.user_id)
             return error_response(status.HTTP_400_BAD_REQUEST, result.reason)
-        self._event("registro", "y ∈ subgrupo de orden q ✔ → el banco guarda (id, y)",
-                    {"user_id": body.user_id, "y": body.y, "guardado": "solo y"})
-        return RegisterResponse(user_id=body.user_id, stored={"y": str(int(body.y))})
+        self._event("registro", "register", {**fields, "subgroup": "ok", "stored": "solo y"}, span=span,
+                    math=math, signals=["account.created"], user_id=body.user_id)
+        return RegisterResponse(user_id=body.user_id, stored={"y": str(y)})
 
     def login_commit(self, body: CommitRequest) -> CommitResponse | JSONResponse:
         """Recibe t, lo valida y responde con un reto c aleatorio (sesión de un solo uso). Cubre R3, R9 y R11."""
         self._ctx.audit(f"{PREFIX}/login/commit", body.model_dump(), MECHANISM_ID)
-        self._event("paso", "El banco recibe el compromiso t", {"user_id": body.user_id, "t": body.t})
+        t = int(body.t)
         with self._ctx.lock:
-            outcome = self._bank.challenge(body.user_id, int(body.t))
+            outcome = self._bank.challenge(body.user_id, t)
+        fields = {"user": body.user_id, "t": observe.short(t)}
+        math = observe.subgroup_math("t", t, self.gp)
         if isinstance(outcome, VerifyResult):
-            self._event("error", f"Compromiso rechazado: {outcome.reason}",
-                        {"user_id": body.user_id, "attempts_left": str(outcome.attempts_left)})
+            self._event("error", "challenge",
+                        {**fields, "reason": str(outcome.reason), "attempts_left": str(outcome.attempts_left)},
+                        span=observe.challenge_span(outcome.reason), math=math,
+                        signals=observe.verdict_signals(outcome, replayed=False), user_id=body.user_id)
             code = COMMIT_ERROR_STATUS.get(outcome.reason, status.HTTP_400_BAD_REQUEST)
             return error_response(code, outcome.reason)
         session_id, c = outcome
-        self._event("paso", "t ∈ subgrupo ✔ → el banco elige el reto c al azar",
-                    {"session_id": session_id, "c": str(c)})
+        self._remember_session(session_id, body.user_id)
+        self._event("paso", "challenge", {**fields, "subgroup": "ok", "c": observe.short(c),
+                                          "session": session_id[:8] + "…"},
+                    span=observe.challenge_span(None), math=[*math, f"c = {observe.short(c)} (al azar en [0, q − 1])"],
+                    signals=["auth.challenge"], user_id=body.user_id)
         return CommitResponse(session_id=session_id, c=str(c))
+
+    def _remember_session(self, session_id: str, user_id: str) -> None:
+        with self._ctx.lock:
+            self._session_users[session_id] = user_id
+
+    def _consume_session(self, session_id: str, result: VerifyResult) -> tuple[str | None, bool]:
+        """(usuario de la sesión, ¿era una sesión ya usada?) y la marca como consumida."""
+        with self._ctx.lock:
+            if result.reason == Reason.INVALID_SESSION:
+                user_id = self._consumed.get(session_id)
+                return user_id, user_id is not None
+            user_id = self._session_users.pop(session_id, None)
+            if user_id is not None:
+                self._consumed[session_id] = user_id
+                while len(self._consumed) > MAX_REMEMBERED_SESSIONS:
+                    self._consumed.pop(next(iter(self._consumed)))
+            return user_id, False
+
+    def _verify_math(self, user_id: str | None, transcript: Transcript | None,
+                     details: Mapping[str, int]) -> list[str]:
+        y = self._bank.users.get(user_id or "")
+        if y is None or transcript is None:
+            return []
+        return observe.verify_math(dict(details), y, transcript.t, transcript.c, transcript.s, self.gp)
 
     def login_respond(self, body: RespondRequest) -> VerifyResponse:
         """Verifica g^s ≡ t·y^c y t ≡ g^s·(y^c)^-1 (mod p); la sesión se consume. Cubre R6, R9 y R11."""
         self._ctx.audit(f"{PREFIX}/login/respond", body.model_dump(), MECHANISM_ID)
-        self._event("paso", "El banco recibe la respuesta s", {"session_id": body.session_id, "s": body.s})
         trace = self._trace()
         with self._ctx.lock:
             result = self._bank.verify(body.session_id, int(body.s), trace)
+        user_id, replayed = self._consume_session(body.session_id, result)
         payload = verify_payload(result)
         verdict = "ACCESO CONCEDIDO" if result.accepted else f"Rechazado: {result.reason}"
-        self._event("verificacion", verdict, {**payload.details, "accepted": str(result.accepted),
-                                               "attempts_left": str(result.attempts_left),
-                                               "trace": "\n".join(trace or [])})
+        fields = {"session": body.session_id[:8] + "…", "user": user_id or "?", "s": observe.short(body.s),
+                  **{key: observe.short(value) for key, value in payload.details.items()},
+                  "accepted": str(result.accepted).lower(), "reason": str(result.reason),
+                  "attempts_left": str(result.attempts_left)}
+        self._event("verificacion", verdict, {**fields, "trace": "\n".join(trace or [])},
+                    span=observe.verify_span(result),
+                    math=self._verify_math(user_id, result.transcript, result.details),
+                    signals=observe.verdict_signals(result, replayed), user_id=user_id,
+                    evidence={"session_id": body.session_id} if replayed else None)
         return payload
 
     def login_nizk(self, body: NizkRequest) -> VerifyResponse | JSONResponse:
@@ -156,7 +227,6 @@ class ZkpServer:
         fuera de la ventana permitida (definición 14).
         """
         self._ctx.audit(f"{PREFIX}/login/nizk", body.model_dump(), MECHANISM_ID)
-        self._event("paso", "El banco recibe una prueba no interactiva (t, s, m)", body.model_dump())
         proof = NizkProof(user_id=body.user_id, t=int(body.t), s=int(body.s), m=int(body.m))
         try:
             with self._ctx.lock:
@@ -165,9 +235,17 @@ class ZkpServer:
             return error_response(status.HTTP_400_BAD_REQUEST, str(error))
         payload = verify_payload(result)
         verdict = "ACCESO CONCEDIDO" if result.accepted else f"Rechazado: {result.reason}"
-        challenge = {"c = H(p‖g‖y‖t‖id‖m) mod q": payload.transcript["c"]} if payload.transcript else {}
-        self._event("verificacion", verdict, {**challenge, **payload.details, "accepted": str(result.accepted),
-                                               "attempts_left": str(result.attempts_left)})
+        replayed = result.reason == Reason.PROOF_ALREADY_USED
+        challenge = {"c": payload.transcript["c"]} if payload.transcript else {}
+        fields = {"user": body.user_id, "t": observe.short(body.t), "s": observe.short(body.s), "m": body.m,
+                  **challenge, **{key: observe.short(value) for key, value in payload.details.items()},
+                  "accepted": str(result.accepted).lower(), "reason": str(result.reason),
+                  "attempts_left": str(result.attempts_left)}
+        math = ["c = SHA-256(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q" + (f" = {observe.short(challenge['c'])}" if challenge else "")]
+        self._event("verificacion", verdict, fields, span=observe.nizk_span(result),
+                    math=[*math, *self._verify_math(body.user_id, result.transcript, result.details)],
+                    signals=observe.verdict_signals(result, replayed), user_id=body.user_id,
+                    evidence={"t": body.t, "s": body.s} if replayed else None)
         return payload
 
     def demo_client(self, body: DemoClientRequest) -> DemoClientResponse | JSONResponse:

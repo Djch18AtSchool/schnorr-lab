@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from infra.events import EventLog
+from infra.telemetry import Telemetry
 
 MAX_AUDIT_ENTRIES = 10_000
 
@@ -25,10 +26,11 @@ class AuditEntry:
 
 
 class ServerContext:
-    """Bitácora de eventos, auditoría de cuerpos recibidos y un lock para el estado del banco. Cubre R11."""
+    """Bitácora de eventos, telemetría, auditoría de cuerpos recibidos y un lock para el estado del banco. Cubre R11."""
 
     def __init__(self) -> None:
         self.events = EventLog()
+        self.telemetry = Telemetry(self.events)
         self.lock = threading.Lock()     # el estado de los mecanismos no es seguro entre hilos
         self._audit: deque[AuditEntry] = deque(maxlen=MAX_AUDIT_ENTRIES)
         self._audit_lock = threading.Lock()

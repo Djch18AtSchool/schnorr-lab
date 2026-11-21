@@ -10,13 +10,18 @@ la auditoría de cuerpos recibidos, los eventos en tiempo real y el reinicio del
 
 import os
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, FastAPI, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
+from api.observability import RESULTS_DIR, locked_counter, telemetry_middleware
+from api.observability import router as observability_router
 from api.schemas import AuditEntryOut, EventOut, ResetRequest
 from api.validation import validation_handler
 from infra.events import CORRELATION_HEADER, current_correlation_id
@@ -30,9 +35,12 @@ GROUP_ENV_VAR = "SCHNORR_GROUP"
 DEFAULT_GROUP = "toy"
 GROUP_SETTING = "zkp_group"
 CORS_ENV_VAR = "BANK_CORS_ORIGINS"
-DEFAULT_CORS_ORIGINS = "http://127.0.0.1:8001,http://localhost:8001"
+DEFAULT_CORS_ORIGINS = "http://127.0.0.1:8001,http://localhost:8001,http://127.0.0.1:5173,http://localhost:5173"
 MAX_EVENTS_PAGE = 5_000
 PENDING_MESSAGE = "Disponible en el informe final"
+WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
+CONSOLE_PAGE = "consola.html"
+SWAGGER_VENDOR = WEB_DIST / "vendor" / "swagger"
 
 
 class BankState:
@@ -121,28 +129,65 @@ def _cors_origins(configured: str | None) -> list[str]:
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
+def _mount_console(app: FastAPI) -> None:
+    """Sirve la Consola del banco (web/dist) en /consola/ si ya está compilada. Cubre R11."""
+    page = WEB_DIST / CONSOLE_PAGE
+    if not page.is_file():
+        return
+
+    @app.get("/consola", include_in_schema=False)
+    @app.get("/consola/", include_in_schema=False)
+    def console() -> FileResponse:
+        return FileResponse(page)
+
+    app.mount("/consola", StaticFiles(directory=WEB_DIST), name="consola")
+
+
+def _offline_docs(app: FastAPI) -> None:
+    """Swagger con sus archivos locales (funciona sin internet) cuando la web está compilada."""
+    if not SWAGGER_VENDOR.is_dir():
+        return
+
+    @app.get("/docs", include_in_schema=False)
+    def docs() -> HTMLResponse:
+        return get_swagger_ui_html(openapi_url="/openapi.json", title=f"{app.title} · Swagger",
+                                   swagger_js_url="/consola/vendor/swagger/swagger-ui-bundle.js",
+                                   swagger_css_url="/consola/vendor/swagger/swagger-ui.css",
+                                   swagger_favicon_url="/consola/vendor/swagger/favicon-32x32.png")
+
+
 def create_app(group_name: str | None = None, cors_origins: str | None = None) -> FastAPI:
     """Construye el banco con todos los mecanismos registrados; el ZKP usa el grupo indicado. Cubre R11."""
     ctx = ServerContext()
     servers = create_servers(ctx, {GROUP_SETTING: group_name or os.environ.get(GROUP_ENV_VAR, DEFAULT_GROUP)})
     state = BankState(ctx, servers)
+    ctx.telemetry.locked_accounts = locked_counter(state)
+    offline = SWAGGER_VENDOR.is_dir()
     app = FastAPI(
         title="Schnorr Lab · API del banco",
-        version="0.3.0",
+        version="0.4.0",
+        docs_url=None if offline else "/docs",
         description=(
             "Banco del laboratorio de autenticación sin contraseñas. Cada mecanismo tiene sus rutas; "
             "el ZKP de Schnorr está en `/zkp`: `POST /zkp/register` con y → `POST /zkp/login/commit` con t "
-            "(devuelve c) → `POST /zkp/login/respond` con s. Todos los enteros viajan como cadenas decimales."
+            "(devuelve c) → `POST /zkp/login/respond` con s. Todos los enteros viajan como cadenas decimales. "
+            "La Consola del banco está en `/consola/`."
         ),
     )
     app.state.bank = state
     app.add_exception_handler(RequestValidationError, validation_handler(ctx, state.audited_paths))
+    app.middleware("http")(telemetry_middleware(frozenset(servers), CORRELATION_HEADER))
     app.middleware("http")(correlation_middleware)
     app.add_middleware(CORSMiddleware, allow_origins=_cors_origins(cors_origins), allow_methods=["GET", "POST"],
                        allow_headers=["Content-Type", CORRELATION_HEADER, "Last-Event-ID"])
     for server in servers.values():
         app.include_router(server.router())
     app.include_router(router)
+    app.include_router(observability_router)
+    RESULTS_DIR.mkdir(exist_ok=True)
+    app.mount("/results", StaticFiles(directory=RESULTS_DIR), name="results")
+    _mount_console(app)
+    _offline_docs(app)
     return app
 
 
