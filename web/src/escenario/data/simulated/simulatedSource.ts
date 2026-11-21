@@ -80,68 +80,43 @@ function eventsFor(scripted: ScriptedExchange, exchange: Exchange, firstId: numb
   return [...mechanism, accessEvent];
 }
 
-export function createSimulatedSource(options: SimulatedOptions = {}): ScenarioSource {
-  const delay = options.eventDelayMs ?? DEFAULT_EVENT_DELAY_MS;
-  const now = options.now ?? (() => Date.now() / 1000);
-  const newId = options.newId ?? randomId;
-  let runs: ReadonlyMap<string, ActRun> = new Map();
-  let listeners: ReadonlyArray<(event: BankEvent) => void> = [];
-  let lastEventId = 0;
+function scriptOf(actId: string): ScriptedAct {
+  const script = SCRIPTED_ACTS.find((a) => a.info.id === actId);
+  if (!script) throw new ApiError(`El acto «${actId}» no está en la simulación.`, 404);
+  return script;
+}
 
-  const config = (): PhoneConfig => ({
+function simulatedConfig(): PhoneConfig {
+  return {
     bank_url: BANK_URL, docs_url: `${BANK_URL}/docs`, console_url: `${BANK_URL}/consola`,
     mechanisms: [], acts: simulatedActs(), groups: [TOY_GROUP], group: TOY_GROUP.id,
-  });
+  };
+}
 
-  function emit(events: BankEvent[]): void {
-    const send = (): void => events.forEach((e) => listeners.forEach((l) => l(e)));
-    if (delay <= 0) send();
-    else setTimeout(send, delay);
-  }
+/** Ejecuta el siguiente paso del guion: devuelve el run nuevo y el registro del paso. */
+export function advanceRun(run: ActRun): { run: ActRun; record: ActStepRecord; script: ScriptedAct } {
+  if (run.next_index >= run.steps.length) throw new ApiError("El acto ya terminó.", 409);
+  const script = scriptOf(run.act);
+  const index = run.next_index;
+  const record = recordFor(script, run.id, index);
+  const isLast = index === run.steps.length - 1;
+  const next: ActRun = {
+    ...run,
+    next_index: index + 1,
+    status: isLast ? script.finalStatus : "en_curso",
+    steps: run.steps.map((s, i) => (i === index ? { ...s, record } : s)),
+  };
+  return { run: next, record, script };
+}
 
-  function scriptOf(actId: string): ScriptedAct {
-    const script = SCRIPTED_ACTS.find((a) => a.info.id === actId);
-    if (!script) throw new ApiError(`El acto «${actId}» no está en la simulación.`, 404);
-    return script;
-  }
-
-  async function nextStep(runId: string): Promise<ActRun> {
-    const run = runs.get(runId);
-    if (!run) throw new ApiError("No existe esa ejecución.", 404);
-    if (run.next_index >= run.steps.length) throw new ApiError("El acto ya terminó.", 409);
-    const script = scriptOf(run.act);
-    const index = run.next_index;
-    const record = recordFor(script, run.id, index);
-    const isLast = index === run.steps.length - 1;
-    const next: ActRun = {
-      ...run,
-      next_index: index + 1,
-      status: isLast ? script.finalStatus : "en_curso",
-      steps: run.steps.map((s, i) => (i === index ? { ...s, record } : s)),
-    };
-    runs = new Map(runs).set(runId, next);
-    const events = record.exchanges.flatMap((ex, k) => {
-      const batch = eventsFor(script.steps[index].exchanges[k], ex, lastEventId + 1, now());
-      lastEventId += batch.length;
-      return batch;
-    });
-    emit(events);
-    return next;
-  }
-
+/** Canal de eventos del banco simulado: entrega con una demora, como llegaría por SSE. */
+function createBus(delay: number): Pick<ScenarioSource, "subscribeBank"> & { emit: (events: BankEvent[]) => void } {
+  let listeners: ReadonlyArray<(event: BankEvent) => void> = [];
   return {
-    kind: "simulada",
-    loadConfig: async () => config(),
-    async startAct(act) {
-      const run = initialRun(scriptOf(act), newId());
-      runs = new Map(runs).set(run.id, run);
-      return run;
-    },
-    nextStep,
-    async resetLab(group) {
-      if (group !== TOY_GROUP.id) throw new ApiError("La simulación solo tiene el grupo de ejemplo (p = 23).", 400);
-      runs = new Map();
-      return config();
+    emit(events) {
+      const send = (): void => events.forEach((e) => listeners.forEach((l) => l(e)));
+      if (delay <= 0) send();
+      else setTimeout(send, delay);
     },
     subscribeBank(onEvent, onStatus) {
       listeners = [...listeners, onEvent];
@@ -150,5 +125,45 @@ export function createSimulatedSource(options: SimulatedOptions = {}): ScenarioS
         listeners = listeners.filter((l) => l !== onEvent);
       };
     },
+  };
+}
+
+export function createSimulatedSource(options: SimulatedOptions = {}): ScenarioSource {
+  const now = options.now ?? (() => Date.now() / 1000);
+  const newId = options.newId ?? randomId;
+  const bus = createBus(options.eventDelayMs ?? DEFAULT_EVENT_DELAY_MS);
+  let runs: ReadonlyMap<string, ActRun> = new Map();
+  let lastEventId = 0;
+
+  function eventsOf(script: ScriptedAct, record: ActStepRecord): BankEvent[] {
+    return record.exchanges.flatMap((ex, k) => {
+      const batch = eventsFor(script.steps[record.index].exchanges[k], ex, lastEventId + 1, now());
+      lastEventId += batch.length;
+      return batch;
+    });
+  }
+
+  return {
+    kind: "simulada",
+    loadConfig: async () => simulatedConfig(),
+    async startAct(act) {
+      const run = initialRun(scriptOf(act), newId());
+      runs = new Map(runs).set(run.id, run);
+      return run;
+    },
+    async nextStep(runId) {
+      const current = runs.get(runId);
+      if (!current) throw new ApiError("No existe esa ejecución.", 404);
+      const { run, record, script } = advanceRun(current);
+      runs = new Map(runs).set(runId, run);
+      bus.emit(eventsOf(script, record));
+      return run;
+    },
+    async resetLab(group) {
+      if (group !== TOY_GROUP.id) throw new ApiError("La simulación solo tiene el grupo de ejemplo (p = 23).", 400);
+      runs = new Map();
+      return simulatedConfig();
+    },
+    subscribeBank: bus.subscribeBank,
   };
 }

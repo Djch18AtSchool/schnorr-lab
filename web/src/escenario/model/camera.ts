@@ -4,7 +4,7 @@
  * desplazamiento del «mundo».
  */
 import type { ActRun } from "../../shared/types";
-import { exchangeOf, lastDecision, stepOf } from "./beats";
+import { exchangeOf, stepOf } from "./beats";
 import { eveOnStage } from "./eveTerminal";
 import type { Beat, Focus } from "./types";
 
@@ -52,9 +52,7 @@ export function shotFor(run: ActRun, beat: Beat, cam: CamMode, review: number | 
   const focus = beatFocus(run, beat);
   if (cam === "wide" || focus === "wide") return { kind: "wide" };
   if (focus === "summary") return { kind: "summary" };
-  const decision = beat.kind === "outcome" ? lastDecision(run) : null;
-  const decisionRow = decision ? `s${decision.stepIndex}:x${decision.exchangeIndex}:res` : null;
-  const rowId = ROW_KINDS.includes(beat.kind) ? beat.id : decisionRow;
+  const rowId = ROW_KINDS.includes(beat.kind) ? beat.id : null;
   return {
     kind: "focus",
     focus,

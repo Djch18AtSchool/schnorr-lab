@@ -12,6 +12,8 @@ type SrvRow = Extract<DiagramRow, { type: "srv" }>;
 
 const ARROW_DRAW_MS = 620;
 const PACKET_MS = 720;
+/** La cámara llega primero; después viaja el mensaje. */
+const LEAD_MS = 450;
 
 function rowClass(base: string, view: RowView, compact: boolean): string {
   return [base, compact ? "cpt" : "", view.dim ? "dim" : "", view.now ? "now" : ""].filter(Boolean).join(" ");
@@ -69,12 +71,12 @@ function useMessageReveal(ref: RefObject<HTMLDivElement | null>, row: MsgRow, fr
     const right = isRightward(row.from, row.to);
     const dx = LANE_X[row.from] - midX(row.from, row.to);
     const stops = [
-      play(el.querySelector(".arrow"), { clipPath: [right ? "inset(0 100% 0 0)" : "inset(0 0 0 100%)", "inset(0 0 0 0)"] }, { ms: ARROW_DRAW_MS, ease: [0.45, 0, 0.3, 1] }, settings),
-      play(el.querySelector(".arrow-label, .c-label"), { opacity: [0, 1] }, { ms: 280, delayMs: 160 }, settings),
-      play(el.querySelector(".xnet"), { transform: ["scale(0)", "scale(1)"] }, { ms: 220, delayMs: ARROW_DRAW_MS * 0.42 }, settings),
-      play(el.querySelector(".packet"), { transform: [`translateX(calc(-50% + ${dx}px)) scale(.9)`, "translateX(-50%) scale(1)"], opacity: [0, 1, 1] }, { ms: PACKET_MS }, settings),
-      play(el.querySelector(".tapline"), { clipPath: ["inset(-6px 100% -6px 0)", "inset(-6px 0 -6px 0)"] }, { ms: 420, delayMs: ARROW_DRAW_MS * 0.45 }, settings),
-      play(el.querySelector(".packet .badge"), { opacity: [0, 1], transform: ["translateY(4px)", "none"] }, { ms: 260, delayMs: PACKET_MS }, settings),
+      play(el.querySelector(".arrow"), { clipPath: [right ? "inset(0 100% 0 0)" : "inset(0 0 0 100%)", "inset(0 0 0 0)"] }, { ms: ARROW_DRAW_MS, delayMs: LEAD_MS, ease: [0.45, 0, 0.3, 1] }, settings),
+      play(el.querySelector(".arrow-label, .c-label"), { opacity: [0, 1] }, { ms: 280, delayMs: LEAD_MS + 160 }, settings),
+      play(el.querySelector(".xnet"), { transform: ["scale(0)", "scale(1)"] }, { ms: 220, delayMs: LEAD_MS + ARROW_DRAW_MS * 0.42 }, settings),
+      play(el.querySelector(".packet"), { transform: [`translateX(calc(-50% + ${dx}px)) scale(.9)`, "translateX(-50%) scale(1)"], opacity: [0, 1, 1] }, { ms: PACKET_MS, delayMs: LEAD_MS }, settings),
+      play(el.querySelector(".tapline"), { clipPath: ["inset(-6px 100% -6px 0)", "inset(-6px 0 -6px 0)"] }, { ms: 420, delayMs: LEAD_MS + ARROW_DRAW_MS * 0.45 }, settings),
+      play(el.querySelector(".packet .badge"), { opacity: [0, 1], transform: ["translateY(4px)", "none"] }, { ms: 260, delayMs: LEAD_MS + PACKET_MS }, settings),
     ];
     return () => stops.forEach((stop) => stop());
   }, [ref, row, fresh, settings]);
@@ -117,7 +119,7 @@ export function LocalRowView({ view, compact }: { view: RowView; compact: boolea
   const settings = useMotionSettings();
   useLayoutEffect(() => {
     if (!view.fresh) return undefined;
-    return play(ref.current?.querySelector(".mark, .c-side") ?? null, { opacity: [0, 1], transform: ["translateY(-6px)", "none"] }, { ms: 340 }, settings);
+    return play(ref.current?.querySelector(".mark, .c-side") ?? null, { opacity: [0, 1], transform: ["translateY(-6px)", "none"] }, { ms: 340, delayMs: LEAD_MS }, settings);
   }, [view.fresh, settings]);
   const style = { "--c": LANE_COLOR[row.at], "--c-ink": LANE_INK[row.at] } as CSSProperties;
   return (
@@ -145,8 +147,8 @@ export function ServerRowView({ view, compact, linked }: { view: RowView; compac
   useLayoutEffect(() => {
     if (!view.fresh || !ref.current) return undefined;
     const stops = [
-      play(ref.current.querySelector(".activation"), { transform: ["scaleY(0)", "scaleY(1)"] }, { ms: 300 }, settings),
-      play(ref.current.querySelector(".c-side"), { opacity: [0, 1] }, { ms: 300, delayMs: 120 }, settings),
+      play(ref.current.querySelector(".activation"), { transform: ["scaleY(0)", "scaleY(1)"] }, { ms: 300, delayMs: LEAD_MS }, settings),
+      play(ref.current.querySelector(".c-side"), { opacity: [0, 1] }, { ms: 300, delayMs: LEAD_MS + 120 }, settings),
     ];
     return () => stops.forEach((stop) => stop());
   }, [view.fresh, settings]);

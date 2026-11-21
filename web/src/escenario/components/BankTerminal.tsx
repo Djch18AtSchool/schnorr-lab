@@ -28,7 +28,7 @@ function CodeView({ span, animate }: { span: CodeSpan; animate: boolean }) {
   useLayoutEffect(() => {
     if (!animate || !ref.current) return undefined;
     const lines = [...ref.current.querySelectorAll(".cl")];
-    const stops = lines.map((el, j) => play(el, { opacity: [0, 1], transform: ["translateX(-5px)", "none"] }, { ms: 240, delayMs: 380 + j * CODE_STAGGER_MS }, settings));
+    const stops = lines.map((el, j) => play(el, { opacity: [0, 1], transform: ["translateX(-5px)", "none"] }, { ms: 240, delayMs: 760 + j * CODE_STAGGER_MS }, settings));
     return () => stops.forEach((stop) => stop());
   }, [key, animate, settings]);
   return (

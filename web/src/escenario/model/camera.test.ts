@@ -26,7 +26,7 @@ describe("plan de cámara", () => {
     expect(shot("s2:x0:srv")).toEqual({ kind: "focus", focus: "bank", rowId: "s2:x0:srv", withLaptop: false, linkRowId: "s2:x0:srv" });
     expect(shot("s2:x0:req")).toMatchObject({ kind: "focus", focus: "net", rowId: "s2:x0:req", linkRowId: null });
     expect(shot("bio")).toMatchObject({ focus: "ana", rowId: null });
-    expect(shot("outcome")).toMatchObject({ focus: "ana", rowId: "s4:x0:res" });
+    expect(shot("outcome")).toMatchObject({ focus: "ana", rowId: null });
   });
 
   test("si Eve escucha, el mensaje de Ana se encuadra con su laptop", async () => {

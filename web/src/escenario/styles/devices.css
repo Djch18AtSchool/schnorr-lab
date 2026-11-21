@@ -79,7 +79,8 @@
 .lap-term .p { color: #ec6a9c; } .lap-term .o { color: #9aa6b8; } .lap-term .cap { color: #e8edf5; }
 .lap-term .hl { background: rgba(236, 106, 156, .2); color: #fff; border-radius: 3px; }
 .lap-term .err { color: #ff8a8a; }
-.lap-term .fresh { animation: logIn .45s ease both; }
+.lap-term .fresh { animation: logIn .45s ease .45s both; }
+.lap-term .cap.fresh { animation-delay: 1s; }
 @keyframes logIn { from { opacity: 0; transform: translateY(6px); } }
 .lap-base { position: absolute; left: 0; right: 0; top: 292px; height: 18px; border-radius: 2px 2px 12px 12px; background: linear-gradient(#3a3e47, #2a2d34); }
 .lap-base::before { content: ""; position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 90px; height: 6px; border-radius: 0 0 6px 6px; background: #1e2127; }

@@ -91,6 +91,29 @@ function placeLink(svg: SVGSVGElement | null, els: WorldEls, input: CameraInput)
   b?.setAttribute("cy", String(y2));
 }
 
+/**
+ * Encuadra una toma: ancla el celular, mueve el mundo, coloca corchetes y enlace.
+ * Devuelve la posición elegida para la tarjeta y la nueva altura del celular.
+ */
+function frameShot(refs: CameraRefs, input: CameraInput, phoneY: number, instant: boolean): { card: CardPos; phoneY: number } | null {
+  const els = worldEls(refs);
+  const stage = refs.stage.current;
+  if (!els || !stage) return null;
+  const quick = instant || prefersReducedMotion();
+  stage.classList.toggle("no-anim", quick);
+  stage.style.setProperty("--cam-ms", `${quick ? 0 : Math.max(MIN_CAM_MS, CAM_MS / Math.sqrt(input.speed))}ms`);
+  const y = anchorPhone(els, input.shot, phoneY);
+  if (refs.phone.current) refs.phone.current.style.top = `${y}px`;
+  const geo = shotGeometry(els, input.shot, input.rows, input.hasEve, y);
+  const viewport = { vw: stage.clientWidth, vh: stage.clientHeight, noteH: refs.note.current?.offsetHeight ?? 160 };
+  const fit = bestFit(geo.rect, geo.cards, viewport, geo.max);
+  els.world.style.transform = `translate(${fit.tx}px, ${fit.ty}px) scale(${fit.s})`;
+  placeBrackets(refs.brackets.current, geo.frame, fit, input);
+  placeLink(refs.link.current, els, input);
+  if (quick) requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.remove("no-anim")));
+  return { card: fit.card, phoneY: y };
+}
+
 /** Devuelve la posición de la tarjeta elegida por el encuadre. */
 export function useCamera(refs: CameraRefs, input: CameraInput): CardPos {
   const [notePos, setNotePos] = useState<CardPos>("top");
@@ -100,23 +123,10 @@ export function useCamera(refs: CameraRefs, input: CameraInput): CardPos {
 
   const apply = useCallback(
     (instant: boolean) => {
-      const els = worldEls(refs);
-      const stage = refs.stage.current;
-      if (!els || !stage) return;
-      const current = inputRef.current;
-      const quick = instant || prefersReducedMotion();
-      stage.classList.toggle("no-anim", quick);
-      stage.style.setProperty("--cam-ms", `${quick ? 0 : Math.max(MIN_CAM_MS, CAM_MS / Math.sqrt(current.speed))}ms`);
-      phoneY.current = anchorPhone(els, current.shot, phoneY.current);
-      if (refs.phone.current) refs.phone.current.style.top = `${phoneY.current}px`;
-      const geo = shotGeometry(els, current.shot, current.rows, current.hasEve, phoneY.current);
-      const viewport = { vw: stage.clientWidth, vh: stage.clientHeight, noteH: refs.note.current?.offsetHeight ?? 160 };
-      const fit = bestFit(geo.rect, geo.cards, viewport, geo.max);
-      els.world.style.transform = `translate(${fit.tx}px, ${fit.ty}px) scale(${fit.s})`;
-      setNotePos(fit.card);
-      placeBrackets(refs.brackets.current, geo.frame, fit, current);
-      placeLink(refs.link.current, els, current);
-      if (quick) requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.remove("no-anim")));
+      const result = frameShot(refs, inputRef.current, phoneY.current, instant);
+      if (!result) return;
+      phoneY.current = result.phoneY;
+      setNotePos(result.card);
     },
     [refs],
   );

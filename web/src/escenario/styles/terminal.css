@@ -24,7 +24,7 @@
 .log .entry { opacity: .42; border-left: 2px solid transparent; padding-left: 10px; margin-left: -12px; transition: opacity .4s; }
 .log .entry.cur { opacity: 1; border-left-color: #2fbfa9; }
 .log .entry.cur.eve { border-left-color: var(--eve); }
-.log .entry.fresh { animation: logIn .5s ease both; }
+.log .entry.fresh { animation: logIn .5s ease .45s both; }
 .log .ln { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
 .lv-info { color: #5fd38e; } .lv-warn { color: #f0b54a; } .lg-src { color: #2fbfa9; }
 .lg-req { color: #e8edf5; } .lg-st { color: #7fd9c8; } .lg-ms { color: #8e9bb0; } .lg-k { color: #6f7c90; } .lg-bad { color: #ff8a8a; } .lg-ok { color: #5fd38e; }

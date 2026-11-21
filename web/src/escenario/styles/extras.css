@@ -8,7 +8,7 @@
 .win-bar .live.off::before { background: #4c586b; }
 .cursor.eve { background: #ec6a9c; }
 .lap-term .ok { color: #5fd38e; }
-.code .cl.hl { animation: hlPulse 1.2s ease .5s 1 both; }
+.code .cl.hl { animation: hlPulse 1.2s ease 1.1s 1 both; }
 @keyframes hlPulse { from { box-shadow: inset 0 0 0 999px rgba(127, 217, 200, .28); } }
 .code .cl.hl.bad { animation-name: hlPulseBad; }
 @keyframes hlPulseBad { from { box-shadow: inset 0 0 0 999px rgba(240, 106, 106, .3); } }
@@ -50,4 +50,8 @@
 @media (max-width: 760px) {
   .sim-badge { display: none; }
   .banner { top: 60px; flex-direction: column; align-items: stretch; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-delay: 0s !important; }
 }
