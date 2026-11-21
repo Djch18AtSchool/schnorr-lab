@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { sciParts } from "../../lib/format";
 
 /** «arrow» apunta a la derecha: marca un valor que se sale del eje. */
-export type Shape = "circle" | "square" | "diamond" | "arrow";
+export type Shape = "circle" | "square" | "diamond" | "arrow" | "triangle";
 
 export interface SeriesStyle {
   key: string;
@@ -29,6 +29,7 @@ export function Marker({ shape, cx, cy, color, hollow, size = 5.5 }: MarkerProps
   const paint = { fill: hollow ? "var(--surface)" : color, stroke: hollow ? color : "var(--surface)", strokeWidth: 2 };
   if (shape === "square") return <rect x={cx - size + 0.5} y={cy - size + 0.5} width={2 * size - 1} height={2 * size - 1} rx={1.5} {...paint} />;
   if (shape === "diamond") return <path d={`M${cx},${cy - size - 1}L${cx + size + 1},${cy}L${cx},${cy + size + 1}L${cx - size - 1},${cy}Z`} {...paint} />;
+  if (shape === "triangle") return <path d={`M${cx},${cy - size - 1}L${cx + size + 1},${cy + size}L${cx - size - 1},${cy + size}Z`} {...paint} />;
   if (shape === "arrow") return <path d={`M${cx + size + 2},${cy}L${cx - size},${cy - size - 1}L${cx - size},${cy + size + 1}Z`} {...paint} />;
   return <circle cx={cx} cy={cy} r={size} {...paint} />;
 }

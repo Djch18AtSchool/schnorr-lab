@@ -1,40 +1,34 @@
-/** Navegación lateral: 9 secciones con atajos 1–9, alertas sin ver y el grupo activo. */
+/** Navegación lateral: 7 secciones en 3 grupos; Seguridad lleva las alertas nuevas sin ver. */
 import type { MouseEvent } from "react";
-import type { GroupInfo } from "../lib/group";
-import { shortNum } from "../lib/format";
-import { SECTIONS, type Section } from "../state/sections";
+import { GROUP_TITLES, SECTIONS, type Section, type SectionGroup } from "../state/sections";
 
 interface SideNavProps {
   current: Section;
   onGo: (section: Section) => void;
   unseenAlerts: number;
-  group: GroupInfo | null;
 }
 
-export function SideNav({ current, onGo, unseenAlerts, group }: SideNavProps) {
-  const click = (section: Section) => (event: MouseEvent) => {
-    event.preventDefault();
-    onGo(section);
+const GROUPS = Object.keys(GROUP_TITLES) as SectionGroup[];
+
+export function SideNav({ current, onGo, unseenAlerts }: SideNavProps) {
+  const click = (e: MouseEvent, id: Section): void => {
+    e.preventDefault();
+    onGo(id);
   };
   return (
     <nav className="side" aria-label="Secciones">
-      {SECTIONS.map((s, i) => (
-        <div key={s.id} style={{ display: "contents" }}>
-          {i > 0 && s.group !== SECTIONS[i - 1].group ? <div className="grp">Sistema</div> : null}
-          <a className="nav" href={`#${s.id}`} aria-current={current === s.id ? "page" : undefined} onClick={click(s.id)} title={`${s.title} (tecla ${i + 1})`}>
-            <s.icon className="i" aria-hidden="true" />{s.title}
-            {s.id === "resumen" && unseenAlerts > 0 && current !== "resumen" ? <span className="badge" title="Alertas sin ver">{unseenAlerts}</span> : null}
-            <span className="key" aria-hidden="true">{i + 1}</span>
-          </a>
+      {GROUPS.map((group) => (
+        <div key={group} className="side-group">
+          <div className="side-title">{GROUP_TITLES[group]}</div>
+          {SECTIONS.filter((s) => s.group === group).map(({ id, title, icon: Icon }) => (
+            <a key={id} className="nav" href={`#${id}`} aria-current={id === current ? "page" : undefined} onClick={(e) => click(e, id)}>
+              <Icon aria-hidden="true" />
+              <span>{title}</span>
+              {id === "seguridad" && unseenAlerts > 0 ? <span className="badge" title={`${unseenAlerts} alertas nuevas`}>{unseenAlerts}</span> : null}
+            </a>
+          ))}
         </div>
       ))}
-      <div className="foot">
-        <div className="groupchip">
-          <span>Grupo activo</span>
-          <b>{group ? `${group.name} · ${group.bits} bits` : "—"}</b>
-          <span>{group ? `p = ${shortNum(group.p, 4)}, q = ${shortNum(group.q, 4)}, g = ${shortNum(group.g, 4)}` : "sin datos de /mechanisms"}</span>
-        </div>
-      </div>
     </nav>
   );
 }

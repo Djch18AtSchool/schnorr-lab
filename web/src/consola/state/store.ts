@@ -1,12 +1,11 @@
 /** Estado de la Consola: una instantánea inmutable que solo cambia a través del reductor. */
-import type { Account, Alert, AuditEntry, BankEvent, BankMechanism, RequestRecord, TelemetrySummary, TestReport } from "../../shared/types";
+import type { Account, Alert, AuditEntry, BankMechanism, RequestRecord, TestReport } from "../../shared/types";
 import type { ApiRoutes, LabResults } from "../data/source";
 import { mergeById } from "../lib/requests";
 
-export type Resource = "summary" | "requests" | "alerts" | "accounts" | "audit" | "mechanisms" | "tests" | "results" | "events" | "routes";
+export type Resource = "requests" | "alerts" | "accounts" | "audit" | "mechanisms" | "tests" | "results" | "routes";
 
 export interface ConsoleState {
-  summary: TelemetrySummary | null;
   requests: readonly RequestRecord[];
   alerts: readonly Alert[];
   accounts: readonly Account[] | null;
@@ -14,26 +13,23 @@ export interface ConsoleState {
   mechanisms: readonly BankMechanism[] | null;
   tests: TestReport | null;
   results: LabResults | null;
-  events: readonly BankEvent[];
   routes: ApiRoutes | null;
   errors: Readonly<Partial<Record<Resource, string>>>;
   online: boolean;
   loaded: boolean;
 }
 
-export const MAX_REQUESTS = 1500;
-export const MAX_EVENTS = 3000;
+export const MAX_REQUESTS = 2000;
 
 export const INITIAL_STATE: ConsoleState = {
-  summary: null, requests: [], alerts: [], accounts: null, audit: null, mechanisms: null, tests: null, results: null,
-  events: [], routes: null, errors: {}, online: false, loaded: false,
+  requests: [], alerts: [], accounts: null, audit: null, mechanisms: null, tests: null, results: null, routes: null,
+  errors: {}, online: false, loaded: false,
 };
 
 export type Action =
   | { type: "loaded"; patch: Partial<ConsoleState> }
   | { type: "set"; patch: Partial<ConsoleState> }
   | { type: "requests"; fresh: readonly RequestRecord[] }
-  | { type: "events"; fresh: readonly BankEvent[] }
   | { type: "alert"; alert: Alert }
   | { type: "error"; resource: Resource; message: string }
   | { type: "ok"; resource: Resource }
@@ -53,10 +49,6 @@ export function reducer(state: ConsoleState, action: Action): ConsoleState {
       const requests = mergeById(state.requests, action.fresh, MAX_REQUESTS);
       return requests === state.requests ? state : { ...state, requests };
     }
-    case "events": {
-      const events = mergeById(state.events, action.fresh, MAX_EVENTS);
-      return events === state.events ? state : { ...state, events };
-    }
     case "alert":
       return state.alerts.some((a) => a.id === action.alert.id) ? state : { ...state, alerts: [...state.alerts, action.alert] };
     case "error": return { ...state, errors: { ...state.errors, [action.resource]: action.message } };
@@ -69,8 +61,8 @@ export function reducer(state: ConsoleState, action: Action): ConsoleState {
   }
 }
 
-/** El arranque falló si no hay ni resumen ni peticiones: la telemetría del banco no responde. */
+/** El arranque falló si no llegaron peticiones ni cuentas: el banco no responde. */
 export function bootFailure(state: ConsoleState): string | null {
-  if (!state.loaded || state.summary || state.requests.length) return null;
-  return state.errors.summary ?? state.errors.requests ?? null;
+  if (!state.loaded || state.requests.length || state.accounts) return null;
+  return state.errors.requests ?? state.errors.accounts ?? null;
 }

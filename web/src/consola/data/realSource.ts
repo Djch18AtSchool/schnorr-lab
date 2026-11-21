@@ -3,14 +3,11 @@
  * que las rutas son relativas al origen) y el flujo SSE /events/stream.
  */
 import { ApiError, api, listen } from "../../shared/api";
-import type { Account, Alert, AuditEntry, BankEvent, BankMechanism, RequestRecord, TelemetrySummary, TestReport } from "../../shared/types";
+import type { Account, Alert, AuditEntry, BankEvent, BankMechanism, RequestDetail, RequestRecord, TestReport } from "../../shared/types";
 import { buildLabResults, LAB_FILES, listedFiles, rawBody, type RawLabFile } from "../lib/labFiles";
 import { parseOpenApi } from "../lib/results";
 import { FALLBACK_ROUTES } from "./routes";
 import type { ApiRoutes, ConsoleDataSource, LabFileKey, LabResults } from "./source";
-
-/** Máximo que acepta GET /events por página (MAX_EVENTS_PAGE en api/app.py). */
-const EVENTS_PAGE = 5000;
 
 /** Mensaje legible de un fallo, con la ruta: "GET /telemetry/summary → 404 Not Found". */
 export function describeFailure(method: string, url: string, error: unknown): string {
@@ -21,11 +18,11 @@ export function describeFailure(method: string, url: string, error: unknown): st
   return `${route} → ${error instanceof Error ? error.message : String(error)}`;
 }
 
-async function call<T>(url: string, init?: { method: "POST"; body: unknown }): Promise<T> {
+async function call<T>(url: string): Promise<T> {
   try {
-    return await api<T>(url, init);
+    return await api<T>(url);
   } catch (error: unknown) {
-    throw new Error(describeFailure(init?.method ?? "GET", url, error), { cause: error });
+    throw new Error(describeFailure("GET", url, error), { cause: error });
   }
 }
 
@@ -58,12 +55,16 @@ async function listResults(): Promise<ReadonlySet<string> | null> {
 export class RealSource implements ConsoleDataSource {
   readonly kind = "real" as const;
 
-  summary(windowS: number): Promise<TelemetrySummary> {
-    return call<TelemetrySummary>(`/telemetry/summary?window=${windowS}`);
-  }
-
   requests(since: number, limit: number): Promise<RequestRecord[]> {
     return list<RequestRecord>(`/telemetry/requests?since=${since}&limit=${limit}`);
+  }
+
+  async requestDetail(id: number): Promise<RequestDetail> {
+    const detail = await call<RequestDetail>(`/telemetry/requests/${id}`);
+    if (!detail || typeof detail.request !== "object" || !Array.isArray(detail.events)) {
+      throw new Error(`GET /telemetry/requests/${id} → la respuesta no trae la petición y sus eventos`);
+    }
+    return detail;
   }
 
   alerts(): Promise<Alert[]> {
@@ -96,10 +97,6 @@ export class RealSource implements ConsoleDataSource {
     return buildLabResults(Object.fromEntries(raws) as Record<LabFileKey, RawLabFile>);
   }
 
-  events(since: number): Promise<BankEvent[]> {
-    return list<BankEvent>(`/events?since=${since}&limit=${EVENTS_PAGE}`);
-  }
-
   /** Rutas de /openapi.json; si no está o no trae rutas, la lista conocida del banco. */
   async routes(): Promise<ApiRoutes> {
     const fallback: ApiRoutes = { routes: [...FALLBACK_ROUTES], origin: "respaldo" };
@@ -109,10 +106,6 @@ export class RealSource implements ConsoleDataSource {
     } catch {
       return fallback;
     }
-  }
-
-  async reset(): Promise<void> {
-    await call<unknown>("/lab/reset", { method: "POST", body: {} });
   }
 
   stream(onEvent: (event: BankEvent) => void, onStatus: (online: boolean) => void): () => void {

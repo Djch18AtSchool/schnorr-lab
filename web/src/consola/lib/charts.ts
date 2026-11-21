@@ -1,8 +1,6 @@
 /**
- * Datos de las gráficas: escalas (lineal y logarítmica), totales por intervalo y conversión de
- * results/*.json a series. Funciones puras; el dibujo SVG vive en components/charts.
+ * Datos de las gráficas: escalas (lineal y logarítmica) y conversión de results/*.json a series. Funciones puras; el dibujo SVG vive en components/charts.
  */
-import type { SeriesPoint } from "../../shared/types";
 import type { BsgsResults, LatencyResults, LatencyRow } from "../data/source";
 
 export type Scale = (value: number) => number;
@@ -24,20 +22,6 @@ export function niceMax(value: number): number {
   const magnitude = 10 ** Math.floor(Math.log10(value));
   const f = value / magnitude;
   return (f <= 2 ? 2 : f <= 5 ? 5 : 10) * magnitude;
-}
-
-export const pointTotal = (p: SeriesPoint): number => p.ok + p.rejected + p.other + p.error;
-
-/** Agrupa la serie del resumen en minutos (para la mini gráfica de peticiones por minuto). */
-export function perMinute(series: readonly SeriesPoint[], bucketS: number): number[] {
-  const per = Math.max(1, Math.round(60 / Math.max(1, bucketS)));
-  const groups = Math.ceil(series.length / per);
-  return Array.from({ length: groups }, (_, i) => series.slice(i * per, (i + 1) * per).reduce((sum, p) => sum + pointTotal(p), 0));
-}
-
-/** Puntos de latencia con huecos donde no hubo peticiones (para no dibujar ceros falsos). */
-export function latencyPoints(series: readonly SeriesPoint[]): Array<{ p50: number; p95: number } | null> {
-  return series.map((p) => (pointTotal(p) > 0 ? { p50: p.p50_ms, p95: p.p95_ms } : null));
 }
 
 /** Dominio logarítmico que cubre los valores, ajustado a potencias de 10. */

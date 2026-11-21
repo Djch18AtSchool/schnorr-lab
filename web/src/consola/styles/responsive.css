@@ -1,51 +1,53 @@
-/* Responsivo y movimiento reducido. */
-/* ---------- Responsivo ---------- */
-@media (max-width: 1280px) {
-  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .kpi:nth-child(4) { border-left: 0; }
-  .kpi:nth-child(n+4) { border-top: 1px solid var(--line-2); }
-  .traffic { grid-template-columns: minmax(0, 1fr) 380px; }
+/* Responsivo (proyector de 1280 × 720, tableta y teléfono) y movimiento reducido. */
+@media (max-width: 1360px) {
+  .resumen-grid, .security { grid-template-columns: minmax(0, 1fr); }
+  .activity { grid-template-columns: minmax(0, 1fr) minmax(0, 500px); }
+  .kpi-value b { font-size: 23px; }
+  .attempt-reqs { padding-left: 40px; }
 }
-@media (max-width: 1100px) {
-  .grid-main, .lab2, .traffic { grid-template-columns: minmax(0, 1fr); }
-  .insp { position: static; max-height: none; }
-  .clock .d { display: none; }
+@media (max-width: 1180px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .activity, .two { grid-template-columns: minmax(0, 1fr); }
+  .rq { position: static; max-height: none; }
+  .account-b { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .account-b > dl { grid-column: 1 / -1; }
+}
+@media (max-height: 780px) and (min-width: 861px) {
+  .app { grid-template-rows: 50px minmax(0, 1fr); }
+  .view { padding: 18px 22px 36px; gap: 14px; }
 }
 @media (max-width: 860px) {
-  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
-  .top { padding: 8px 12px; flex-wrap: wrap; gap: 8px 10px; }
-  .brand { width: auto; }
-  .svc .muted, .op span.who, .clock { display: none; }
-  .op { border-left: 0; padding-left: 0; }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 52px auto minmax(0, 1fr); }
+  .topbar { padding: 0 12px; gap: 8px; }
+  .slate { gap: 10px; }
+  .slate .name span, .slate .sep, .live-btn .lbl { display: none; }
   .side { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 6px 8px; border-right: 0; border-bottom: 1px solid var(--line); gap: 2px; }
-  .side a.nav { flex: none; padding: 6px 10px; }
-  .side a.nav[aria-current="page"]::before { display: none; }
-  .side .key, .side .grp, .side .foot { display: none; }
+  .side-group { display: flex; gap: 2px; }
+  .side-title { display: none; }
+  .side a.nav { flex: none; height: 34px; }
   .view { padding: 16px 16px 32px; gap: 14px; }
-  .two, .mechs { grid-template-columns: minmax(0, 1fr); }
-  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kpi { border-left: 1px solid var(--line-2) !important; border-top: 1px solid var(--line-2); }
-  .kpi:nth-child(odd) { border-left: 0 !important; }
-  .kpi:nth-child(-n+2) { border-top: 0; }
-  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .fact:nth-child(3) { border-left: 0; }
-  .fact:nth-child(n+3) { border-top: 1px solid var(--line-2); }
-  input.field { width: 100%; }
-  .aitem { grid-template-columns: 44px 70px minmax(0, 1fr); }
-  .aitem > :nth-child(4) { grid-column: 3; justify-self: start; }
-  .aitem > code { grid-column: 1 / -1; }
-  .aitem .why { grid-column: 1 / -1; }
-  .frow { grid-template-columns: 120px minmax(0, 1fr) 44px; }
-  .ll { grid-template-columns: 70px 60px minmax(0, 1fr); }
-  .ll .src { display: none; }
-  .tbl-scroll { max-height: 60vh; }
+  .vhead h1 { font-size: 21px; }
+  .vhead p { font-size: 14px; }
+  .search { max-width: none; }
+  .attempt-sum { padding: 10px 12px; }
+  .attempt-l1 { flex-wrap: wrap; }
+  .attempt-l2 { padding-left: 0; flex-wrap: wrap; }
+  .attempt-l2 .steps { display: none; }
+  .attempt-reqs { padding: 0 8px 8px 12px; }
+  .req-line { grid-template-columns: minmax(0, 1fr) auto; }
+  .req-line .outcome, .req-line .ms { display: none; }
+  .bodies, .account-b { grid-template-columns: minmax(0, 1fr); }
+  .raw-line { grid-template-columns: 90px 40px minmax(200px, 1fr) 60px; }
+  .raw-line .ip, .raw-line .res { display: none; }
+  .pips { margin-left: 0; }
 }
-@media (max-width: 480px) {
-  .env { display: none; }
-  .vhead h1 { font-size: 19px; }
+@media (max-width: 520px) {
+  .kpis { grid-template-columns: minmax(0, 1fr); }
+  .svc { font-size: 12px; }
+  .sim-badge { display: none; }
+  .kv { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
+  .kv dt { margin-top: 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
-  /* El anillo del indicador es la única animación infinita: con movimiento reducido no existe. */
-  .pulse::after { display: none; }
 }

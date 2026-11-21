@@ -17,20 +17,24 @@ afterEach(() => vi.unstubAllGlobals());
 describe("RealSource", () => {
   it("llama a los endpoints del contrato con rutas relativas al origen", async () => {
     const calls = stubFetch({
-      "/telemetry/summary": { status: 200, body: { window_s: 900 } },
       "/telemetry/requests": { status: 200, body: [] },
-      "/events": { status: 200, body: [] },
+      "/telemetry/requests/7": { status: 200, body: { request: { id: 7 }, events: [] } },
     });
     const source = new RealSource();
-    await source.summary(900);
     await source.requests(42, 500);
-    await source.events(7);
-    expect(calls).toEqual(["GET /telemetry/summary?window=900", "GET /telemetry/requests?since=42&limit=500", "GET /events?since=7&limit=5000"]);
+    const detail = await source.requestDetail(7);
+    expect(detail.request.id).toBe(7);
+    expect(calls).toEqual(["GET /telemetry/requests?since=42&limit=500", "GET /telemetry/requests/7"]);
   });
 
-  it("explica un 404 con la ruta (la telemetría todavía no existe)", async () => {
+  it("explica un 404 con la ruta y el motivo del banco", async () => {
     stubFetch({});
-    await expect(new RealSource().summary(900)).rejects.toThrow("GET /telemetry/summary → 404 Not Found");
+    await expect(new RealSource().requestDetail(3)).rejects.toThrow("GET /telemetry/requests/3 → 404 Not Found");
+  });
+
+  it("rechaza un detalle sin la petición y sus eventos", async () => {
+    stubFetch({ "/telemetry/requests/3": { status: 200, body: { request: { id: 3 } } } });
+    await expect(new RealSource().requestDetail(3)).rejects.toThrow("no trae la petición y sus eventos");
   });
 
   it("rechaza una lista que no es lista", async () => {
@@ -74,12 +78,6 @@ describe("RealSource", () => {
     const routes = await new RealSource().routes();
     expect(routes.origin).toBe("respaldo");
     expect(routes.routes.some((r) => r.path === "/zkp/login/commit")).toBe(true);
-  });
-
-  it("reinicia con POST /lab/reset", async () => {
-    const calls = stubFetch({ "/lab/reset": { status: 200, body: [] } });
-    await new RealSource().reset();
-    expect(calls).toEqual(["POST /lab/reset"]);
   });
 });
 

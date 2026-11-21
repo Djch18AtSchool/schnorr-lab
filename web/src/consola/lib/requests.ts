@@ -1,65 +1,74 @@
 /**
- * Lectura de las peticiones (RequestRecord) tal como las ve el banco: resultado, flujo por
- * correlación, usuario deducido y filtros del Tráfico. Funciones puras.
+ * Lectura de una petición (RequestRecord) tal como la vio el banco: su resultado en palabras, el
+ * paso del protocolo al que corresponde y utilidades para cuerpos JSON. Funciones puras.
  */
 import type { RequestRecord } from "../../shared/types";
 import { shortNum } from "./format";
 
-export type Outcome = "granted" | "denied" | "error" | "other";
+/** ok: concedido o creado · bad: rechazado · warn: error del cliente · neutral: todo lo demás. */
+export type Tone = "ok" | "bad" | "warn" | "neutral";
+
+export interface RequestOutcome {
+  label: string;
+  tone: Tone;
+}
 
 export const asRecord = (value: unknown): Record<string, unknown> | null =>
   value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 
 const str = (value: unknown): string | null => (typeof value === "string" ? value : null);
 
-/** Señales del banco que significan un acceso rechazado. */
-const DENIED_SIGNALS = new Set(["auth.rejected", "auth.replay", "auth.locked", "auth.stale"]);
+export const bodyField = (body: unknown, key: string): string | null => str(asRecord(body)?.[key]);
 
-export function outcomeOf(r: RequestRecord): Outcome {
-  if (r.signal === "auth.ok") return "granted";
-  if (r.signal && DENIED_SIGNALS.has(r.signal)) return "denied";
-  const accepted = asRecord(r.response_body)?.accepted;
-  if (accepted === true) return "granted";
-  if (accepted === false || r.status === 423) return "denied";
-  if (r.status >= 400) return "error";
-  return "other";
-}
+/** Señales que el banco cuenta como acceso concedido o rechazado (las mismas que infra/telemetry.py). */
+export const GRANTED_SIGNALS: ReadonlySet<string> = new Set(["auth.ok"]);
+export const REJECTED_SIGNALS: ReadonlySet<string> = new Set(["auth.rejected", "auth.replay", "auth.stale", "auth.lockout", "auth.locked_attempt"]);
+
+const SIGNAL_OUTCOME: Readonly<Record<string, RequestOutcome>> = {
+  "auth.ok": { label: "Acceso concedido", tone: "ok" },
+  "auth.rejected": { label: "Prueba inválida", tone: "bad" },
+  "auth.replay": { label: "Repetición rechazada", tone: "bad" },
+  "auth.stale": { label: "Prueba vieja rechazada", tone: "bad" },
+  "auth.lockout": { label: "Prueba inválida: cuenta bloqueada", tone: "bad" },
+  "auth.locked_attempt": { label: "Cuenta bloqueada", tone: "bad" },
+  "account.created": { label: "Cuenta creada", tone: "ok" },
+  "account.rejected": { label: "Registro rechazado", tone: "bad" },
+  "admin.unlock": { label: "Cuenta desbloqueada", tone: "neutral" },
+  "admin.remove": { label: "Cuenta dada de baja", tone: "neutral" },
+};
 
 function errorReason(body: unknown): string | null {
   const record = asRecord(body);
-  if (!record) return null;
-  const reason = str(record.reason) ?? str(record.detail);
+  const reason = str(record?.reason) ?? str(record?.detail);
   if (reason) return reason;
-  if (Array.isArray(record.detail)) {
-    const first = asRecord(record.detail[0]);
-    return str(first?.msg) ?? null;
-  }
-  return null;
+  const first = Array.isArray(record?.detail) ? asRecord(record.detail[0]) : null;
+  return str(first?.msg);
 }
 
-function listLabel(path: string, body: unknown): string | null {
-  if (Array.isArray(body)) {
-    const noun = path.includes("audit") ? "entradas" : path.includes("mechanisms") ? "mecanismos" : "elementos";
-    return `${body.length} ${noun}`;
+export const isGranted = (r: RequestRecord): boolean => r.signal !== null && GRANTED_SIGNALS.has(r.signal);
+export const isRejected = (r: RequestRecord): boolean => r.signal !== null && REJECTED_SIGNALS.has(r.signal);
+
+/** Qué pasó con la petición, en palabras del banco. */
+export function requestOutcome(r: RequestRecord): RequestOutcome {
+  const known = r.signal ? SIGNAL_OUTCOME[r.signal] : undefined;
+  if (known) return known;
+  if (r.status === 422) return { label: "Mensaje mal formado", tone: "warn" };
+  if (r.status >= 400) return { label: errorReason(r.response_body) ?? `Error ${r.status}`, tone: "warn" };
+  const c = bodyField(r.response_body, "c");
+  if (r.signal === "auth.challenge" || (c && bodyField(r.response_body, "session_id"))) {
+    return { label: c ? `Reto emitido (c = ${shortNum(c, 6)})` : "Reto emitido", tone: "neutral" };
   }
-  return null;
+  if (r.path.endsWith("/params")) return { label: "Parámetros públicos", tone: "neutral" };
+  return { label: "Consulta", tone: "neutral" };
 }
 
-/** Texto corto de la columna «Resultado», deducido de la respuesta. */
-export function resultLabel(r: RequestRecord): string {
-  const body = asRecord(r.response_body);
-  const reason = errorReason(r.response_body);
-  if (reason) return reason;
-  if (r.path.endsWith("/events/stream")) return "Flujo SSE abierto";
-  if (r.path.endsWith("/params")) return "Parámetros públicos";
-  if (r.status === 201 && body?.stored) return "Registro exitoso";
-  const c = str(body?.c);
-  if (c && str(body?.session_id)) return `Reto emitido (c = ${shortNum(c, 6)})`;
-  if (r.path.endsWith("/lab/reset") && r.status < 300) return "Banco reiniciado";
-  const list = listLabel(r.path, r.response_body);
-  if (list) return list;
-  if (r.path.endsWith("/bank/users") && body) return "Credenciales guardadas";
-  return r.status < 300 ? "OK" : `HTTP ${r.status}`;
+/** Nombre corto del paso: params, register, commit, respond, nizk, unlock, baja o la ruta. */
+export function stepName(r: RequestRecord): string {
+  const parts = r.path.split("/").filter(Boolean);
+  const last = parts[parts.length - 1] ?? r.path;
+  if (r.path.startsWith("/admin/")) return r.method === "DELETE" ? "baja" : last;
+  const isProtocolStep = parts[parts.length - 2] === "login" || last === "params" || last === "register";
+  return isProtocolStep ? last : r.path;
 }
 
 export function statusClass(status: number): "s2" | "s4" | "s4x" {
@@ -67,63 +76,11 @@ export function statusClass(status: number): "s2" | "s4" | "s4x" {
   return status === 423 || status === 401 || status >= 500 ? "s4x" : "s4";
 }
 
-/** Correlación "flujo:paso" → flujo. Sin correlación, cada petición es su propio flujo. */
-export function flowOf(r: RequestRecord): string {
-  if (!r.correlation_id) return `#${r.id}`;
-  const cut = r.correlation_id.lastIndexOf(":");
-  return cut > 0 ? r.correlation_id.slice(0, cut) : r.correlation_id;
-}
-
-export function stepOf(r: RequestRecord): string {
-  const cut = r.correlation_id?.lastIndexOf(":") ?? -1;
-  return cut > 0 && r.correlation_id ? r.correlation_id.slice(cut + 1) : "·";
-}
-
-export const bodyField = (body: unknown, key: string): string | null => str(asRecord(body)?.[key]);
-
-/**
- * Usuario de cada petición: el user_id del cuerpo o, para una respuesta s, el dueño de la sesión
- * (el que la pidió con su compromiso). Así una respuesta repetida por otro origen se atribuye a la
- * cuenta atacada.
- */
-export function userIndex(requests: readonly RequestRecord[]): ReadonlyMap<number, string> {
-  const sessionOwner = new Map<string, string>();
-  const entries: Array<[number, string]> = [];
-  for (const r of requests) {
-    const user = bodyField(r.request_body, "user_id");
-    const issued = bodyField(r.response_body, "session_id");
-    if (user && issued) sessionOwner.set(issued, user);
-    const owner = user ?? sessionOwner.get(bodyField(r.request_body, "session_id") ?? "");
-    if (owner) entries.push([r.id, owner]);
-  }
-  return new Map(entries);
-}
-
-export type TrafficFilter = "all" | "write" | "bad";
-
-export interface TrafficQuery {
-  filter: TrafficFilter;
-  search: string;
-}
-
-export const isWrite = (r: RequestRecord): boolean => r.method !== "GET";
-export const isBad = (r: RequestRecord): boolean => {
-  const outcome = outcomeOf(r);
-  return outcome === "denied" || outcome === "error";
-};
-
-export function matchesTraffic(r: RequestRecord, query: TrafficQuery, user: string | undefined): boolean {
-  if (query.filter === "write" && !isWrite(r)) return false;
-  if (query.filter === "bad" && !isBad(r)) return false;
-  const needle = query.search.trim().toLowerCase();
-  if (!needle) return true;
-  const haystack = [r.path, r.client, r.correlation_id, user, bodyField(r.request_body, "session_id"),
-    bodyField(r.response_body, "session_id"), resultLabel(r), String(r.status), r.device];
-  return haystack.some((value) => value != null && value.toLowerCase().includes(needle));
-}
-
 /** IP del cliente sin el puerto. */
 export const hostOf = (client: string): string => client.replace(/:\d+$/, "");
+
+/** Usuario de la petición: la etiqueta del banco o, si no la hay, el user_id del cuerpo. */
+export const userOf = (r: RequestRecord): string | null => r.tags.user ?? bodyField(r.request_body, "user_id");
 
 /** Agrega registros nuevos sin duplicar ids, en orden, y conserva solo los últimos `cap`. */
 export function mergeById<T extends { id: number }>(current: readonly T[], fresh: readonly T[], cap: number): readonly T[] {

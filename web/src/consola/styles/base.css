@@ -1,0 +1,104 @@
+/*
+ * Base de la Consola sobre los tokens comunes (shared/tokens.css): lo mismo que el Escenario
+ * (fondo con puntos, tarjetas, botones «Dirección», segmentos y chips por actor) más unos pocos
+ * tonos suaves de estado y la paleta de series de las gráficas del laboratorio.
+ */
+:root {
+  --ok-soft: color-mix(in srgb, var(--ok) 12%, var(--surface));
+  --bad-soft: color-mix(in srgb, var(--bad) 11%, var(--surface));
+  --warn-soft: color-mix(in srgb, var(--warn) 14%, var(--surface));
+  --support: var(--ink-3);
+  --support-soft: var(--surface-2);
+  --r: 8px;
+  --r-lg: 14px;
+  /* Series de las gráficas del laboratorio (independientes de los actores). */
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --s1: #4f95ea; --s2: #e2703f; --s3: #2bbd88; }
+}
+:root[data-theme="dark"] { --s1: #4f95ea; --s2: #e2703f; --s3: #2bbd88; }
+
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.5;
+  font-feature-settings: "tnum" 1; overflow: hidden;
+}
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--bank-ink); }
+:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; border-radius: 6px; }
+code { font-family: var(--mono); font-size: .92em; }
+sup { font-size: .72em; line-height: 0; }
+.mono { font-family: var(--mono); font-size: .93em; }
+.muted { color: var(--ink-3); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+svg.i, .i { width: 16px; height: 16px; flex: none; }
+.loading { padding: 40px 16px; text-align: center; color: var(--ink-3); }
+
+/* ---------- Controles (los del Escenario) ---------- */
+.dir-btn, .btn {
+  display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px;
+  border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); cursor: pointer;
+  font-size: 13px; color: var(--ink-2); flex: none; white-space: nowrap; text-decoration: none;
+}
+.dir-btn:hover, .btn:hover { color: var(--ink); border-color: var(--line-2); }
+.dir-btn svg, .btn svg { width: 15px; height: 15px; }
+.btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); font-weight: 500; }
+.icon-btn { width: 34px; height: 34px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-2); flex: none; }
+.icon-btn:hover { color: var(--ink); border-color: var(--line-2); }
+.icon-btn svg { width: 15px; height: 15px; }
+.icon-btn.sm { width: 26px; height: 26px; border-radius: 6px; }
+.icon-btn.sm svg { width: 13px; height: 13px; }
+.link { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: var(--ana-ink); font-size: 13px; font-weight: 500; text-decoration: none; }
+.link:hover { text-decoration: underline; }
+.link:focus-visible { outline: 2px solid var(--ana); outline-offset: 2px; border-radius: 4px; }
+.link svg { width: 14px; height: 14px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; padding: 2px; background: var(--surface-2); flex-wrap: wrap; }
+.seg button { border: 0; background: none; padding: 5px 11px; border-radius: 7px; font-size: 13px; cursor: pointer; color: var(--ink-2); white-space: nowrap; }
+.seg button:hover { color: var(--ink); }
+.seg button.sel { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line); font-weight: 500; }
+.field { height: 34px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: 0 10px; min-width: 0; font-size: 13px; color: var(--ink); }
+.field:focus { outline: 2px solid var(--ana); outline-offset: -1px; }
+.more { all: unset; cursor: pointer; display: block; text-align: center; padding: 10px; font-size: 13px; color: var(--ana-ink); border-top: 1px solid var(--line); }
+.more:hover { background: var(--surface-2); }
+
+/* Chip de dispositivo con el color de su actor (como .chip del Escenario). */
+.dev {
+  --c: var(--net); --soft: var(--net-soft);
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 8px; max-width: 100%;
+  border-radius: 999px; border: 1px solid color-mix(in srgb, var(--c) 40%, transparent); background: var(--soft);
+  font-size: 12.5px; color: var(--ink); white-space: nowrap; min-width: 0;
+}
+.dev svg { width: 14px; height: 14px; color: var(--c); flex: none; }
+.dev .dev-name { overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.dev .dev-detail { color: var(--ink-3); font-family: var(--mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; }
+.dev.compact { height: 22px; padding: 0 8px 0 6px; font-size: 12px; }
+.dev[data-a="ana"] { --c: var(--ana); --soft: var(--ana-soft); }
+.dev[data-a="eve"] { --c: var(--eve); --soft: var(--eve-soft); }
+.dev[data-a="support"] { --c: var(--support); --soft: var(--support-soft); }
+
+/* Resultado: punto + texto (el color nunca va solo). */
+.outcome { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; white-space: nowrap; color: var(--ink-2); min-width: 0; }
+.outcome::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); flex: none; }
+.outcome.ok { color: var(--ok); } .outcome.ok::before { background: var(--ok); }
+.outcome.bad { color: var(--bad); } .outcome.bad::before { background: var(--bad); }
+.outcome.warn { color: var(--warn); } .outcome.warn::before { background: var(--warn); }
+
+/* Código de estado HTTP y método. */
+.st { font-family: var(--mono); font-size: 11.5px; font-weight: 500; padding: 1px 6px; border-radius: 5px; }
+.st.s2 { color: var(--ok); background: var(--ok-soft); }
+.st.s4 { color: var(--warn); background: var(--warn-soft); }
+.st.s4x { color: var(--bad); background: var(--bad-soft); }
+.m { font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: .02em; }
+.m.GET { color: var(--ana-ink); } .m.POST { color: var(--bank-ink); } .m.DELETE { color: var(--bad); }
+
+/* Severidad de una alerta. */
+.sev { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; flex: none; }
+.sev svg { width: 14px; height: 14px; }
+.sev.alta { background: var(--bad-soft); color: var(--bad); }
+.sev.media { background: var(--warn-soft); color: var(--warn); }
+.sev.baja { background: var(--surface-2); color: var(--ink-3); }
+
+.sim-badge {
+  font-size: 11.5px; font-weight: 600; color: var(--net); background: var(--net-soft);
+  border: 1px solid color-mix(in srgb, var(--net) 40%, transparent); padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+}

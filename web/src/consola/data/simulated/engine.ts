@@ -1,45 +1,44 @@
 /**
- * Servidor simulado completo: recibe una petición HTTP, la atiende con el banco simulado y deja el
- * mismo rastro que el banco real (RequestRecord, eventos «acceso» y del mecanismo, auditoría y
- * alertas deducidas). Todo lo que sale de aquí cumple el contrato de shared/types.ts.
+ * Servidor simulado: atiende una petición con el banco simulado y deja el mismo rastro que el banco
+ * real: RequestRecord con etiquetas, eventos con request_id (log, función, cálculos, acceso),
+ * auditoría, alertas y dispositivos por cuenta. Todo cumple el contrato de shared/types.ts.
  */
-import type { Alert, AuditEntry, BankEvent, EventSource, RequestRecord } from "../../../shared/types";
-import { SimBank, TOY_PARAMS, type Force, type RouteResult } from "./bank";
-import { Observer, type AlertDraft } from "./observer";
+import type { Account, Alert, AuditEntry, BankEvent, RequestDetail, RequestRecord } from "../../../shared/types";
+import { isAuditedPath } from "../../lib/audit";
+import { SimBank, type RouteResult } from "./bank";
+import { deduceAlerts } from "./observer";
 import type { Rng } from "./rng";
 import { TOY } from "./toy";
 
 export interface Origin {
+  device: string;
   ip: string;
   ua: string;
 }
 
-export interface Flow {
+export interface Send {
+  method: "GET" | "POST" | "DELETE";
+  path: string;
+  body: Record<string, unknown> | null;
   origin: Origin;
-  port: number;
-  id: string;
-  step: number;
-  force: Force | null;
+  ts: number;
+  correlation: string;
+  forcedC?: number;
 }
 
-const AUDITED = new Set(["/zkp/register", "/zkp/login/commit", "/zkp/login/respond", "/zkp/login/nizk"]);
-const BASE_LATENCY: Readonly<Record<string, readonly [number, number]>> = {
-  "/zkp/params": [1.1, 2.4], "/zkp/register": [2.4, 4.8], "/zkp/login/commit": [2.9, 5.6], "/zkp/login/respond": [3.4, 6.8],
-  "/zkp/login/nizk": [3.8, 7.4], "/bank/users": [1.4, 2.9], "/audit/log": [1.9, 5.5], "/mechanisms": [1.3, 2.6], "/lab/reset": [5.2, 9.1],
+const LATENCY_MS: Readonly<Record<string, readonly [number, number]>> = {
+  params: [0.4, 1.1], register: [1.8, 3.2], commit: [0.8, 1.6], respond: [0.6, 1.5], nizk: [1.0, 1.9], users: [0.7, 1.3], admin: [1.9, 3.1],
 };
-const SPIKE_PROBABILITY = 0.035;
-const MAX_REQUESTS = 3000;
-const MAX_EVENTS = 6000;
+const SPIKE_PROBABILITY = 0.04;
+const MAX_KEPT = 5000;
 
 type Listener = (event: BankEvent) => void;
 
-function deviceOf(ua: string): string {
-  if (ua.startsWith("BancoLab/")) return "celular (app Banco Lab)";
-  if (ua.startsWith("python-httpx")) return "script python-httpx";
-  if (ua.startsWith("BancoLab-Escenario")) return "Escenario del laboratorio";
-  if (ua.includes("Swagger")) return "navegador (Swagger UI)";
-  if (ua.startsWith("curl")) return "curl";
-  return "desconocido";
+interface SeenDevice {
+  device: string;
+  client: string;
+  last_seen: number;
+  requests: number;
 }
 
 export class SimEngine {
@@ -48,10 +47,8 @@ export class SimEngine {
   readonly events: BankEvent[] = [];
   readonly audit: AuditEntry[] = [];
   readonly alerts: Alert[] = [];
-  readonly lastLogin = new Map<string, number>();
-  startedAt = 0;
-  private subscribers = 0;
-  private readonly observer = new Observer();
+  private readonly lastLogin = new Map<string, number>();
+  private readonly devices = new Map<string, Map<string, SeenDevice>>();
   private readonly listeners = new Set<Listener>();
 
   constructor(private readonly rng: Rng) {}
@@ -61,108 +58,94 @@ export class SimEngine {
     return () => this.listeners.delete(listener);
   }
 
-  newFlow(origin: Origin, force: Force | null = null): Flow {
-    return { origin, port: this.rng.int(40000, 64000), id: this.rng.hex(6), step: 0, force };
-  }
-
-  publish(ts: number, source: EventSource, kind: string, title: string, data: Record<string, unknown>, corr: string | null = null, mechanism: string | null = null): BankEvent {
-    const event: BankEvent = { id: (this.events[this.events.length - 1]?.id ?? 0) + 1, timestamp: ts, source, kind, title, mechanism, correlation_id: corr, data };
-    this.events.push(event);
-    if (this.events.length > MAX_EVENTS) this.events.splice(0, this.events.length - MAX_EVENTS);
-    this.listeners.forEach((listener) => listener(event));
-    return event;
-  }
-
-  /** Una petición HTTP completa; `malformed` simula un cuerpo que la validación rechaza (422). */
-  http(method: string, path: string, body: Record<string, unknown> | null, flow: Flow, ts: number, malformed: string | null = null): RequestRecord {
-    flow.step += 1;
-    const corr = `${flow.id}:${flow.step}`;
-    const result = malformed
-      ? { status: 422, body: { reason: malformed }, signal: null, logs: [{ kind: "error", title: `422 ${path}`, data: { logger: "api.validation", reason: malformed } }] }
-      : this.route(method, path, body ?? {}, flow, ts);
-    const rec = this.record(method, path, body, flow, ts, corr, result);
-    this.trace(rec, result, malformed);
-    const seen = { id: rec.id, ts, ip: flow.origin.ip, agent: flow.origin.ua, path };
-    const drafts = this.observer.observe(seen, result, (u) => this.bank.isLocked(u), (u) => this.bank.attemptsLeft(u));
-    const malformedAlert: AlertDraft[] = malformed
-      ? [{ severity: "baja", kind: "malformed", title: "Cuerpo mal formado (422)", user_id: null, evidence: [rec.id], detail: `\`${malformed}\`. El cuerpo queda en la auditoría como inválido.` }]
-      : [];
-    [...malformedAlert, ...drafts].forEach((draft) => this.raise(draft, ts));
-    if (result.succeededUser) this.lastLogin.set(result.succeededUser, ts);
-    return rec;
-  }
-
-  private record(method: string, path: string, body: unknown, flow: Flow, ts: number, corr: string, result: RouteResult | { status: number; body: unknown; signal: string | null }): RequestRecord {
-    const rec: RequestRecord = {
-      id: (this.requests[this.requests.length - 1]?.id ?? 0) + 1, timestamp: ts, method, path, route: path, status: result.status,
-      duration_ms: this.latency(path, result.status), client: `${flow.origin.ip}:${flow.port}`, user_agent: flow.origin.ua,
-      device: deviceOf(flow.origin.ua), correlation_id: corr, mechanism: path.startsWith("/zkp/") ? "zkp" : null,
-      request_body: body, response_body: result.body, signal: result.signal,
+  http(send: Send): RequestRecord {
+    const result = this.route(send);
+    const id = (this.requests[this.requests.length - 1]?.id ?? 0) + 1;
+    const record: RequestRecord = {
+      id, timestamp: send.ts, method: send.method, path: send.path, route: send.path, status: result.status, duration_ms: this.latency(send.path),
+      client: send.origin.ip, user_agent: send.origin.ua, device: send.origin.device, correlation_id: send.correlation,
+      mechanism: send.path.startsWith("/zkp/") || send.path.startsWith("/admin/") ? "zkp" : null, request_body: send.body, response_body: result.body,
+      signal: result.signals[result.signals.length - 1] ?? null, tags: result.tags,
     };
-    this.requests.push(rec);
-    if (this.requests.length > MAX_REQUESTS) this.requests.splice(0, this.requests.length - MAX_REQUESTS);
-    return rec;
+    keep(this.requests, record);
+    if (isAuditedPath(send.method, send.path)) this.audit.push({ endpoint: send.path, mechanism: "zkp", valid: true, body: send.body });
+    result.logs.forEach((l) => this.publish(record, l.kind, l.title, l.data));
+    this.publish(record, "acceso", `"${record.method} ${record.path} HTTP/1.1" ${record.status}`, {
+      method: record.method, path: record.path, status: record.status, duration_ms: record.duration_ms, client: record.client,
+      user_agent: record.user_agent, device: record.device, request_id: record.id,
+    });
+    this.track(record, result.signals);
+    deduceAlerts(record, result.signals, result.evidence, this.requests).forEach((draft) => {
+      const alert: Alert = { ...draft, id: this.alerts.length + 1, timestamp: record.timestamp };
+      this.alerts.push(alert);
+      this.publish(record, "alerta", alert.title, { ...alert });
+    });
+    return record;
   }
 
-  /** Eventos que deja la petición: acceso, cuerpo auditado, decisiones del mecanismo y SSE. */
-  private trace(rec: RequestRecord, result: { logs: ReadonlyArray<{ kind: string; title: string; data: Record<string, unknown> }> }, malformed: string | null): void {
-    const corr = rec.correlation_id;
-    this.publish(rec.timestamp, "banco", "acceso", `${rec.method} ${rec.path}`, {
-      method: rec.method, path: rec.path, status: rec.status, duration_ms: rec.path.endsWith("/events/stream") ? null : rec.duration_ms,
-      client: rec.client, user_agent: rec.user_agent, device: rec.device,
-    }, corr, rec.mechanism);
-    if (AUDITED.has(rec.path)) {
-      this.audit.push({ endpoint: rec.path, mechanism: "zkp", valid: !malformed, body: rec.request_body });
-      const fields = Object.keys((rec.request_body as Record<string, unknown> | null) ?? {}).join(",");
-      this.publish(rec.timestamp, "banco", "log", "body", { logger: "banco.audit", level: "DEBUG", endpoint: rec.path, valid: !malformed, fields }, corr);
-    }
-    result.logs.forEach((log) => this.publish(rec.timestamp, "banco", log.kind, log.title, log.data, corr, rec.mechanism));
+  detail(id: number): RequestDetail | null {
+    const request = this.requests.find((r) => r.id === id);
+    return request ? { request, events: this.events.filter((e) => e.request_id === id) } : null;
   }
 
-  private raise(draft: AlertDraft, ts: number): void {
-    const alert: Alert = { ...draft, id: this.alerts.length + 1, timestamp: ts };
-    this.alerts.push(alert);
-    this.publish(ts, "banco", "alerta", alert.title, { ...alert });
+  accounts(): Account[] {
+    return [...this.bank.users].map(([user_id, u]) => ({
+      mechanism: "zkp", user_id, stored: { y: String(u.y) }, status: this.bank.isLocked(user_id) ? "bloqueada" : "activa",
+      attempts_left: this.bank.attemptsLeft(user_id), created_at: u.created, last_login_at: this.lastLogin.get(user_id) ?? null,
+      devices: [...(this.devices.get(user_id)?.values() ?? [])].sort((a, b) => b.last_seen - a.last_seen),
+    }));
   }
 
-  private latency(path: string, status: number): number {
-    if (path.endsWith("/events/stream")) return 0;
-    if (status === 422) return this.rng.range(0.9, 2.2);
-    const [a, b] = BASE_LATENCY[path] ?? [1, 3];
-    const spike = this.rng.next() < SPIKE_PROBABILITY ? this.rng.range(2.2, 3.6) : 1;
-    return this.rng.range(a, b) * spike;
-  }
-
-  private route(method: string, path: string, body: Record<string, unknown>, flow: Flow, ts: number): RouteResult {
-    const ok = (payload: unknown, logs: RouteResult["logs"] = []): RouteResult => ({ status: 200, body: payload, signal: null, logs });
+  private route(send: Send): RouteResult {
+    const body = send.body ?? {};
     const draws = { challenge: () => this.rng.int(0, TOY.q - 1), sessionId: () => this.rng.hex(8) };
-    switch (`${method} ${path}`) {
-      case "GET /zkp/params": return ok(TOY_PARAMS);
-      case "POST /zkp/register": return this.bank.register(body, ts);
-      case "POST /zkp/login/commit": return this.bank.commit(body, draws, flow.force);
+    if (send.path.startsWith("/admin/accounts/zkp/")) {
+      const user = send.path.split("/")[4] ?? "";
+      return this.bank.admin(user, send.method === "DELETE" ? "remove" : "unlock");
+    }
+    switch (`${send.method} ${send.path}`) {
+      case "GET /zkp/params": return this.bank.params();
+      case "POST /zkp/register": return this.bank.register(body, send.ts);
+      case "POST /zkp/login/commit": return this.bank.commit(body, draws, send.forcedC ?? null);
       case "POST /zkp/login/respond": return this.bank.respond(body);
-      case "POST /zkp/login/nizk": return this.bank.nizk(body, ts);
-      case "GET /bank/users": return ok({ zkp: Object.fromEntries([...this.bank.users].map(([id, u]) => [id, { y: String(u.y) }])) });
-      case "GET /audit/log": return ok(this.audit.slice(-50));
-      case "GET /mechanisms": return ok([{ id: "zkp", server: { group: TOY.name, bits: TOY.bits } }]);
-      case "GET /events/stream": return this.openStream();
-      case "POST /lab/reset": return this.resetBank(ts);
-      default: return { status: 404, body: { detail: "Not Found" }, signal: null, logs: [] };
+      case "POST /zkp/login/nizk": return this.bank.nizk(body, send.ts);
+      case "GET /bank/users": {
+        const zkp = Object.fromEntries([...this.bank.users].map(([user, u]) => [user, { y: String(u.y) }]));
+        return { status: 200, body: { zkp, password: {}, totp: {}, srp: {} }, signals: [], tags: {}, logs: [] };
+      }
+      default: return { status: 404, body: { detail: "Not Found" }, signals: [], tags: {}, logs: [] };
     }
   }
 
-  private openStream(): RouteResult {
-    this.subscribers += 1;
-    return { status: 200, body: "event: log\ndata: {\"title\":\"Conexión establecida\"}\n\n…", signal: null,
-      logs: [{ kind: "log", title: `nuevo suscriptor (${this.subscribers} activos)`, data: { logger: "banco.sse", level: "DEBUG" } }] };
+  /** Dispositivos por cuenta y último acceso, como Telemetry._track_accounts. */
+  private track(record: RequestRecord, signals: readonly string[]): void {
+    const user = record.tags.user;
+    if (!user || !signals.length) return;
+    const seen = this.devices.get(user) ?? new Map<string, SeenDevice>();
+    const previous = seen.get(record.device);
+    seen.set(record.device, { device: record.device, client: record.client, last_seen: record.timestamp, requests: (previous?.requests ?? 0) + 1 });
+    this.devices.set(user, seen);
+    if (signals.includes("auth.ok")) this.lastLogin.set(user, record.timestamp);
   }
 
-  private resetBank(ts: number): RouteResult {
-    this.bank.reset();
-    this.observer.reset();
-    this.audit.splice(0, this.audit.length);
-    this.lastLogin.clear();
-    this.publish(ts, "sistema", "log", `Banco reiniciado con el grupo ${TOY.name}: usuarios, sesiones y auditoría borrados`, { logger: "banco.lab" });
-    return { status: 200, body: [{ id: "zkp", server: { group: TOY.name } }], signal: null, logs: [] };
+  private publish(record: RequestRecord, kind: string, title: string, data: Record<string, unknown>): void {
+    const event: BankEvent = {
+      id: (this.events[this.events.length - 1]?.id ?? 0) + 1, timestamp: record.timestamp, source: "banco", kind, title,
+      mechanism: record.mechanism, correlation_id: record.correlation_id, data, request_id: record.id,
+    };
+    keep(this.events, event);
+    this.listeners.forEach((listener) => listener(event));
   }
+
+  private latency(path: string): number {
+    const key = path.startsWith("/admin/") ? "admin" : path.split("/").pop() ?? "";
+    const [lo, hi] = LATENCY_MS[key] ?? [0.6, 1.4];
+    const spike = this.rng.next() < SPIKE_PROBABILITY ? this.rng.range(2, 3.5) : 1;
+    return Math.round(this.rng.range(lo, hi) * spike * 100) / 100;
+  }
+}
+
+function keep<T>(list: T[], item: T): void {
+  list.push(item);
+  if (list.length > MAX_KEPT) list.splice(0, list.length - MAX_KEPT);
 }

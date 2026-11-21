@@ -1,107 +1,65 @@
 /**
- * Observador de la simulación: recuerda lo que vio (sesiones consumidas, orígenes, fallos) y deduce
- * alertas solo a partir de las peticiones, como la telemetría del banco real. No conoce los actos.
+ * Alertas de la simulación: las mismas reglas genéricas y el mismo lenguaje que infra/telemetry.py.
+ * Solo miran las peticiones y sus señales; no saben qué escena las produjo.
  */
-import type { Alert } from "../../../shared/types";
-import type { RouteResult } from "./bank";
-import { MAX_ATTEMPTS, NIZK_WINDOW_S, TOY } from "./toy";
-import { ago } from "../../lib/format";
-
-export interface Seen {
-  id: number;
-  ts: number;
-  ip: string;
-  agent: string;
-  path: string;
-}
+import type { Alert, RequestRecord } from "../../../shared/types";
+import { asRecord, hostOf } from "../../lib/requests";
 
 export type AlertDraft = Omit<Alert, "id" | "timestamp">;
 
-interface Consumed extends Seen {
-  s: number;
-  user: string;
+const LOCKOUT_EVIDENCE = 3;
+const REJECTED = new Set(["auth.rejected", "auth.replay", "auth.stale", "auth.lockout", "auth.locked_attempt"]);
+
+/** «el celular de Ana (192.168.1.23)», «la laptop de Eve (…)» o «un dispositivo desconocido (…)». */
+function who(r: RequestRecord): string {
+  const device = r.device !== "desconocido" ? r.device : "un dispositivo desconocido";
+  const first = device.split(" ")[0];
+  const article = device.startsWith("un ") ? "" : first === "celular" || first === "soporte" ? "el " : "la ";
+  return `${article}${device} (${hostOf(r.client)})`;
 }
 
-const agentName = (ua: string): string => ua.split(" ")[0];
-const shortSid = (sid: string): string => `${sid.slice(0, 8)}…`;
+const sentence = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
+const ago = (seconds: number): string => (seconds < 60 ? `${Math.round(seconds)} s` : `${Math.round(seconds / 60)} min`);
 
-export class Observer {
-  private readonly consumed = new Map<string, Consumed>();
-  private readonly commitOf = new Map<string, number>();
-  private readonly failures = new Map<string, number[]>();
-  private readonly origins = new Map<string, Set<string>>();
+function matches(r: RequestRecord, evidence: Record<string, string>): boolean {
+  const body = asRecord(r.request_body) ?? {};
+  return Object.entries(evidence).every(([key, value]) => String(body[key]) === value);
+}
 
-  reset(): void {
-    this.consumed.clear();
-    this.commitOf.clear();
-    this.failures.clear();
-    this.origins.clear();
-  }
+function replayAlert(r: RequestRecord, user: string | null, evidence: Record<string, string>, history: readonly RequestRecord[]): AlertDraft {
+  const earlier = history.filter((h) => h.id < r.id && matches(h, evidence));
+  const first = earlier[0];
+  const origin = first ? ` que ${who(first)} había enviado hace ${ago(r.timestamp - first.timestamp)}` : " que ya había llegado antes";
+  return { severity: "alta", kind: "replay", title: "Repetición de un mensaje capturado", user_id: user, evidence: [...earlier.map((h) => h.id), r.id],
+    detail: `${sentence(who(r))} reenvió un mensaje idéntico (${r.method} ${r.path})${origin}. El banco lo rechazó: lo capturado no sirve dos veces.` };
+}
 
-  /** Registra la petición y devuelve las alertas que se deducen de ella. */
-  observe(seen: Seen, r: RouteResult, locked: (user: string) => boolean, attemptsLeft: (user: string) => number): AlertDraft[] {
-    if (r.sid && seen.path.endsWith("/login/commit") && r.status === 200) this.commitOf.set(r.sid, seen.id);
-    const alerts = this.instantAlerts(seen, r);
-    if (r.consume) this.consumed.set(r.consume.sid, { ...seen, s: r.consume.s, user: r.consume.user });
-    if (r.succeededUser) this.remember(r.succeededUser, seen.ip);
-    if (!r.failedUser) return alerts.map((a) => ({ ...a, evidence: [...a.evidence, seen.id] }));
-    const user = r.failedUser;
-    const list = [...(this.failures.get(user) ?? []), seen.id];
-    this.failures.set(user, list);
-    if (locked(user)) return [this.lockAlert(user, seen, list)];
-    const impostor = r.impostor ? [this.impostorAlert(seen, r, attemptsLeft(user))] : [];
-    return [...alerts, ...impostor].map((a) => ({ ...a, evidence: [...a.evidence, seen.id] }));
-  }
+function lockoutAlert(r: RequestRecord, user: string, history: readonly RequestRecord[]): AlertDraft {
+  const failures = history.filter((h) => h.id <= r.id && h.tags.user === user && h.signal !== null && REJECTED.has(h.signal)).slice(-LOCKOUT_EVIDENCE);
+  const origins = [...new Set(failures.map(who))].sort().join(", ");
+  return { severity: "alta", kind: "lockout", title: `Cuenta bloqueada: ${user}`, user_id: user, evidence: failures.map((h) => h.id),
+    detail: `${failures.length} pruebas inválidas seguidas desde ${origins}. La cuenta de ${user} no recibe retos hasta que soporte la desbloquee.` };
+}
 
-  private remember(user: string, ip: string): void {
-    this.failures.set(user, []);
-    this.origins.set(user, new Set([...(this.origins.get(user) ?? []), ip]));
-  }
+const SIMPLE: Readonly<Record<string, (user: string, from: string) => Omit<AlertDraft, "user_id" | "evidence">>> = {
+  "auth.rejected": (user, from) => ({ severity: "media", kind: "invalid_proof", title: `Prueba inválida para ${user}`,
+    detail: `${sentence(from)} envió una prueba que no cumple la verificación para la cuenta de ${user}.` }),
+  "auth.stale": (user, from) => ({ severity: "media", kind: "stale_proof", title: `Prueba vieja para ${user}`,
+    detail: `${sentence(from)} envió una prueba no interactiva con la hora fuera de la ventana permitida.` }),
+  "auth.locked_attempt": (user, from) => ({ severity: "media", kind: "locked_attempt", title: `Intento sobre una cuenta bloqueada: ${user}`,
+    detail: `${sentence(from)} intentó iniciar sesión en la cuenta bloqueada de ${user}.` }),
+};
 
-  private instantAlerts(seen: Seen, r: RouteResult): AlertDraft[] {
-    if (r.invalidSession) return [this.replayAlert(seen, r.invalidSession)];
-    if (r.lockedTry) {
-      return [{ severity: "media", kind: "locked_attempt", title: `Intento sobre una cuenta bloqueada: ${r.lockedTry}`, user_id: r.lockedTry, evidence: [],
-        detail: `El banco no emite reto. Origen \`${seen.ip}\` (${agentName(seen.agent)}).` }];
-    }
-    if (r.stale) {
-      return [{ severity: "media", kind: "stale_proof", title: `Prueba no interactiva vieja para ${r.stale.user}`, user_id: r.stale.user, evidence: [],
-        detail: `m es de hace ${r.stale.delta} s (ventana: ${NIZK_WINDOW_S} s). Patrón típico de una prueba capturada y reenviada. Origen \`${seen.ip}\`.` }];
-    }
-    if (r.usedProof) {
-      const { user, t, s } = r.usedProof;
-      return [{ severity: "media", kind: "replay", title: `Prueba no interactiva repetida para ${user}`, user_id: user, evidence: [],
-        detail: `El par (t = ${t}, s = ${s}) ya se había aceptado. Origen \`${seen.ip}\`.` }];
-    }
-    return [];
-  }
-
-  private replayAlert(seen: Seen, sid: string): AlertDraft {
-    const prev = this.consumed.get(sid);
-    if (!prev) {
-      return { severity: "baja", kind: "unknown_session", title: "Respuesta para una sesión desconocida", user_id: null, evidence: [],
-        detail: `La sesión \`${shortSid(sid)}\` nunca fue emitida por este banco.` };
-    }
-    const origin = prev.ip === seen.ip ? "Mismo origen."
-      : `Origen distinto: \`${seen.ip}\` (${agentName(seen.agent)}) frente a \`${prev.ip}\` (${agentName(prev.agent)}).`;
-    return { severity: "alta", kind: "replay", title: "Respuesta repetida rechazada", user_id: prev.user, evidence: [prev.id],
-      detail: `La sesión \`${shortSid(sid)}\` de \`${prev.user}\` ya se había usado ${ago(prev.ts, seen.ts)} con s = ${prev.s}. ${origin}` };
-  }
-
-  private lockAlert(user: string, seen: Seen, failures: readonly number[]): AlertDraft {
-    return { severity: "alta", kind: "lockout", title: `Cuenta bloqueada: ${user}`, user_id: user, evidence: [...failures],
-      detail: `${MAX_ATTEMPTS} pruebas inválidas seguidas. Último origen \`${seen.ip}\` (${agentName(seen.agent)}). La cuenta no recibe más retos hasta reiniciar el banco.` };
-  }
-
-  private impostorAlert(seen: Seen, r: RouteResult, left: number): AlertDraft {
-    const imp = r.impostor;
-    const user = r.failedUser ?? "?";
-    const fresh = !this.origins.get(user)?.has(seen.ip);
-    const commitId = r.sid ? this.commitOf.get(r.sid) : undefined;
-    const where = fresh ? ` El origen \`${seen.ip}\` nunca había accedido a esta cuenta.` : "";
-    const detail = imp?.d
-      ? `g^s = ${TOY.g}^${imp.s} mod ${TOY.p} = ${imp.d.gs}, pero t·y^c mod ${TOY.p} = ${imp.d.tyc} (t = ${imp.t}, c = ${imp.c}). Intentos restantes: ${left}.${where}`
-      : `s fuera de rango. Intentos restantes: ${left}.${where}`;
-    return { severity: "media", kind: "invalid_proof", title: `Prueba inválida para ${user}`, user_id: user, evidence: commitId ? [commitId] : [], detail };
-  }
+/** Alertas que se deducen de una petición recién atendida (history ya la incluye). */
+export function deduceAlerts(r: RequestRecord, signals: readonly string[], evidence: Record<string, string> | undefined, history: readonly RequestRecord[]): AlertDraft[] {
+  const user = r.tags.user ?? null;
+  const drafts = signals.flatMap((signal): AlertDraft[] => {
+    if (signal === "auth.replay") return [replayAlert(r, user, evidence ?? {}, history)];
+    if (signal === "auth.lockout" && user) return [lockoutAlert(r, user, history)];
+    if (!(signal in SIMPLE) || !user) return [];
+    return [{ ...SIMPLE[signal](user, who(r)), user_id: user, evidence: [r.id] }];
+  });
+  if (r.status !== 422) return drafts;
+  return [...drafts, { severity: "baja", kind: "malformed", title: "Mensaje mal formado", user_id: null, evidence: [r.id],
+    detail: `${sentence(who(r))} envió un cuerpo que no cumple el formato de ${r.path}; el banco no lo procesó.` }];
 }

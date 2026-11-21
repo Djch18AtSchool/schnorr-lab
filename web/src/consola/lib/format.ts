@@ -83,11 +83,17 @@ export function fmtBytes(bytes: number): string {
   return bytes < 1000 ? `${Math.round(bytes)} B` : `${(bytes / 1000).toFixed(1)} kB`;
 }
 
-/** Milisegundos con las cifras justas: «0.56 ms», «9.1 ms», «154 ms». */
-export function fmtMsShort(ms: number): string {
-  if (ms < 1) return `${ms.toFixed(2)} ms`;
-  return ms < 10 ? `${ms.toFixed(1)} ms` : `${Math.round(ms)} ms`;
+/** Milisegundos con las cifras justas, sin unidad: «0.56», «9.1», «154». */
+export function fmtMsNumber(ms: number): string {
+  if (ms < 1) return ms.toFixed(2);
+  return ms < 10 ? ms.toFixed(1) : String(Math.round(ms));
 }
+
+/** Milisegundos con las cifras justas: «0.56 ms», «9.1 ms», «154 ms». */
+export const fmtMsShort = (ms: number): string => `${fmtMsNumber(ms)} ms`;
+
+/** Duración de un intento: «0.88 ms», «3.0 ms» o, desde un segundo, «4.5 s». */
+export const fmtElapsed = (ms: number): string => (ms < 1000 ? fmtMsShort(ms) : `${(ms / 1000).toFixed(1)} s`);
 
 /** Razón «8.6×» con una cifra decimal. */
 export const fmtTimes = (ratio: number): string => `${ratio.toFixed(ratio < 10 ? 1 : 0)}×`;

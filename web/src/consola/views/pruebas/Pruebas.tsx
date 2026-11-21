@@ -1,7 +1,7 @@
 /** Sección Pruebas: la última ejecución de pytest y la trazabilidad de los requerimientos R1–R11 y C1–C5. */
 import { CircleAlert, CircleCheck, CircleMinus, CircleX } from "lucide-react";
 import type { TestReport } from "../../../shared/types";
-import { PanelHead, Unavailable, ViewHead } from "../../components/Common";
+import { CodeText, PanelHead, Unavailable, ViewHead } from "../../components/Common";
 import { tipHandlers, useTip } from "../../components/Tooltip";
 import { fmtClock, plural } from "../../lib/format";
 import { REQUIREMENT_SOURCES, requirementFiles, requirementStatus, testsByFile, type RequirementStatus } from "../../lib/lab";
@@ -44,7 +44,7 @@ function RequirementRow({ req }: { req: Requirement }) {
   const { text, Icon } = STATUS[status];
   return (
     <tr>
-      <td>{req.id}</td><td>{req.title}</td>
+      <td>{req.id}</td><td><CodeText text={req.title} /></td>
       <td className="mono src">{REQUIREMENT_SOURCES[req.id] ?? "—"}</td>
       <td><div className="files">{requirementFiles(req).map((f) => <code key={f.file}>{f.file}<b>{f.count}</b></code>)}</div></td>
       <td><span className={`passed ${status}`}><Icon className="i" aria-hidden="true" />{text}</span></td>

@@ -1,47 +1,36 @@
-/** Barra superior: entorno, estado del servicio, En vivo/Pausado, fecha y hora, tema y operador. */
-import { Landmark, SunMoon } from "lucide-react";
-import { fmtClock } from "../lib/format";
+/** Barra superior sobria, como la del Escenario: nombre, estado del servicio, En vivo/Pausado y tema. */
+import { Moon, Pause, Play } from "lucide-react";
 
 interface TopBarProps {
   online: boolean;
-  startedAt: number | null;
-  now: number;
   live: boolean;
   pending: number;
+  simulated: boolean;
   onToggleLive: () => void;
   onToggleTheme: () => void;
-  simulated: boolean;
 }
 
-function uptime(startedAt: number | null, now: number): string {
-  if (startedAt == null) return "";
-  const minutes = Math.max(0, Math.floor((now - startedAt) / 60));
-  return minutes < 60 ? `activo hace ${minutes} min` : `activo hace ${Math.floor(minutes / 60)} h ${minutes % 60} min`;
-}
-
-export function TopBar({ online, startedAt, now, live, pending, onToggleLive, onToggleTheme, simulated }: TopBarProps) {
-  const date = new Date(now * 1000).toLocaleDateString("es-CR", { weekday: "short", day: "numeric", month: "short" });
-  const liveText = live ? "En vivo" : pending ? `Pausado · ${pending} nuevas` : "Pausado";
+export function TopBar({ online, live, pending, simulated, onToggleLive, onToggleTheme }: TopBarProps) {
   return (
-    <header className="top">
-      <div className="brand"><span className="brandmark" aria-hidden="true"><Landmark /></span><b>Banco Lab</b><span className="muted">Consola</span></div>
-      <span className="env" title={simulated ? "Datos generados en el navegador (?fuente=simulada)" : "Entorno"}>
-        banco-lab · {simulated ? "datos simulados" : "simulación"}
-      </span>
-      <span className="svc">
-        <span className={`pulse${online ? "" : " off"}`} aria-hidden="true" />
-        <strong>{online ? "Servicio en línea" : "Sin conexión en vivo"}</strong>
-        <span className="muted mono">{uptime(startedAt, now)}</span>
-      </span>
-      <span className="spacer" />
-      <button type="button" className="live" aria-pressed={live} onClick={onToggleLive} title="Pausar o reanudar la actualización en vivo (P)">
-        <span className="ld" /><span>{liveText}</span>
-      </button>
-      <span className="clock mono"><span className="d">{date}, </span>{fmtClock(now)}</span>
-      <button type="button" className="iconbtn" onClick={onToggleTheme} title="Cambiar tema (T)" aria-label="Cambiar tema"><SunMoon className="i" aria-hidden="true" /></button>
-      <div className="op" title="Sesión de operador">
-        <span className="avatar">MR</span>
-        <span className="who">M. Rojas<small>operadora de turno</small></span>
+    <header className="topbar">
+      <div className="slate">
+        <div className="name"><b>Schnorr Lab</b><span>Consola del banco</span></div>
+        <span className="sep" aria-hidden="true" />
+        <span className={`svc${online ? " on" : ""}`} role="status">
+          <i aria-hidden="true" />{online ? "En línea" : "Sin conexión"}
+        </span>
+        {simulated ? <span className="sim-badge" title="?fuente=simulada: el banco corre en este navegador">Datos simulados</span> : null}
+      </div>
+      <div className="top-tools">
+        <button type="button" className={`dir-btn live-btn${live ? " on" : ""}`} aria-pressed={live} onClick={onToggleLive}
+          title={live ? "Congelar la vista para leer con calma" : "Volver a recibir peticiones en vivo"}>
+          {live ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
+          <span className="lbl">{live ? "En vivo" : "Pausado"}</span>
+          {!live && pending > 0 ? <span className="pending">+{pending}</span> : null}
+        </button>
+        <button type="button" className="icon-btn" onClick={onToggleTheme} aria-label="Cambiar tema claro u oscuro" title="Tema claro u oscuro">
+          <Moon aria-hidden="true" />
+        </button>
       </div>
     </header>
   );

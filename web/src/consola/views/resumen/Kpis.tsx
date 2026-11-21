@@ -1,38 +1,63 @@
-/** Fila de indicadores del resumen, todos leídos de /telemetry/summary y /bank/accounts. */
+/** Cuatro indicadores del rango elegido; cada número abre las peticiones que lo forman. */
 import type { ReactNode } from "react";
-import type { Account, TelemetrySummary } from "../../../shared/types";
-import { Sparkline } from "../../components/charts/TrafficCharts";
-import { perMinute } from "../../lib/charts";
-import { rejectionText } from "../../lib/telemetry";
+import { linkOutcome, linkSince } from "../../lib/activityQuery";
+import { fmtClock, fmtMsNumber, plural } from "../../lib/format";
+import type { AccountsStatus, SeverityCounts, TrafficStats } from "../../lib/stats";
+import type { ConsoleNav } from "../SectionView";
 
-export const P95_TARGET_MS = 50;
+interface KpisProps {
+  stats: TrafficStats;
+  accounts: AccountsStatus | null;
+  alerts: SeverityCounts;
+  since: number | null;
+  rangeLabel: string;
+  nav: ConsoleNav;
+}
 
-function Kpi({ label, value, unit, tone, sub, children }: { label: string; value: string | number; unit?: string; tone?: "ok" | "bad"; sub?: string; children?: ReactNode }) {
+function Kpi({ label, tone, children, sub }: { label: string; tone: string; children: ReactNode; sub: ReactNode }) {
   return (
-    <div className="kpi">
-      <span className="lb">{label}</span>
-      <span className={`v ${tone ?? ""}`}>{value}{unit ? <small>{unit}</small> : null}</span>
-      {sub !== undefined ? <span className="sub" title={sub}>{sub}</span> : null}
-      {children}
+    <div className="kpi" data-tone={tone}>
+      <span className="kpi-label">{label}</span>
+      <div className="kpi-values">{children}</div>
+      <span className="kpi-sub">{sub}</span>
     </div>
   );
 }
 
-export function Kpis({ summary, accounts }: { summary: TelemetrySummary; accounts: readonly Account[] | null }) {
-  const minutes = Math.round(summary.window_s / 60);
-  const locked = (accounts ?? []).filter((a) => a.status === "bloqueada").map((a) => a.user_id);
-  const reasons = rejectionText(summary.signals);
+function Value({ value, unit, tone, onClick, title }: { value: ReactNode; unit: string; tone?: string; onClick: () => void; title: string }) {
   return (
-    <div className="panel kpis">
-      <Kpi label="Peticiones por minuto" value={summary.requests_per_min}>
-        <Sparkline values={perMinute(summary.series, summary.bucket_s)} color="var(--banco)" />
+    <button type="button" className={`kpi-value${tone ? ` ${tone}` : ""}`} onClick={onClick} title={title}>
+      <b>{value}</b><small>{unit}</small>
+    </button>
+  );
+}
+
+function accountsSub(accounts: AccountsStatus): ReactNode {
+  const fixed = accounts.unlocked[accounts.unlocked.length - 1];
+  if (accounts.locked.length) return <>Bloqueada: <b>{accounts.locked.join(", ")}</b>. Soporte puede desbloquearla.</>;
+  if (fixed) return <>{fixed.user} se bloqueó a las {fmtClock(fixed.lockedAt)}; soporte la desbloqueó a las {fmtClock(fixed.unlockedAt)}.</>;
+  return accounts.total ? "Ninguna cuenta bloqueada." : "Aún no hay cuentas registradas.";
+}
+
+export function Kpis({ stats, accounts, alerts, since, rangeLabel, nav }: KpisProps) {
+  const totalAlerts = alerts.alta + alerts.media + alerts.baja;
+  return (
+    <div className="kpis">
+      <Kpi label="Inicios de sesión" tone="auth" sub={`${rangeLabel} · ${plural(stats.granted + stats.rejected, "intento decidido", "intentos decididos")}`}>
+        <Value value={stats.granted} unit="concedidos" tone="ok" title="Ver los accesos concedidos" onClick={() => nav.openActivity(linkOutcome("concedido", since, `Accesos concedidos · ${rangeLabel}`))} />
+        <Value value={stats.rejected} unit="rechazados" tone="bad" title="Ver los intentos rechazados" onClick={() => nav.openActivity(linkOutcome("rechazado", since, `Intentos rechazados · ${rangeLabel}`))} />
       </Kpi>
-      <Kpi label="Latencia p50" value={summary.p50_ms.toFixed(2)} unit="ms" sub={`${minutes} min, sin flujos SSE`} />
-      <Kpi label="Latencia p95" value={summary.p95_ms.toFixed(2)} unit="ms" sub={`objetivo < ${P95_TARGET_MS} ms`} />
-      <Kpi label="Accesos concedidos" value={summary.totals.auth_ok} tone="ok" sub={`${minutes} min, ambos flujos`} />
-      <Kpi label="Accesos rechazados" value={summary.totals.auth_rejected} tone="bad" sub={reasons || "ninguno"} />
-      <Kpi label="Cuentas bloqueadas" value={summary.totals.locked_accounts} unit={accounts ? `de ${accounts.length}` : undefined}
-        sub={locked.length ? locked.join(", ") : "ninguna"} />
+      <Kpi label="Tiempo de respuesta del banco" tone="bank" sub={`${rangeLabel} · ${plural(stats.requests, "petición", "peticiones")}; mediana y percentil 95`}>
+        <Value value={stats.requests ? fmtMsNumber(stats.p50) : "–"} unit="ms p50" title="Ver las peticiones del rango" onClick={() => nav.openActivity(linkSince(since, `Peticiones · ${rangeLabel}`))} />
+        <Value value={stats.requests ? fmtMsNumber(stats.p95) : "–"} unit="ms p95" title="Ver las peticiones del rango" onClick={() => nav.openActivity(linkSince(since, `Peticiones · ${rangeLabel}`))} />
+      </Kpi>
+      <Kpi label="Cuentas" tone="accounts" sub={accounts ? accountsSub(accounts) : "No se pudieron leer las cuentas."}>
+        <Value value={accounts?.active ?? "–"} unit={accounts?.active === 1 ? "activa" : "activas"} title="Ver los clientes" onClick={() => nav.go("clientes")} />
+        <Value value={accounts?.locked.length ?? "–"} unit={accounts?.locked.length === 1 ? "bloqueada" : "bloqueadas"} tone={accounts?.locked.length ? "bad" : undefined} title="Ver los clientes" onClick={() => nav.go("clientes")} />
+      </Kpi>
+      <Kpi label="Alertas de seguridad" tone="alerts" sub={totalAlerts ? `${rangeLabel} · ${alerts.alta} altas, ${alerts.media} medias, ${alerts.baja} bajas` : `${rangeLabel} · sin alertas`}>
+        <Value value={totalAlerts} unit={totalAlerts === 1 ? "alerta" : "alertas"} tone={alerts.alta ? "bad" : totalAlerts ? "warn" : undefined} title="Ver quién ataca en Seguridad" onClick={() => nav.go("seguridad")} />
+      </Kpi>
     </div>
   );
 }
