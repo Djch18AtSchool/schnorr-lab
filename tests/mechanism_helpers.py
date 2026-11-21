@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from api.app import create_app
 from client_app.app import create_client_app
+from mechanisms.base import FlowContext, StepError, StepResult
 
 USER = "cliente01"
 
@@ -15,11 +16,31 @@ def make_lab(group: str = "toy") -> tuple[TestClient, TestClient]:
     return bank, phone
 
 
+def _record(result: StepResult | None, error: str | None) -> dict:
+    if result is None:
+        return {"status": "error", "values": {}, "exchange": None, "message": error or ""}
+    return {"status": result.outcome, "values": dict(result.values), "message": result.message,
+            "exchange": result.exchange.to_json() if result.exchange else None}
+
+
 def run_flow(phone: TestClient, mechanism: str, flow: str, user: str = USER) -> dict:
-    """Inicia un flujo en el celular y ejecuta todos sus pasos."""
-    started = phone.post("/api/flows", json={"mechanism": mechanism, "flow": flow, "user_id": user})
-    assert started.status_code == 201, started.text
-    return phone.post(f"/api/flows/{started.json()['id']}/run").json()
+    """Ejecuta en el celular todos los pasos de un flujo del mecanismo, como lo hace un acto del Escenario."""
+    state = phone.app.state.phone
+    context = FlowContext(user_id=user, gateway=state.gateway, wallet=state.wallet)
+    steps, status = [], "aceptado"
+    for step in state.mechanisms[mechanism].steps(flow):
+        try:
+            result, error = step.action(context), None
+        except StepError as exc:
+            result, error = None, str(exc)
+        steps.append({**vars(step.info), "record": _record(result, error)})
+        if result is None:
+            status = "error"
+            break
+        if result.finished:
+            status = "rechazado" if result.outcome == "rechazado" else "aceptado"
+            break
+    return {"status": status, "steps": steps}
 
 
 def sent_bodies(flow: dict) -> list[dict]:
@@ -35,7 +56,7 @@ def bank_server(bank: TestClient, mechanism: str):
 
 def phone_mechanism(phone: TestClient, mechanism: str):
     """La parte del celular de un mecanismo (para fijar el reloj en las pruebas)."""
-    return phone.app.state.phone.manager.mechanisms[mechanism]
+    return phone.app.state.phone.mechanisms[mechanism]
 
 
 class FakeClock:

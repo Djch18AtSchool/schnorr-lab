@@ -75,7 +75,6 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Escenario (proyectar):  {client_url}/", flush=True)
     print(f"Consola del banco:      {bank_url}/consola/" + ("" if compiled else "  (falta compilar la web)"), flush=True)
     print(f"Swagger del banco:      {bank_url}/docs", flush=True)
-    print(f"Interfaz clásica:       {client_url}/clasico", flush=True)
     if not compiled:
         print("Para la interfaz nueva:  cd web && npm ci && npm run build", flush=True)
     print("Ctrl+C para detener.", flush=True)

@@ -14,9 +14,8 @@ from typing import Any
 from attacks.bsgs import MAX_BSGS_Q_BITS, bsgs, ceil_sqrt
 from attacks.nonce_reuse import extract_secret
 from attacks.simulator import simulate
-from attacks.stolen_db import AVERAGE_STEPS_FACTOR
+from attacks.stolen_db import AVERAGE_STEPS_FACTOR, measured_seconds_per_operation, years_text
 from client_app.acts.model import ActContext, StepOutcome, TerminalLine
-from client_app.lab import _measured_seconds_per_operation, _years
 from mechanisms.base import Exchange, StepError
 from mechanisms.zkp.observe import short
 from protocol import GroupParams
@@ -132,8 +131,8 @@ def crack(ctx: ActContext) -> StepOutcome:
 
 def _too_big(gp: GroupParams, q_bits: int, command: TerminalLine) -> StepOutcome:
     log10_ops = math.log10(AVERAGE_STEPS_FACTOR) + math.log10(math.isqrt(gp.q))
-    seconds_per_op = _measured_seconds_per_operation()
-    years = _years(log10_ops, seconds_per_op) if seconds_per_op else "incontables"
+    seconds_per_op = measured_seconds_per_operation()
+    years = years_text(log10_ops, seconds_per_op) if seconds_per_op else "incontables"
     terminal = (command, _line("out", f"q de {q_bits} bits → ~2^{q_bits // 2} pasos y otras tantas entradas de memoria"),
                 _line("bad", f"estimado: {years} años. Abortado."))
     return StepOutcome(values={"bits de q": str(q_bits), "operaciones": f"~2^{q_bits // 2}", "tiempo estimado": f"{years} años"},

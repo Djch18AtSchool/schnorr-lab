@@ -17,12 +17,12 @@ build-backend = "setuptools.build_meta"
 # Distribución plana: se declaran los paquetes para que `pip install -e ".[dev]"` funcione.
 [tool.setuptools]
 packages = ["core", "protocol", "attacks", "benchmark", "api", "infra", "mechanisms", "mechanisms.zkp",
-            "mechanisms.password", "mechanisms.totp", "mechanisms.srp", "client_app"]
+            "mechanisms.password", "mechanisms.totp", "mechanisms.srp", "client_app",
+            "client_app.acts"]
 py-modules = ["demo", "http_client", "lab"]
 
 [tool.setuptools.package-data]
 core = ["groups.json"]
-client_app = ["static/*.html", "static/*.css", "static/js/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

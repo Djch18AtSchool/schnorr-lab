@@ -221,3 +221,25 @@ def _print_report(rows: list[dict], summary: dict) -> None:
     for p in summary["predictions"]:
         print(f"    q de {p['q_bits']} bits: unas {p['operations']:.1e} operaciones ≈ {p['years']:.1e} años "
               f"(edad del universo: {UNIVERSE_AGE_YEARS:.1e} años).")
+
+
+def years_text(log10_operations: float, seconds_per_operation: float) -> str:
+    """Años de cómputo en notación científica, calculados con logaritmos para no desbordar el float. Cubre R10.
+
+    Con q de 2047 bits hacen falta ≈ 2^1023 operaciones: en punto flotante el producto daría «inf».
+    """
+    exponent = log10_operations + math.log10(seconds_per_operation) - math.log10(SECONDS_PER_YEAR)
+    power = math.floor(exponent)
+    mantissa = round(10 ** (exponent - power), 1)
+    if mantissa >= 10:
+        mantissa, power = mantissa / 10, power + 1
+    return f"{mantissa:.1f}·10^{power}"
+
+
+def measured_seconds_per_operation(results_dir: Path = RESULTS_DIR) -> float | None:
+    """Segundos por operación de BSGS medidos en el experimento (results/bsgs.json), si existe. Cubre R10."""
+    try:
+        data = json.loads((results_dir / "bsgs.json").read_text(encoding="utf-8"))
+        return float(data["fit"]["seconds_per_operation"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None

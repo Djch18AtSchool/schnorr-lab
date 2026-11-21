@@ -1,8 +1,8 @@
 {
- "generated_at": 1795249509.5873506,
- "duration_s": 31.39,
- "total": 380,
- "passed": 380,
+ "generated_at": 1795273664.7670426,
+ "duration_s": 29.3,
+ "total": 372,
+ "passed": 372,
  "failed": 0,
  "skipped": 0,
  "requirements": [
@@ -697,12 +697,12 @@
      "outcome": "passed"
     },
     {
-     "name": "test_reiniciar_con_un_grupo_desconocido_devuelve_400",
+     "name": "test_reiniciar_cambia_el_grupo_y_borra_los_secretos",
      "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
     {
-     "name": "test_reiniciar_el_laboratorio_cambia_el_grupo_y_borra_secretos",
+     "name": "test_reiniciar_con_un_grupo_desconocido_devuelve_400",
      "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
@@ -775,11 +775,6 @@
     {
      "name": "test_hash_rechaza_entradas_fuera_de_rango[y=p]",
      "file": "tests/test_fiat_shamir.py",
-     "outcome": "passed"
-    },
-    {
-     "name": "test_inicio_de_sesion_no_interactivo_en_un_solo_mensaje",
-     "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
     {
@@ -860,6 +855,11 @@
     {
      "name": "test_registro_de_pruebas_usadas",
      "file": "tests/test_fiat_shamir.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_repeticion_se_acepta_sin_proteccion_y_se_rechaza_con_ella",
+     "file": "tests/test_experiments.py",
      "outcome": "passed"
     },
     {
@@ -1080,11 +1080,6 @@
      "outcome": "passed"
     },
     {
-     "name": "test_ataque_fuera_de_linea_devuelve_resultado_y_reporte",
-     "file": "tests/test_client_app.py",
-     "outcome": "passed"
-    },
-    {
      "name": "test_bsgs_cuenta_4_pasos_de_bebe_y_2_de_gigante_en_el_ejemplo",
      "file": "tests/test_bsgs.py",
      "outcome": "passed"
@@ -1125,6 +1120,11 @@
      "outcome": "passed"
     },
     {
+     "name": "test_convergencia_del_impostor_tiene_los_puntos_de_control",
+     "file": "tests/test_experiments.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_enumeracion_se_niega_con_q_mayor_que_2_a_la_12",
      "file": "tests/test_attacks.py",
      "outcome": "passed"
@@ -1157,11 +1157,6 @@
     {
      "name": "test_extraccion_exige_retos_distintos",
      "file": "tests/test_attacks.py",
-     "outcome": "passed"
-    },
-    {
-     "name": "test_impostor_en_vivo_es_rechazado_y_consume_intentos",
-     "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
     {
@@ -1240,18 +1235,13 @@
      "outcome": "passed"
     },
     {
+     "name": "test_r_repetido_recupera_x_en_el_ejemplo_y_al_azar",
+     "file": "tests/test_experiments.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_repeticion_se_acepta_sin_proteccion_y_se_rechaza_con_proteccion",
      "file": "tests/test_contracts.py",
-     "outcome": "passed"
-    },
-    {
-     "name": "test_repetir_la_prueba_no_interactiva_capturada_es_rechazado",
-     "file": "tests/test_client_app.py",
-     "outcome": "passed"
-    },
-    {
-     "name": "test_repetir_la_respuesta_capturada_es_rechazado",
-     "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
     {
@@ -1267,16 +1257,6 @@
     {
      "name": "test_reutilizar_r_tambien_rompe_un_grupo_grande",
      "file": "tests/test_attacks.py",
-     "outcome": "passed"
-    },
-    {
-     "name": "test_robar_la_base_de_un_grupo_real_no_permite_despejar_x",
-     "file": "tests/test_client_app.py",
-     "outcome": "passed"
-    },
-    {
-     "name": "test_robar_la_base_solo_entrega_claves_publicas",
-     "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
     {
@@ -1325,6 +1305,11 @@
      "outcome": "passed"
     },
     {
+     "name": "test_simulador_tiene_la_misma_distribucion_por_t",
+     "file": "tests/test_experiments.py",
+     "outcome": "passed"
+    },
+    {
      "name": "test_tasa_del_impostor_se_acerca_a_1_entre_q",
      "file": "tests/test_attacks.py",
      "outcome": "passed"
@@ -1366,11 +1351,6 @@
      "outcome": "passed"
     },
     {
-     "name": "test_cada_paso_muestra_sus_valores_y_la_traza_con_p_pequeno",
-     "file": "tests/test_client_app.py",
-     "outcome": "passed"
-    },
-    {
      "name": "test_cada_peticion_queda_registrada_con_origen_dispositivo_y_senal",
      "file": "tests/test_observability.py",
      "outcome": "passed"
@@ -1403,11 +1383,6 @@
     {
      "name": "test_compromiso_rechaza_usuario_inexistente_t_invalido_y_cuenta_bloqueada",
      "file": "tests/test_api.py",
-     "outcome": "passed"
-    },
-    {
-     "name": "test_configuracion_y_pagina_principal",
-     "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
     {
@@ -1461,11 +1436,6 @@
      "outcome": "passed"
     },
     {
-     "name": "test_errores_de_uso_de_la_api_del_celular",
-     "file": "tests/test_client_app.py",
-     "outcome": "passed"
-    },
-    {
      "name": "test_errores_de_uso_de_los_actos",
      "file": "tests/test_acts.py",
      "outcome": "passed"
@@ -1486,23 +1456,18 @@
      "outcome": "passed"
     },
     {
-     "name": "test_iniciar_sesion_sin_cuenta_termina_con_error_explicado",
-     "file": "tests/test_client_app.py",
-     "outcome": "passed"
-    },
-    {
      "name": "test_la_consola_no_se_observa_a_si_misma",
      "file": "tests/test_observability.py",
      "outcome": "passed"
     },
     {
-     "name": "test_la_traza_omite_el_docstring_y_falla_si_el_texto_no_existe",
-     "file": "tests/test_observability.py",
+     "name": "test_la_pagina_principal_responde_aunque_la_web_no_este_compilada",
+     "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
     {
-     "name": "test_los_eventos_del_banco_se_correlacionan_con_los_pasos_del_celular",
-     "file": "tests/test_client_app.py",
+     "name": "test_la_traza_omite_el_docstring_y_falla_si_el_texto_no_existe",
+     "file": "tests/test_observability.py",
      "outcome": "passed"
     },
     {
@@ -1513,6 +1478,11 @@
     {
      "name": "test_los_mensajes_de_ana_y_eve_llegan_al_banco_con_su_dispositivo",
      "file": "tests/test_acts.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_los_pasos_de_ana_y_eve_quedan_en_los_eventos_del_celular",
+     "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
     {
@@ -1561,11 +1531,6 @@
      "outcome": "passed"
     },
     {
-     "name": "test_registro_e_inicio_de_sesion_paso_a_paso",
-     "file": "tests/test_client_app.py",
-     "outcome": "passed"
-    },
-    {
      "name": "test_registro_invalido_devuelve_400_con_motivo[1]",
      "file": "tests/test_api.py",
      "outcome": "passed"
@@ -1578,11 +1543,6 @@
     {
      "name": "test_registro_repetido_devuelve_400",
      "file": "tests/test_api.py",
-     "outcome": "passed"
-    },
-    {
-     "name": "test_registro_repetido_termina_rechazado",
-     "file": "tests/test_client_app.py",
      "outcome": "passed"
     },
     {
