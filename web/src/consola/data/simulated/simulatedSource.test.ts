@@ -4,6 +4,9 @@ import { deduceFunnel } from "../../lib/funnel";
 import { outcomeOf } from "../../lib/requests";
 import { SUMMARY_WINDOW_S } from "../source";
 import { SimulatedSource } from "./simulatedSource";
+import comparacionJson from "../../../../../results/comparacion.json";
+import latencyJson from "../../../../../results/latency.json";
+import testsJson from "../../../../../results/tests.json";
 
 const NOW_MS = Date.UTC(2026, 10, 24, 21, 0, 0);
 const make = (): SimulatedSource => new SimulatedSource({ seed: 7, nowMs: NOW_MS, clock: () => NOW_MS });
@@ -78,11 +81,14 @@ describe("SimulatedSource", () => {
   it("entrega resultados, mecanismo y pruebas del laboratorio", async () => {
     const source = make();
     const [results, mechanisms, tests, routes] = await Promise.all([source.results(), source.mechanisms(), source.tests(), source.routes()]);
-    expect(results.latency?.rows).toHaveLength(21);
+    expect(results.latency?.rows).toHaveLength(latencyJson.rows.length);
     expect(results.bsgs?.predictions[0].q_bits).toBe(160);
+    expect(Object.values(results.files).every((f) => f.status === "ok")).toBe(true);
+    expect(results.comparacion?.rows.map((r) => r.key)).toEqual(comparacionJson.rows.map((r) => r.key));
+    expect(results.experimentos?.impostor?.q).toBe(11);
     expect(mechanisms[0].server).toMatchObject({ group: "toy-23", p: "23", q: "11", g: "4" });
-    expect(tests.total).toBe(275);
-    expect(tests.requirements.map((r) => r.id)).toContain("R11");
+    expect(tests.total).toBe(testsJson.total);
+    expect(tests.requirements.map((r) => r.id)).toEqual(testsJson.requirements.map((r) => r.id));
     expect(routes.origin).toBe("respaldo");
   });
 });

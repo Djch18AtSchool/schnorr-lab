@@ -1,8 +1,8 @@
 /** Sección Configuración: grupo activo (con comprobaciones en el navegador), políticas, grupos y mecanismos. */
+import { Check, CircleAlert, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { BankMechanism } from "../../shared/types";
 import { PanelHead, Unavailable, ViewHead } from "../components/Common";
-import { Icon } from "../components/Icons";
 import type { LabResults } from "../data/source";
 import { latencyGroups } from "../lib/charts";
 import { shortNum } from "../lib/format";
@@ -38,7 +38,7 @@ function ResetButton({ onReset }: { onReset: () => Promise<void> }) {
     <>
       {error ? <span className="badc" role="alert">No se pudo reiniciar: {error}</span> : null}
       <button type="button" className={`btn danger${armed ? " armed" : ""}`} onClick={click}>
-        <Icon name="reset" /><span>{armed ? "Confirmar: borra usuarios y auditoría" : "Reiniciar banco"}</span>
+        <RotateCcw className="i" aria-hidden="true" /><span>{armed ? "Confirmar: borra usuarios y auditoría" : "Reiniciar banco"}</span>
       </button>
     </>
   );
@@ -58,12 +58,12 @@ function GroupPanel({ group }: { group: GroupInfo }) {
           <dt>Bits de p / de q</dt><dd>{group.bits} / {group.qBits || "?"}</dd>
         </dl>
         <ul className="checks">
-          <li className={checks.safePrime || checks.qDividesP1 ? "" : "bad"}><Icon name="check" /><span>{checks.safePrime ? "p = 2q + 1" : checks.qDividesP1 ? "q divide a p − 1" : "q no divide a p − 1"}</span></li>
-          <li className={checks.generatorOrder ? "" : "bad"}><Icon name="check" /><span>g<sup>q</sup> ≡ 1 (mod p) y g ≠ 1</span></li>
+          <li className={checks.safePrime || checks.qDividesP1 ? "" : "bad"}><Check className="i" aria-hidden="true" /><span>{checks.safePrime ? "p = 2q + 1" : checks.qDividesP1 ? "q divide a p − 1" : "q no divide a p − 1"}</span></li>
+          <li className={checks.generatorOrder ? "" : "bad"}><Check className="i" aria-hidden="true" /><span>g<sup>q</sup> ≡ 1 (mod p) y g ≠ 1</span></li>
           <li className="faint"><span>Comprobado en este navegador con BigInt; la primalidad la verifica el banco al arrancar (core/params.py).</span></li>
         </ul>
         {toy ? (
-          <div className="warnbox"><Icon name="media" style={{ flex: "none", marginTop: 2 }} />
+          <div className="warnbox"><CircleAlert className="i" aria-hidden="true" style={{ flex: "none", marginTop: 2 }} />
             <span>Grupo de ejemplo, solo para aprender: con q = {group.q} hay {group.q} retos posibles y un impostor acierta con probabilidad 1/{group.q}. Para una demostración realista reinicia con rfc-2048 o schnorr-2048.</span>
           </div>
         ) : null}
@@ -91,7 +91,7 @@ function Policies({ maxAttempts }: { maxAttempts: number }) {
   );
 }
 
-const FAMILY: Readonly<Record<string, string>> = { schnorr: "Schnorr", rfc: "RFC 3526", safe: "primo seguro" };
+const FAMILY: Readonly<Record<string, string>> = { schnorr: "Schnorr", rfc: "RFC 3526", ffdhe: "RFC 7919", safe: "primo seguro" };
 
 function GroupsTable({ results, active }: { results: LabResults | null; active: string }) {
   const groups = results?.latency ? latencyGroups(results.latency) : [];
@@ -123,7 +123,7 @@ function Mechanisms({ mechanisms }: { mechanisms: readonly BankMechanism[] }) {
       <div className="pb mechs">
         {mechanisms.map((m) => (
           <div className="mech" key={m.id}>
-            <h3>{m.name}<span className="state on"><Icon name="check" />activo</span></h3>
+            <h3>{m.name}<span className="state on"><Check className="i" aria-hidden="true" />activo</span></h3>
             <span className="muted mono" style={{ fontSize: 12 }}>id: {m.id} · prefijo /{m.id}</span>
             <ul>
               <li>Flujos: {m.flows.map((f) => f.title).join(", ") || "ninguno"}</li>

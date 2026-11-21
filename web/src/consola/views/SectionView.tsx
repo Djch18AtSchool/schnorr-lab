@@ -11,6 +11,7 @@ import { Auditoria } from "./Auditoria";
 import { Configuracion } from "./Configuracion";
 import { Laboratorio } from "./laboratorio/Laboratorio";
 import { Logs } from "./Logs";
+import { Pruebas } from "./pruebas/Pruebas";
 import { Resumen } from "./resumen/Resumen";
 import { Trafico } from "./trafico/Trafico";
 import { Usuarios } from "./Usuarios";
@@ -52,7 +53,9 @@ export function SectionView(p: SectionViewProps) {
     case "auditoria":
       return <Auditoria entries={state.audit} error={state.errors.audit} requests={state.requests} onOpenRequest={p.onOpenRequest} />;
     case "laboratorio":
-      return <Laboratorio results={state.results} resultsError={state.errors.results} tests={state.tests} testsError={state.errors.tests} />;
+      return <Laboratorio results={state.results} resultsError={state.errors.results} simulated={p.simulated} />;
+    case "pruebas":
+      return <Pruebas tests={state.tests} testsError={state.errors.tests} />;
     case "api":
       return <Api routes={state.routes} stats={state.summary?.routes ?? []} requests={state.requests} now={now} simulated={p.simulated} />;
     case "configuracion":

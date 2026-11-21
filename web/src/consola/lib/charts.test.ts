@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { BSGS, LATENCY } from "../data/simulated/fixtures";
-import { bsgsSeries, latencyGroups, latencyPoints, latencySeries, linearScale, logScale, niceMax, perMinute, pointTotal } from "./charts";
+import { LAB_RESULTS } from "../data/simulated/labData";
+import type { BsgsResults, LatencyResults } from "../data/source";
+import { bsgsSeries, latencyGroups, latencyPoints, linearScale, linearTicks, logDomain, logScale, niceMax, perMinute, pointTotal, powerTicks } from "./charts";
+
+const LATENCY = LAB_RESULTS.latency as LatencyResults;
+const BSGS = LAB_RESULTS.bsgs as BsgsResults;
 
 const point = (t: number, ok: number, other = 0) => ({ t, ok, rejected: 0, other, error: 0, p50_ms: ok ? 3 : 0, p95_ms: ok ? 5 : 0 });
 
@@ -31,20 +35,14 @@ describe("series del resumen", () => {
 });
 
 describe("resultados del laboratorio", () => {
-  it("agrupa latency.json por grupo con ms por aritmética", () => {
+  it("agrupa latency.json por grupo con ms por aritmética, en el orden del archivo", () => {
     const groups = latencyGroups(LATENCY);
-    expect(groups).toHaveLength(7);
+    const names = [...new Set(LATENCY.rows.map((r) => r.name))];
+    expect(groups.map((g) => g.name)).toEqual(names);
+    const row = LATENCY.rows.find((r) => r.name === "rfc-2048" && r.backend === "gmpy2");
     const rfc = groups.find((g) => g.name === "rfc-2048");
-    expect(rfc?.ms.propia).toBeCloseTo(94.736, 2);
-    expect(rfc?.ms.gmpy2).toBeCloseTo(8.66, 2);
+    expect(rfc?.ms.gmpy2).toBeCloseTo((row?.median_s ?? 0) * 1000, 6);
     expect(rfc?.bitsQ).toBe(2047);
-  });
-
-  it("separa primos seguros y grupos de Schnorr en cada serie", () => {
-    const series = latencySeries(latencyGroups(LATENCY));
-    expect(series.map((s) => s.backend)).toEqual(["propia", "nativa", "gmpy2"]);
-    expect(series[0].safe.map((p) => p.x)).toEqual([256, 512, 1024, 2048, 3072]);
-    expect(series[0].schnorr.map((p) => p.label)).toEqual(["schnorr-2048", "schnorr-3072"]);
   });
 
   it("convierte bsgs.json en medido, ajuste y extrapolación", () => {
@@ -56,5 +54,22 @@ describe("resultados del laboratorio", () => {
     expect(s.fitDashed[s.fitDashed.length - 1].x).toBe(256);
     const q40 = 1.5 * 2 ** 20 * BSGS.fit.seconds_per_operation;
     expect(s.fitDashed[0].y).toBeCloseTo(q40);
+  });
+});
+
+describe("ejes del laboratorio", () => {
+  it("logDomain cubre los valores con potencias de 10 enteras", () => {
+    expect(logDomain([0.138, 295.8])).toEqual([0.1, 1000]);
+    expect(logDomain([])).toEqual([1, 10]);
+    expect(logDomain([5, 5])).toEqual([1, 10]);
+  });
+
+  it("powerTicks da las potencias de 10 del dominio, saltando de a step", () => {
+    expect(powerTicks([0.1, 1000])).toEqual([0.1, 1, 10, 100, 1000]);
+    expect(powerTicks([1e-6, 1e30], 6).map((v) => Math.round(Math.log10(v)))).toEqual([-6, 0, 6, 12, 18, 24, 30]);
+  });
+
+  it("linearTicks reparte de 0 al máximo", () => {
+    expect(linearTicks(200)).toEqual([0, 50, 100, 150, 200]);
   });
 });

@@ -21,6 +21,12 @@ function latencyRow(value: unknown): LatencyRow | null {
     backend: r.backend,
     reps: isNum(r.reps) ? r.reps : 0,
     median_s: r.median_s,
+    previous: isStr(r.previous) ? r.previous : null,
+    ratio: isNum(r.ratio) ? r.ratio : null,
+    pred_k3: isNum(r.pred_k3) ? r.pred_k3 : null,
+    pred_karatsuba: isNum(r.pred_karatsuba) ? r.pred_karatsuba : null,
+    err_k3: isNum(r.err_k3) ? r.err_k3 : null,
+    err_karatsuba: isNum(r.err_karatsuba) ? r.err_karatsuba : null,
   };
 }
 

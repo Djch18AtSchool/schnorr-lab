@@ -13,11 +13,12 @@ import type {
   TelemetrySummary,
   TestReport,
 } from "../../shared/types";
+import type { ComparisonResults, ExperimentResults } from "./labTypes";
 
 /** Una fila de results/latency.json: mediana de un inicio de sesión completo. */
 export interface LatencyRow {
   name: string;
-  family: string;            // safe | rfc | schnorr
+  family: string;            // safe | rfc | ffdhe | schnorr
   series: string;
   bits_p: number;
   bits_q: number;
@@ -25,6 +26,13 @@ export interface LatencyRow {
   backend: string;           // propia | nativa | gmpy2
   reps: number;
   median_s: number;
+  /** Paso anterior de la misma familia y la razón medida frente a las predichas (k³ y k^2.585). */
+  previous: string | null;
+  ratio: number | null;
+  pred_k3: number | null;
+  pred_karatsuba: number | null;
+  err_k3: number | null;
+  err_karatsuba: number | null;
 }
 
 export interface LatencyResults {
@@ -58,9 +66,20 @@ export interface BsgsResults {
   universe_age_years: number;
 }
 
+export type LabFileKey = "latency" | "bsgs" | "comparacion" | "experimentos";
+
+/** Estado de un archivo de results/: leído, ausente (aún no se generó) o mal formado. */
+export interface LabFileState {
+  status: "ok" | "falta" | "invalido";
+  detail?: string;
+}
+
 export interface LabResults {
   latency: LatencyResults | null;
   bsgs: BsgsResults | null;
+  comparacion: ComparisonResults | null;
+  experimentos: ExperimentResults | null;
+  files: Readonly<Record<LabFileKey, LabFileState>>;
 }
 
 /** Una operación de /openapi.json reducida a lo que muestra la sección API. */

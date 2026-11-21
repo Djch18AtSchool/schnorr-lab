@@ -1,10 +1,10 @@
 /** Piezas pequeñas reutilizadas por varias secciones. */
+import { CircleAlert, Info, TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Alert } from "../../shared/types";
 import { codeSpans, supSpans } from "../lib/alerts";
-import { sciParts } from "../lib/format";
+import { durationParts, sciParts } from "../lib/format";
 import { statusClass, type Outcome } from "../lib/requests";
-import { Icon } from "./Icons";
 
 export function ViewHead({ title, children, tools }: { title: string; children: ReactNode; tools?: ReactNode }) {
   return (
@@ -42,12 +42,21 @@ export function Sci({ value, digits = 1 }: { value: number; digits?: number }) {
   return exponent === null ? <>{mantissa}</> : <>{mantissa}·10<sup>{exponent}</sup></>;
 }
 
+/** Duración dada como log10 de años, con el exponente en <sup>: «4.6 h», «1.6·10⁶ años». */
+export function Duration({ log10 }: { log10: number }) {
+  const { mantissa, exponent, unit } = durationParts(log10);
+  return exponent === null ? <>{mantissa} {unit}</> : <>{mantissa}·10<sup>{exponent}</sup> {unit}</>;
+}
+
 const SEVERITY_NAME: Readonly<Record<Alert["severity"], string>> = { alta: "Alta", media: "Media", baja: "Baja" };
 
+const SEVERITY_ICON = { alta: TriangleAlert, media: CircleAlert, baja: Info } as const;
+
 export function Severity({ severity }: { severity: Alert["severity"] }) {
+  const SeverityIcon = SEVERITY_ICON[severity];
   return (
     <span className={`sev ${severity}`} title={`Severidad ${SEVERITY_NAME[severity]}`}>
-      <Icon name={severity} />
+      <SeverityIcon className="i" aria-hidden="true" />
       <span className="sr">Severidad {SEVERITY_NAME[severity]}</span>
     </span>
   );
@@ -57,7 +66,7 @@ export function Severity({ severity }: { severity: Alert["severity"] }) {
 export function Unavailable({ what, error }: { what: string; error: string | undefined }) {
   return (
     <div className="unavailable">
-      <Icon name="media" />
+      <CircleAlert className="i" aria-hidden="true" />
       <span><b>{what} no disponible.</b> {error ? <span className="mono">{error}</span> : "Cargando…"}</span>
     </div>
   );

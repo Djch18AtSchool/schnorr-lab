@@ -40,6 +40,27 @@ export function latencyPoints(series: readonly SeriesPoint[]): Array<{ p50: numb
   return series.map((p) => (pointTotal(p) > 0 ? { p50: p.p50_ms, p95: p.p95_ms } : null));
 }
 
+/** Dominio logarítmico que cubre los valores, ajustado a potencias de 10. */
+export function logDomain(values: readonly number[], pad = 0): [number, number] {
+  const positive = values.filter((v) => v > 0 && Number.isFinite(v));
+  if (!positive.length) return [1, 10];
+  const lo = Math.floor(Math.log10(Math.min(...positive))) - pad;
+  const hi = Math.ceil(Math.log10(Math.max(...positive))) + pad;
+  return [10 ** lo, 10 ** (hi > lo ? hi : lo + 1)];
+}
+
+/** Potencias de 10 dentro del dominio, saltando de `step` en `step` exponentes. */
+export function powerTicks([d0, d1]: readonly [number, number], step = 1): number[] {
+  const lo = Math.ceil(Math.log10(d0) - 1e-9);
+  const hi = Math.floor(Math.log10(d1) + 1e-9);
+  return Array.from({ length: Math.floor((hi - lo) / step) + 1 }, (_, i) => 10 ** (lo + i * step));
+}
+
+/** Marcas lineales "redondas" de 0 a max (max ya pasado por niceMax). */
+export function linearTicks(max: number, count = 4): number[] {
+  return Array.from({ length: count + 1 }, (_, i) => (max * i) / count);
+}
+
 // ---------------------------------------------------------------- laboratorio
 
 export interface XY {
@@ -79,23 +100,6 @@ export function latencyGroups(results: LatencyResults): LatencyGroup[] {
       ms: Object.fromEntries(rows.map((r) => [r.backend, r.median_s * 1000])),
     };
   });
-}
-
-export interface LatencySeries {
-  backend: string;
-  safe: XY[];
-  schnorr: XY[];
-}
-
-/** Una serie por aritmética: primos seguros (línea continua) y grupos de Schnorr (punteada). */
-export function latencySeries(groups: readonly LatencyGroup[]): LatencySeries[] {
-  const points = (family: (g: LatencyGroup) => boolean, backend: string): XY[] =>
-    groups.filter((g) => family(g) && g.ms[backend] != null).map((g) => ({ x: g.bitsP, y: g.ms[backend], label: g.name }));
-  return BACKENDS.map((backend) => ({
-    backend,
-    safe: points((g) => g.family !== "schnorr", backend),
-    schnorr: points((g) => g.family === "schnorr", backend),
-  }));
 }
 
 export interface BsgsSeries {

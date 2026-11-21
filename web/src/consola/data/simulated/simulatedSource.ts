@@ -9,7 +9,8 @@ import { FALLBACK_ROUTES } from "../routes";
 import type { ApiRoutes, ConsoleDataSource, LabResults } from "../source";
 import { Director } from "./director";
 import { SimEngine } from "./engine";
-import { BSGS, LATENCY, MECHANISMS, testReport } from "./fixtures";
+import { MECHANISMS } from "./fixtures";
+import { LAB_RESULTS, TEST_REPORT } from "./labData";
 import { createRng, type Rng } from "./rng";
 import type { Scene } from "./scenes";
 import { MAX_ATTEMPTS } from "./toy";
@@ -78,11 +79,11 @@ export class SimulatedSource implements ConsoleDataSource {
   }
 
   async tests(): Promise<TestReport> {
-    return testReport(this.nowS());
+    return TEST_REPORT;
   }
 
   async results(): Promise<LabResults> {
-    return { latency: LATENCY, bsgs: BSGS };
+    return LAB_RESULTS;
   }
 
   async events(since: number): Promise<BankEvent[]> {
