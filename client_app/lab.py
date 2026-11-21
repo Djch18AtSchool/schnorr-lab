@@ -123,12 +123,13 @@ class LiveAttacker:
             start = time.perf_counter()
             recovered = {user: str(bsgs.bsgs(gp.g, int(data["y"]), gp.p, gp.q)[0]) for user, data in stolen.items()}
             elapsed_ms = (time.perf_counter() - start) * 1000
+            found = ", ".join(f"{user}: x = {x}" for user, x in recovered.items())
             return {"recovered_x": recovered, "cracked": True,
-                    "conclusion": (f"{intro}Con q de {q_bits} bits, BSGS la despeja en {elapsed_ms:.2f} ms: "
-                                   f"{recovered}. Por eso el grupo de ejemplo solo sirve para aprender.")}
-        operations = AVERAGE_STEPS_FACTOR * math.isqrt(gp.q)
+                    "conclusion": (f"{intro}Con q de {q_bits} bits, BSGS la despeja en {elapsed_ms:.2f} ms "
+                                   f"({found}). Por eso el grupo de ejemplo solo sirve para aprender.")}
+        log10_operations = math.log10(AVERAGE_STEPS_FACTOR) + math.log10(math.isqrt(gp.q))
         seconds_per_op = _measured_seconds_per_operation()
-        estimate = (f"; según la medición, unos {operations * seconds_per_op / SECONDS_PER_YEAR:.1e} años"
+        estimate = (f"; según la medición, unos {_years(log10_operations, seconds_per_op)} años"
                     if seconds_per_op else "")
         return {"cracked": False,
                 "conclusion": (f"{intro}Con q de {q_bits} bits, BSGS necesitaría del orden de 2^{q_bits // 2} "
@@ -157,6 +158,19 @@ class LiveAttacker:
                 "attempts_left": body.get("attempts_left"), "exchange": verdict.to_json(),
                 "conclusion": (f"Adivinó c' = {guessed_c} y el banco eligió c = {data['c']}: "
                                f"{body.get('reason')}. Probabilidad de acertar: 1/q.")}
+
+
+def _years(log10_operations: float, seconds_per_op: float) -> str:
+    """Años de cómputo en notación científica, calculados con logaritmos para no desbordar el float.
+
+    Con q de 2047 bits hacen falta ≈ 2^1023 operaciones: en punto flotante el producto daría «inf».
+    """
+    exponent = log10_operations + math.log10(seconds_per_op) - math.log10(SECONDS_PER_YEAR)
+    power = math.floor(exponent)
+    mantissa = round(10 ** (exponent - power), 1)
+    if mantissa >= 10:
+        mantissa, power = mantissa / 10, power + 1
+    return f"{mantissa:.1f}·10^{power}"
 
 
 def _measured_seconds_per_operation() -> float | None:

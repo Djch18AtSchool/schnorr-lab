@@ -1,5 +1,7 @@
 """Pruebas de la app del celular contra el banco: flujos paso a paso, eventos y laboratorio (R11)."""
 
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -169,6 +171,7 @@ def test_robar_la_base_solo_entrega_claves_publicas(lab):
     assert set(result["stolen"][USER]) == {"y"}
     wallet_x = phone.get("/api/wallet").json()[0]["secret"]["x (secreta)"]
     assert result["cracked"] is True and result["recovered_x"][USER] == wallet_x  # con p = 23, BSGS la despeja
+    assert f"{USER}: x = {wallet_x}" in result["conclusion"] and "{" not in result["conclusion"]
 
 
 @pytest.mark.req("R10")
@@ -177,7 +180,9 @@ def test_robar_la_base_de_un_grupo_real_no_permite_despejar_x(lab):
     phone.post("/api/lab/reset", json={"group": "rfc-2048"})
     _run(phone, "register")
     result = phone.post("/api/lab/attacks/steal_database", json={}).json()
-    assert result["cracked"] is False and "años" in result["conclusion"]
+    conclusion = result["conclusion"]
+    assert result["cracked"] is False and "inf" not in conclusion
+    assert re.search(r"unos \d\.\d·10\^\d{3} años", conclusion), conclusion  # 2^1023 pasos: ~10^300 años
 
 
 @pytest.mark.req("R10")

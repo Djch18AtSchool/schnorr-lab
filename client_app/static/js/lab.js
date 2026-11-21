@@ -67,11 +67,24 @@ export function renderLab(state) {
   };
 }
 
+const SIGNIFICANT_DIGITS = 4;
+const PLAIN_RANGE = [1e-3, 1e6];
+
+/** Celda de tabla: enteros exactos tal cual; decimales y enteros enormes con 4 cifras significativas. */
+function cell(value) {
+  if (typeof value !== "number" || Number.isSafeInteger(value)) return fmtValue(value);
+  const abs = Math.abs(value);
+  const text = abs === 0 || (abs >= PLAIN_RANGE[0] && abs < PLAIN_RANGE[1])
+    ? String(Number(value.toPrecision(SIGNIFICANT_DIGITS)))
+    : value.toExponential(SIGNIFICANT_DIGITS - 1);
+  return `<span title="${esc(String(value))}">${esc(text)}</span>`;
+}
+
 function table(rows) {
   if (!Array.isArray(rows) || !rows.length || typeof rows[0] !== "object") return "";
   const keys = Object.keys(rows[0]);
   const head = keys.map((key) => `<th>${esc(key)}</th>`).join("");
-  const body = rows.map((row) => `<tr>${keys.map((key) => `<td class="mono">${fmtValue(row[key])}</td>`).join("")}</tr>`).join("");
+  const body = rows.map((row) => `<tr>${keys.map((key) => `<td class="mono">${cell(row[key])}</td>`).join("")}</tr>`).join("");
   return `<div style="overflow-x:auto"><table class="list"><thead><tr>${head}</tr></thead>${body}</table></div>`;
 }
 
