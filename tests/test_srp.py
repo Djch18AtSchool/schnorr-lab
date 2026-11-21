@@ -210,6 +210,18 @@ def test_el_celular_rechaza_un_grupo_que_no_es_el_del_rfc():
 
 
 @pytest.mark.req("C3")
+@pytest.mark.parametrize("bad_b", [str(GROUP.N + 5), "-5"])
+def test_el_celular_aborta_si_b_esta_fuera_de_rango(bad_b):
+    params = {"N": str(GROUP.N), "g": "2", "hash": "sha256"}
+    start = {"session_id": "0" * 16, "salt": "00" * 16, "B": bad_b}
+    ctx = _context({"/srp/params": params, "/srp/login/start": start})
+    for step in (srp_client.fetch_params, srp_client.make_ephemeral, srp_client.send_start):
+        step(ctx)
+    result = srp_client.compute_session_key(ctx)
+    assert result.outcome == "rechazado" and "0 < B < N" in result.message
+
+
+@pytest.mark.req("C3")
 def test_el_celular_aborta_si_b_es_congruente_con_cero():
     params = {"N": str(GROUP.N), "g": "2", "hash": "sha256"}
     start = {"session_id": "0" * 16, "salt": "00" * 16, "B": str(GROUP.N)}

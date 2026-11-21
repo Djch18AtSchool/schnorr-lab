@@ -55,6 +55,25 @@ class AttemptLimiter:
         self._failures = {**self._failures, user_id: self._failures.get(user_id, 0) + 1}
         return self.attempts_left(user_id)
 
+    def reserve(self, user_id: str) -> bool:
+        """Cuenta el intento como fallo antes de verificar; False (sin contar) si ya está bloqueado.
+
+        Se llama bajo el lock del banco: así N peticiones en paralelo no pasan todas el control de
+        bloqueo mientras se verifica (lo lento queda fuera del lock). Al acertar se llama succeed;
+        si el rechazo no debe contar (un código repetido), release. Cubre C3.
+        """
+        if self.is_locked(user_id):
+            return False
+        self.fail(user_id)
+        return True
+
+    def release(self, user_id: str) -> int:
+        """Devuelve un intento reservado que al final no cuenta como fallo. Cubre C3."""
+        remaining = self._failures.get(user_id, 0) - 1
+        others = {key: value for key, value in self._failures.items() if key != user_id}
+        self._failures = {**others, user_id: remaining} if remaining > 0 else others
+        return self.attempts_left(user_id)
+
     def succeed(self, user_id: str) -> int:
         """Un acceso correcto reinicia el contador; devuelve los intentos disponibles. Cubre R9."""
         self._failures = {key: value for key, value in self._failures.items() if key != user_id}

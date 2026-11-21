@@ -1,5 +1,7 @@
 """Pruebas del mecanismo de contraseña con Argon2id (C1–C4)."""
 
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -9,6 +11,7 @@ from mechanisms.password import credentials
 from tests.mechanism_helpers import USER, make_lab, run_flow, sent_bodies
 
 PASSWORD = "correcto-caballo-bateria"
+PARALLEL_REQUESTS = 8
 
 
 @pytest.fixture
@@ -152,3 +155,20 @@ def test_repetir_el_mensaje_capturado_si_entra():
     captured = sent_bodies(run_flow(phone, "password", "login"))[-1]
     replay = bank.post("/password/login", json=captured).json()
     assert replay["accepted"] is True        # la contraseña sirve siempre: es la línea base
+
+
+@pytest.mark.req("C3")
+def test_reservar_y_devolver_intentos():
+    limiter = AttemptLimiter(max_attempts=2)
+    assert limiter.reserve(USER) and limiter.attempts_left(USER) == 1
+    assert limiter.release(USER) == 2
+    assert limiter.reserve(USER) and limiter.reserve(USER)
+    assert not limiter.reserve(USER) and limiter.is_locked(USER)
+
+
+@pytest.mark.req("C3")
+def test_peticiones_en_paralelo_no_esquivan_el_bloqueo(api):
+    _register(api)
+    with ThreadPoolExecutor(max_workers=PARALLEL_REQUESTS) as pool:
+        codes = list(pool.map(lambda _: _login(api, "otra-contrasena").status_code, range(PARALLEL_REQUESTS)))
+    assert codes.count(200) == 3 and codes.count(423) == PARALLEL_REQUESTS - 3

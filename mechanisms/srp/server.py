@@ -167,18 +167,23 @@ class SrpServer:
                     {"session_id": session_id, "B": str(session.B)})
         return StartResponse(session_id=session_id, salt=record.salt.hex(), B=str(session.B))
 
-    def _take_session(self, session_id: str) -> SrpSession | None:
+    def _take_session(self, session_id: str) -> tuple[SrpSession, SrpRecord, bool] | None:
+        """Bajo el lock: consume la sesión y reserva el intento (False si la cuenta está bloqueada).
+
+        Reservar antes de la verificación lenta evita que varias sesiones en paralelo esquiven el
+        bloqueo. None si la sesión no existe o ya se usó.
+        """
         with self._ctx.lock:
             session = self._sessions.get(session_id)
-            if session is not None:
-                self._sessions = {k: s for k, s in self._sessions.items() if k != session_id}
-                self._open_sessions = {u: s for u, s in self._open_sessions.items() if s != session_id}
-            return session
+            record = None if session is None else self._records.get(session.user_id)
+            if session is None or record is None:
+                return None
+            self._sessions = {k: s for k, s in self._sessions.items() if k != session_id}
+            self._open_sessions = {u: s for u, s in self._open_sessions.items() if s != session_id}
+            return session, record, self._limiter.reserve(session.user_id)
 
-    def _expected(self, session: SrpSession) -> tuple[bytes, bytes, dict[str, str]]:
+    def _expected(self, session: SrpSession, record: SrpRecord) -> tuple[bytes, bytes, dict[str, str]]:
         """(M1 esperado, K, valores para la bitácora) calculados con v y b."""
-        with self._ctx.lock:
-            record = self._records[session.user_id]
         group = self.group
         u = srp6a.scrambler(group, session.A, session.B)
         S = srp6a.server_premaster(group, session.A, record.v, u, session.b)
@@ -190,20 +195,21 @@ class SrpServer:
         """Compara M1 en tiempo constante; si coincide responde con M2 (autenticación mutua). Cubre C1, C3 y C4."""
         self._ctx.audit(f"{PREFIX}/login/verify", body.model_dump(), MECHANISM_ID)
         self._event("paso", "El banco recibe M1", body.model_dump())
-        session = self._take_session(body.session_id)
-        if session is None:
+        taken = self._take_session(body.session_id)
+        if taken is None:
             self._event("verificacion", f"Rechazado: {INVALID_SESSION}", {"session_id": body.session_id})
             return VerifyResponse(accepted=False, reason=INVALID_SESSION, M2=None, attempts_left=None)
-        if self._limiter.is_locked(session.user_id):
+        session, record, reserved = taken
+        if not reserved:
             return self._reject(status.HTTP_423_LOCKED, ACCOUNT_LOCKED, session.user_id)
-        expected, K, details = self._expected(session)
-        if not hmac.compare_digest(expected, bytes.fromhex(body.M1)):
-            with self._ctx.lock:
-                attempts_left = self._limiter.fail(session.user_id)
+        expected, K, details = self._expected(session, record)
+        accepted = hmac.compare_digest(expected, bytes.fromhex(body.M1))
+        with self._ctx.lock:
+            attempts_left = (self._limiter.succeed(session.user_id) if accepted
+                             else self._limiter.attempts_left(session.user_id))
+        if not accepted:
             self._event("verificacion", f"Rechazado: {BAD_PROOF}", {**details, "attempts_left": str(attempts_left)})
             return VerifyResponse(accepted=False, reason=BAD_PROOF, M2=None, attempts_left=attempts_left)
-        with self._ctx.lock:
-            attempts_left = self._limiter.succeed(session.user_id)
         M2 = srp6a.server_proof(self.group, session.A, expected, K).hex()
         self._event("verificacion", "ACCESO CONCEDIDO", {**details, "M2 = H(A | M1 | K)": M2,
                                                          "accepted": "True", "attempts_left": str(attempts_left)})

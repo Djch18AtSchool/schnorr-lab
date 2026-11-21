@@ -1,5 +1,7 @@
 """Pruebas del mecanismo contraseña + TOTP del RFC 6238 (C1–C4)."""
 
+from concurrent.futures import ThreadPoolExecutor
+
 import pyotp
 import pytest
 from fastapi.testclient import TestClient
@@ -195,3 +197,26 @@ def test_repetir_el_mensaje_capturado_se_rechaza_dentro_y_fuera_de_la_ventana(la
     clock.advance(2 * STEP)
     late = bank.post("/totp/login", json=captured).json()
     assert late["accepted"] is False and late["reason"] == "Usuario, contraseña o código incorrectos"
+
+
+@pytest.mark.req("C4")
+def test_el_mismo_codigo_en_paralelo_solo_entra_una_vez(lab):
+    bank, _, clock = lab
+    secret = _enroll(bank, clock)
+    clock.advance(STEP)
+    code = otp.code_at(secret, clock())
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        accepted = list(pool.map(lambda _: _login(bank, code).json().get("accepted"), range(4)))
+    assert accepted.count(True) == 1
+
+
+@pytest.mark.req("C3")
+def test_un_enrolamiento_pendiente_se_puede_rehacer_y_confirmar_reinicia_los_fallos(lab):
+    bank, _, clock = lab
+    bank.post("/totp/register", json={"user_id": USER, "password": "otra-contrasena"})
+    bank.post("/totp/register/confirm", json={"user_id": USER, "code": "000000"})       # un fallo
+    secret = _enroll(bank, clock)                     # el id pendiente no queda «ocupado»
+    clock.advance(STEP)
+    left = [_login(bank, otp.code_at(secret, clock()), password="mala-contrasena").json()["attempts_left"]
+            for _ in range(2)]
+    assert left == [2, 1]                             # la confirmación correcta reinició el contador

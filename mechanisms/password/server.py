@@ -89,14 +89,15 @@ class PasswordServer:
         self._ctx.audit(f"{PREFIX}/login", body.model_dump(), MECHANISM_ID)
         self._event("paso", "El banco recibe usuario y contraseña", {"user_id": body.user_id})
         with self._ctx.lock:
-            locked = self._limiter.is_locked(body.user_id)
+            reserved = self._limiter.reserve(body.user_id)      # el intento cuenta antes de verificar
             stored = self._hashes.get(body.user_id)
-        if locked:
+        if not reserved:
             self._event("error", ACCOUNT_LOCKED, {"user_id": body.user_id})
             return error_response(status.HTTP_423_LOCKED, ACCOUNT_LOCKED)
         matches = verify_password(stored or dummy_hash(), body.password) and stored is not None
         with self._ctx.lock:
-            attempts_left = self._limiter.succeed(body.user_id) if matches else self._limiter.fail(body.user_id)
+            attempts_left = (self._limiter.succeed(body.user_id) if matches
+                             else self._limiter.attempts_left(body.user_id))
         reason = ACCESS_GRANTED if matches else BAD_CREDENTIALS
         self._event("verificacion", "ACCESO CONCEDIDO" if matches else f"Rechazado: {reason}",
                     {"user_id": body.user_id, "Argon2id coincide": "sí" if matches else "no",

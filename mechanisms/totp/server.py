@@ -93,26 +93,28 @@ class TotpServer:
     def _event(self, kind: str, title: str, data: Mapping[str, Any]) -> None:
         self._ctx.events.publish("banco", kind, title, mechanism=MECHANISM_ID, data=data)
 
-    def _save(self, user_id: str, account: TotpAccount) -> None:
-        with self._ctx.lock:
-            self._accounts = {**self._accounts, user_id: account}
+    def _insert(self, user_id: str, password: str) -> TotpAccount | None:
+        """Crea (o reemplaza, si sigue pendiente) la cuenta; None si ya hay una activa con ese id.
 
-    def _insert(self, user_id: str, password: str) -> bool:
-        """Crea la cuenta pendiente; False si otro registro del mismo id llegó antes."""
+        Reemplazar una pendiente evita que alguien «ocupe» un id registrándolo sin confirmar nunca.
+        """
         account = TotpAccount(password_hash=hash_password(password), secret=otp.new_secret())
         with self._ctx.lock:
-            if user_id in self._accounts:
-                return False
+            current = self._accounts.get(user_id)
+            if current is not None and current.active:
+                return None
             self._accounts = {**self._accounts, user_id: account}
-        return True
+        return account
 
-    def _account(self, user_id: str) -> tuple[TotpAccount | None, bool]:
+    def _reserve(self, user_id: str) -> tuple[TotpAccount | None, bool]:
+        """(cuenta, True si se reservó el intento) bajo el lock; False si la cuenta está bloqueada."""
         with self._ctx.lock:
-            return self._accounts.get(user_id), self._limiter.is_locked(user_id)
+            return self._accounts.get(user_id), self._limiter.reserve(user_id)
 
-    def _fail(self, user_id: str, reason: str, data: Mapping[str, str]) -> LoginResponse:
+    def _rejected(self, user_id: str, reason: str, data: Mapping[str, str]) -> LoginResponse:
+        """Rechazo que cuenta como fallo (el intento ya se reservó)."""
         with self._ctx.lock:
-            attempts_left = self._limiter.fail(user_id)
+            attempts_left = self._limiter.attempts_left(user_id)
         self._event("verificacion", f"Rechazado: {reason}", {**data, "attempts_left": str(attempts_left)})
         return LoginResponse(accepted=False, reason=reason, attempts_left=attempts_left)
 
@@ -126,62 +128,85 @@ class TotpServer:
         """Guarda el hash de la contraseña y un K nuevo, y devuelve K como QR (otpauth://). Cubre C1 y C2."""
         self._ctx.audit(f"{PREFIX}/register", body.model_dump(), MECHANISM_ID)
         self._event("registro", "El banco recibe una contraseña en claro", {"user_id": body.user_id})
-        if self._account(body.user_id)[0] is not None or not self._insert(body.user_id, body.password):
+        account = self._insert(body.user_id, body.password)
+        if account is None:
             self._event("error", f"Registro rechazado: {USER_EXISTS}", {"user_id": body.user_id})
             return error_response(status.HTTP_400_BAD_REQUEST, USER_EXISTS)
-        account = self._account(body.user_id)[0]
         self._event("registro", "El banco guarda el hash y el secreto K, y envía K como QR",
                     {"user_id": body.user_id, **account.to_json()})
         return EnrollResponse(user_id=body.user_id, secret=account.secret,
                               otpauth_uri=otp.provisioning_uri(account.secret, body.user_id),
                               digits=otp.DIGITS, period=otp.PERIOD_SECONDS, stored=account.to_json())
 
+    def _activate(self, user_id: str, code: str) -> int | None:
+        """Bajo el lock: si la cuenta sigue pendiente y el código coincide, la activa; devuelve el paso."""
+        with self._ctx.lock:
+            account = self._accounts.get(user_id)
+            step = None if account is None else otp.matching_step(account.secret, code, self.clock())
+            if account is None or account.active or step is None:
+                return None
+            self._accounts = {**self._accounts, user_id: replace(account, active=True, last_step=step)}
+            self._limiter.succeed(user_id)
+            return step
+
     def confirm(self, body: ConfirmRequest) -> LoginResponse | JSONResponse:
         """Activa el segundo factor si el primer código coincide; ese paso queda usado. Cubre C1 y C3."""
         self._ctx.audit(f"{PREFIX}/register/confirm", body.model_dump(), MECHANISM_ID)
-        account, locked = self._account(body.user_id)
-        if locked:
+        account, reserved = self._reserve(body.user_id)
+        if not reserved:
             return self._locked(body.user_id)
         if account is None or account.active:
+            with self._ctx.lock:
+                self._limiter.release(body.user_id)
             return error_response(status.HTTP_400_BAD_REQUEST, NO_PENDING_ENROLLMENT)
-        step = otp.matching_step(account.secret, body.code, self.clock())
+        step = self._activate(body.user_id, body.code)
         if step is None:
-            return self._fail(body.user_id, BAD_CODE, {"user_id": body.user_id})
-        self._save(body.user_id, replace(account, active=True, last_step=step))
+            return self._rejected(body.user_id, BAD_CODE, {"user_id": body.user_id})
         self._event("registro", "El código coincide → segundo factor activado", {"user_id": body.user_id,
                                                                                 "paso T": str(step)})
         return LoginResponse(accepted=True, reason=ENROLLED, attempts_left=self._limiter.max_attempts)
 
-    def _check_code(self, account: TotpAccount, code: str) -> tuple[int | None, bool]:
-        """(paso que coincide o None, True si ese paso ya se había usado)."""
-        step = otp.matching_step(account.secret, code, self.clock())
-        reused = step is not None and account.last_step is not None and step <= account.last_step
-        return step, reused
+    def _consume_code(self, user_id: str, code: str) -> tuple[int | None, bool]:
+        """Bajo el lock: (paso que coincide o None, True si ya se había usado); si es nuevo, lo marca usado.
+
+        Leer y marcar el último paso en la misma sección evita que dos peticiones en paralelo usen el
+        mismo código. Cubre C4.
+        """
+        with self._ctx.lock:
+            account = self._accounts[user_id]
+            step = otp.matching_step(account.secret, code, self.clock())
+            if step is None:
+                return None, False
+            if account.last_step is not None and step <= account.last_step:
+                self._limiter.release(user_id)                 # un código repetido no cuenta como fallo
+                return step, True
+            self._accounts = {**self._accounts, user_id: replace(account, last_step=step)}
+            self._limiter.succeed(user_id)
+            return step, False
 
     def login(self, body: LoginRequest) -> LoginResponse | JSONResponse:
         """Verifica contraseña (Argon2id) y código (ventana ±1, sin reuso); bloquea al tercer fallo.
 
+        El intento se reserva antes de verificar, así las peticiones en paralelo no esquivan el bloqueo.
         Un código repetido no suma fallo: así un espía no puede bloquear a la víctima. Cubre C1, C3 y C4.
         """
         self._ctx.audit(f"{PREFIX}/login", body.model_dump(), MECHANISM_ID)
         self._event("paso", "El banco recibe usuario, contraseña y código", {"user_id": body.user_id})
-        account, locked = self._account(body.user_id)
-        if locked:
+        account, reserved = self._reserve(body.user_id)
+        if not reserved:
             return self._locked(body.user_id)
         usable = account is not None and account.active
         password_ok = verify_password(account.password_hash if usable else dummy_hash(), body.password) and usable
         if not password_ok:
-            return self._fail(body.user_id, BAD_CREDENTIALS, {"user_id": body.user_id, "contraseña": "no coincide"})
-        step, reused = self._check_code(account, body.code)
+            return self._rejected(body.user_id, BAD_CREDENTIALS, {"user_id": body.user_id, "contraseña": "no coincide"})
+        step, reused = self._consume_code(body.user_id, body.code)
         if step is None:
-            return self._fail(body.user_id, BAD_CREDENTIALS, {"user_id": body.user_id, "código": "no coincide"})
+            return self._rejected(body.user_id, BAD_CREDENTIALS, {"user_id": body.user_id, "código": "no coincide"})
         if reused:
             self._event("verificacion", f"Rechazado: {CODE_REUSED}", {"user_id": body.user_id, "paso T": str(step)})
             return LoginResponse(accepted=False, reason=CODE_REUSED,
                                  attempts_left=self._limiter.attempts_left(body.user_id))
-        self._save(body.user_id, replace(account, last_step=step))
-        with self._ctx.lock:
-            attempts_left = self._limiter.succeed(body.user_id)
+        attempts_left = self._limiter.max_attempts
         self._event("verificacion", "ACCESO CONCEDIDO", {"user_id": body.user_id, "paso T": str(step),
                                                          "accepted": "True", "attempts_left": str(attempts_left)})
         return LoginResponse(accepted=True, reason=ACCESS_GRANTED, attempts_left=attempts_left)

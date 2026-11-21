@@ -14,6 +14,7 @@ from mechanisms.srp.info import INFO, MECHANISM_ID
 
 KNOWN_GROUP = srp6a.RFC5054_2048
 B_IS_ZERO = "B ≡ 0 (mod N): el celular aborta (banco malicioso o mensaje alterado)"
+B_OUT_OF_RANGE = "B debe cumplir 0 < B < N: el celular aborta (mensaje alterado)"
 U_IS_ZERO = "u = 0: el celular aborta (la clave no dependería de la contraseña)"
 FAKE_SERVER = "M2 no coincide: el servidor no conoce v (¿banco falso?). Sesión descartada."
 
@@ -114,6 +115,8 @@ def compute_session_key(ctx: FlowContext) -> StepResult:
     A, B = ctx.state["A"], ctx.state["B"]
     if not srp6a.is_valid_public(group, B):
         return StepResult(outcome="rechazado", message=B_IS_ZERO, finished=True)
+    if not 0 < B < group.N:
+        return StepResult(outcome="rechazado", message=B_OUT_OF_RANGE, finished=True)
     u = srp6a.scrambler(group, A, B)
     if u == 0:
         return StepResult(outcome="rechazado", message=U_IS_ZERO, finished=True)
