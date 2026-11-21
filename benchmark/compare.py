@@ -38,7 +38,7 @@ from benchmark.compare_harness import (
 )
 from core.modular import ARITHMETIC_BACKENDS, DEFAULT_BACKEND, use_backend
 
-DEFAULT_REPS = 15
+DEFAULT_REPS = 31                     # igual que benchmark.latency
 WARMUP_RUNS = 1
 LOGIN_USER = "cliente01"
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"

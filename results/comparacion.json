@@ -1,0 +1,464 @@
+{
+  "python": "3.12.13",
+  "platform": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "backend": "propia",
+  "reps": 31,
+  "notes": [
+    "Latencia: cliente + banco en el mismo proceso, a través de la API real (FastAPI en memoria).",
+    "login_without_params_ms excluye descargar y validar los parámetros públicos (cacheable).",
+    "Los bytes recibidos del ZKP incluyen los valores intermedios que la interfaz muestra (details).",
+    "Base robada: un núcleo de este equipo; un atacante con GPU es mucho más rápido contra SRP que contra Argon2id (que es costoso en memoria a propósito).",
+    "ZKP: BSGS es una cota del ataque genérico; con rfc-2048 el mejor ataque real es la criba del cuerpo de números (≈ 2^112 operaciones según NIST), no BSGS."
+  ],
+  "rows": [
+    {
+      "key": "password",
+      "label": "Contraseña (Argon2id)",
+      "mechanism": "password",
+      "group": "",
+      "security_bits": "—",
+      "reps": 31,
+      "register_ms": 21.525567994103767,
+      "login_ms": 21.848250995390117,
+      "login_without_params_ms": 21.848250995390117,
+      "login_network": {
+        "round_trips": 1,
+        "posts": 1,
+        "sent_bytes": 53,
+        "received_bytes": 63,
+        "paths": [
+          "POST /password/login"
+        ]
+      },
+      "register_network": {
+        "round_trips": 1,
+        "posts": 1,
+        "sent_bytes": 53,
+        "received_bytes": 141,
+        "paths": [
+          "POST /password/register"
+        ]
+      },
+      "stored": {
+        "fields": [
+          "hash"
+        ],
+        "bytes": 109
+      },
+      "secrets_on_wire": {
+        "login": {
+          "contraseña": true
+        },
+        "register": {
+          "contraseña": true
+        }
+      },
+      "replay": {
+        "accepted": true,
+        "verbatim": {
+          "accepted": true,
+          "status": 200,
+          "reason": "Acceso concedido"
+        },
+        "sesion_nueva": {
+          "accepted": true,
+          "status": 200,
+          "reason": "Acceso concedido"
+        }
+      },
+      "offline_dictionary_log10_years": -3.258998325160395,
+      "offline_random8_log10_years": 6.2249945079732125
+    },
+    {
+      "key": "totp",
+      "label": "Contraseña + TOTP",
+      "mechanism": "totp",
+      "group": "",
+      "security_bits": "—",
+      "reps": 31,
+      "register_ms": 26.2605479802005,
+      "login_ms": 22.18721399549395,
+      "login_without_params_ms": 22.18721399549395,
+      "login_network": {
+        "round_trips": 1,
+        "posts": 1,
+        "sent_bytes": 69,
+        "received_bytes": 63,
+        "paths": [
+          "POST /totp/login"
+        ]
+      },
+      "register_network": {
+        "round_trips": 2,
+        "posts": 2,
+        "sent_bytes": 92,
+        "received_bytes": 495,
+        "paths": [
+          "POST /totp/register",
+          "POST /totp/register/confirm"
+        ]
+      },
+      "stored": {
+        "fields": [
+          "hash",
+          "last_step",
+          "status",
+          "totp_secret"
+        ],
+        "bytes": 205
+      },
+      "secrets_on_wire": {
+        "login": {
+          "contraseña": true,
+          "secreto TOTP K": false
+        },
+        "register": {
+          "contraseña": true,
+          "secreto TOTP K": true
+        }
+      },
+      "replay": {
+        "accepted": false,
+        "verbatim": {
+          "accepted": false,
+          "status": 200,
+          "reason": "Código ya utilizado: espere el siguiente (cambia cada 30 s)"
+        },
+        "sesion_nueva": {
+          "accepted": false,
+          "status": 200,
+          "reason": "Código ya utilizado: espere el siguiente (cambia cada 30 s)"
+        }
+      },
+      "offline_dictionary_log10_years": -3.258998325160395,
+      "offline_random8_log10_years": 6.2249945079732125
+    },
+    {
+      "key": "srp",
+      "label": "SRP-6a (2048 bits)",
+      "mechanism": "srp",
+      "group": "",
+      "security_bits": "112",
+      "reps": 31,
+      "register_ms": 9.23295300162863,
+      "login_ms": 31.581475006532855,
+      "login_without_params_ms": 27.933746998314746,
+      "login_network": {
+        "round_trips": 3,
+        "posts": 2,
+        "sent_bytes": 751,
+        "received_bytes": 1517,
+        "paths": [
+          "GET /srp/params",
+          "POST /srp/login/start",
+          "POST /srp/login/verify"
+        ]
+      },
+      "register_network": {
+        "round_trips": 2,
+        "posts": 1,
+        "sent_bytes": 688,
+        "received_bytes": 1382,
+        "paths": [
+          "GET /srp/params",
+          "POST /srp/register"
+        ]
+      },
+      "stored": {
+        "fields": [
+          "salt",
+          "v"
+        ],
+        "bytes": 669
+      },
+      "secrets_on_wire": {
+        "login": {
+          "contraseña": false
+        },
+        "register": {
+          "contraseña": false
+        }
+      },
+      "replay": {
+        "accepted": false,
+        "verbatim": {
+          "accepted": false,
+          "status": 200,
+          "reason": "Sesión inválida o ya utilizada"
+        },
+        "sesion_nueva": {
+          "accepted": false,
+          "status": 200,
+          "reason": "La prueba M1 no coincide: contraseña incorrecta"
+        }
+      },
+      "offline_dictionary_log10_years": -4.062919526459415,
+      "offline_random8_log10_years": 5.421073306674193
+    },
+    {
+      "key": "zkp-rfc-2048",
+      "label": "ZKP Schnorr · rfc-2048",
+      "mechanism": "zkp",
+      "group": "rfc-2048",
+      "security_bits": "112",
+      "reps": 31,
+      "register_ms": 105.30385401216336,
+      "login_ms": 153.35889901325572,
+      "login_without_params_ms": 102.11222498037387,
+      "login_network": {
+        "round_trips": 3,
+        "posts": 2,
+        "sent_bytes": 1303,
+        "received_bytes": 7040,
+        "paths": [
+          "GET /zkp/params",
+          "POST /zkp/login/commit",
+          "POST /zkp/login/respond"
+        ]
+      },
+      "register_network": {
+        "round_trips": 2,
+        "posts": 1,
+        "sent_bytes": 647,
+        "received_bytes": 1949,
+        "paths": [
+          "GET /zkp/params",
+          "POST /zkp/register"
+        ]
+      },
+      "stored": {
+        "fields": [
+          "y"
+        ],
+        "bytes": 626
+      },
+      "secrets_on_wire": {
+        "login": {
+          "clave secreta x": false
+        },
+        "register": {
+          "clave secreta x": false
+        }
+      },
+      "replay": {
+        "accepted": false,
+        "verbatim": {
+          "accepted": false,
+          "status": 200,
+          "reason": "Sesión inválida"
+        },
+        "sesion_nueva": {
+          "accepted": false,
+          "status": 200,
+          "reason": "La congruencia no se cumple"
+        }
+      },
+      "offline_dictionary_log10_years": null,
+      "offline_random8_log10_years": 294.20240396814256
+    },
+    {
+      "key": "zkp-schnorr-2048",
+      "label": "ZKP Schnorr · schnorr-2048",
+      "mechanism": "zkp",
+      "group": "schnorr-2048",
+      "security_bits": "112",
+      "reps": 31,
+      "register_ms": 25.334043995826505,
+      "login_ms": 37.26820900919847,
+      "login_without_params_ms": 19.681016012327746,
+      "login_network": {
+        "round_trips": 3,
+        "posts": 2,
+        "sent_bytes": 754,
+        "received_bytes": 5457,
+        "paths": [
+          "GET /zkp/params",
+          "POST /zkp/login/commit",
+          "POST /zkp/login/respond"
+        ]
+      },
+      "register_network": {
+        "round_trips": 2,
+        "posts": 1,
+        "sent_bytes": 645,
+        "received_bytes": 2014,
+        "paths": [
+          "GET /zkp/params",
+          "POST /zkp/register"
+        ]
+      },
+      "stored": {
+        "fields": [
+          "y"
+        ],
+        "bytes": 624
+      },
+      "secrets_on_wire": {
+        "login": {
+          "clave secreta x": false
+        },
+        "register": {
+          "clave secreta x": false
+        }
+      },
+      "replay": {
+        "accepted": false,
+        "verbatim": {
+          "accepted": false,
+          "status": 200,
+          "reason": "Sesión inválida"
+        },
+        "sesion_nueva": {
+          "accepted": false,
+          "status": 200,
+          "reason": "La congruencia no se cumple"
+        }
+      },
+      "offline_dictionary_log10_years": null,
+      "offline_random8_log10_years": 19.813562920423664
+    },
+    {
+      "key": "zkp-nizk-schnorr-2048",
+      "label": "ZKP Fiat-Shamir · schnorr-2048",
+      "mechanism": "zkp",
+      "group": "schnorr-2048",
+      "security_bits": "112",
+      "reps": 31,
+      "register_ms": 25.055966005311348,
+      "login_ms": 31.974997007637285,
+      "login_without_params_ms": 15.230627002893016,
+      "login_network": {
+        "round_trips": 2,
+        "posts": 1,
+        "sent_bytes": 739,
+        "received_bytes": 5352,
+        "paths": [
+          "GET /zkp/params",
+          "POST /zkp/login/nizk"
+        ]
+      },
+      "register_network": {
+        "round_trips": 2,
+        "posts": 1,
+        "sent_bytes": 646,
+        "received_bytes": 2015,
+        "paths": [
+          "GET /zkp/params",
+          "POST /zkp/register"
+        ]
+      },
+      "stored": {
+        "fields": [
+          "y"
+        ],
+        "bytes": 625
+      },
+      "secrets_on_wire": {
+        "login": {
+          "clave secreta x": false
+        },
+        "register": {
+          "clave secreta x": false
+        }
+      },
+      "replay": {
+        "accepted": false,
+        "verbatim": {
+          "accepted": false,
+          "status": 200,
+          "reason": "Prueba ya utilizada"
+        },
+        "sesion_nueva": {
+          "accepted": false,
+          "status": 200,
+          "reason": "Prueba ya utilizada"
+        }
+      },
+      "offline_dictionary_log10_years": null,
+      "offline_random8_log10_years": 19.813562920423664
+    }
+  ],
+  "stolen_database": {
+    "dictionary_size": 1000000,
+    "random_space": "94^8",
+    "password": {
+      "seconds_per_guess": 0.017382235993864015,
+      "guesses_per_second": 57.52999788709595,
+      "dictionary_seconds": 17382.235993864015,
+      "dictionary_years": 0.0005508098205777377,
+      "random8_years": 1678782.7883378759,
+      "dictionary_log10_years": -3.258998325160395,
+      "random8_log10_years": 6.2249945079732125
+    },
+    "totp": {
+      "seconds_per_guess": 0.017382235993864015,
+      "guesses_per_second": 57.52999788709595,
+      "dictionary_seconds": 17382.235993864015,
+      "dictionary_years": 0.0005508098205777377,
+      "random8_years": 1678782.7883378759,
+      "dictionary_log10_years": -3.258998325160395,
+      "random8_log10_years": 6.2249945079732125,
+      "second_factor": "comprometido al instante: K está en la base"
+    },
+    "srp": {
+      "propia": {
+        "seconds_per_guess": 0.002730136999161914,
+        "guesses_per_second": 366.2819852289375,
+        "dictionary_seconds": 2730.136999161914,
+        "dictionary_years": 8.651282097377221e-05,
+        "random8_years": 263677.64225588477,
+        "dictionary_log10_years": -4.062919526459415,
+        "random8_log10_years": 5.421073306674193
+      },
+      "gmpy2": {
+        "seconds_per_guess": 0.00021014900994487107,
+        "guesses_per_second": 4758.528247467511,
+        "dictionary_seconds": 210.14900994487107,
+        "dictionary_years": 6.6592202811643175e-06,
+        "random8_years": 20296.269191502877,
+        "dictionary_log10_years": -5.176576618789416,
+        "random8_log10_years": 4.307416214344192
+      }
+    },
+    "zkp": {
+      "bsgs_seconds_per_operation": 2.637643606353062e-07,
+      "groups": {
+        "schnorr-2048": {
+          "q_bits": 224,
+          "bsgs_log10_years": 19.813562920423664
+        },
+        "rfc-2048": {
+          "q_bits": 2047,
+          "bsgs_log10_years": 294.20240396814256
+        }
+      },
+      "dictionary": "no aplica: x es aleatoria, no sale de una contraseña"
+    }
+  },
+  "qualitative": {
+    "password": {
+      "phishing": "Vulnerable",
+      "phishing_why": "La persona escribe la contraseña en el sitio falso y este la recibe en claro: sirve para siempre y en cualquier otro sitio donde se repita.",
+      "online_bruteforce": "Limitado por el bloqueo",
+      "online_why": "Tres intentos por cuenta antes del bloqueo; queda expuesto a probar pocas contraseñas muy comunes en muchas cuentas (password spraying) y a credenciales filtradas."
+    },
+    "totp": {
+      "phishing": "Parcial (cae ante un relevo en tiempo real)",
+      "phishing_why": "El sitio falso obtiene la contraseña y un código válido unos 30–90 s; si los reenvía al banco de inmediato (adversario en el medio) entra. El código no sirve después, pero la contraseña sí.",
+      "online_bruteforce": "Muy difícil",
+      "online_why": "Además de la contraseña hay que acertar un código de 10^6 (3 aceptados por la ventana ±1): con 3 intentos antes del bloqueo, probabilidad ≈ 9·10^-6."
+    },
+    "srp": {
+      "phishing": "Resistente si el cliente hace SRP",
+      "phishing_why": "La contraseña no viaja y un banco falso que no conoce v no puede producir M2: el celular lo detecta. Solo puede probar una contraseña por sesión. Si la persona escribe la contraseña en un formulario web falso, se pierde igual.",
+      "online_bruteforce": "Limitado por el bloqueo",
+      "online_why": "Cada candidata exige una sesión completa con el banco (no hay prueba fuera de línea con lo que viaja) y tres M1 incorrectos bloquean la cuenta."
+    },
+    "zkp": {
+      "phishing": "Resistente (no hay secreto que escribir)",
+      "phishing_why": "x nunca sale del celular ni la persona la conoce; las transcripciones no revelan nada (conocimiento cero). El protocolo no autentica al banco: un relevo en tiempo real se evita con TLS y ligando la prueba al canal o al origen (como hace WebAuthn).",
+      "online_bruteforce": "Despreciable",
+      "online_why": "Un impostor acierta el reto con probabilidad 1/q por intento (2^-224 con schnorr-2048) y el bloqueo deja tres intentos."
+    }
+  }
+}
