@@ -35,7 +35,8 @@ describe("buildBeats", () => {
     expect(beats[1].kind).toBe("biometric");
     expect(beats.slice(2).filter((b) => b.ready)).toEqual([]);
     expect(beats[beats.length - 1].kind).toBe("summary");
-    expect(beats.some((b) => b.kind === "outcome")).toBe(false);
+    expect(beats.find((b) => b.kind === "outcome")).toMatchObject({ ready: false, short: "Desenlace" });
+    expect(beats).toHaveLength(buildBeats((await playAct("login")).final).length);
   });
 
   test("usa rótulos cortos derivados de lo que viajó", async () => {

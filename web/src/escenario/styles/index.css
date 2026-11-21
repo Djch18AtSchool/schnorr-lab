@@ -1,0 +1,9 @@
+/* Estilos del Escenario: tokens y piezas portadas del boceto E, más los ajustes de React. */
+@import "./tokens.css";
+@import "./stage.css";
+@import "./diagram.css";
+@import "./terminal.css";
+@import "./devices.css";
+@import "./phone-screens.css";
+@import "./chrome.css";
+@import "./extras.css";

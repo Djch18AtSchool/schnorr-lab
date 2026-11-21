@@ -108,8 +108,16 @@ export function buildBeats(run: ActRun, exhausted = false): Beat[] {
     return [...lead, ...stepBeats(step, i)];
   });
   const summary: Beat = { id: "summary", kind: "summary", stepIndex: null, exchangeIndex: null, actor: "banco", ready: finished, short: "Resumen" };
-  const outcome = finished ? outcomeBeat(run) : null;
+  const outcome = finished ? outcomeBeat(run) : plannedOutcome(run);
   return [intro, ...body, ...(outcome ? [outcome] : []), summary];
+}
+
+/** Antes de terminar se reserva el desenlace si el acto envía mensajes (para que la cuenta de pasos no salte). */
+function plannedOutcome(run: ActRun): Beat | null {
+  const sends = run.steps.some((step) => step.kind === "exchange" || step.kind === "attack");
+  if (!sends) return null;
+  const actor = run.steps[run.steps.length - 1]?.actor ?? "ana";
+  return { id: "outcome", kind: "outcome", stepIndex: null, exchangeIndex: null, actor, ready: false, short: "Desenlace" };
 }
 
 export type Advance = { kind: "goto"; index: number } | { kind: "fetch" } | { kind: "end" };

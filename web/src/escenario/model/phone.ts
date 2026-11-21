@@ -9,7 +9,7 @@ import { attemptsLeftOf, isPresent, isRegistration, isSuccess, verdictOf } from 
 import type { Beat, PhoneView } from "./types";
 
 const LOCKED_RE = /bloquead/i;
-const ERROR_TEXT = "No pudimos verificar su identidad. Intente de nuevo.";
+const ERROR_TEXT = "El banco no confirmó el ingreso. Intente de nuevo.";
 const LOCKED_TEXT = "Por seguridad, su cuenta se bloqueó tras varios intentos fallidos.";
 const SIGNUP_ERROR_TEXT = "No pudimos crear su cuenta. Intente de nuevo.";
 

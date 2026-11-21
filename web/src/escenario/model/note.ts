@@ -160,3 +160,10 @@ export function noteView(run: ActRun, act: ActInfo | null, beat: Beat, store: Ev
       return stepNote(run, beat);
   }
 }
+
+/** Tarjeta al revisar una fase compactada del diagrama (n = número de fase). */
+export function reviewNote(run: ActRun, stepIndex: number, n: number): NoteView {
+  const step = run.steps[stepIndex];
+  const text = [step?.explanation, step?.record?.message].filter(Boolean).join(" ");
+  return { ...base("wide", step?.title ?? "", text), who: `Revisando el paso ${n} del diagrama` };
+}

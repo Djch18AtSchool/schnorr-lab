@@ -3,7 +3,19 @@ import { playAct } from "../fixtures/runs";
 import { SCRIPTED_ACTS } from "../data/simulated/acts";
 import { buildBeats } from "./beats";
 import { EMPTY_STORE } from "./events";
-import { formulaRow, noteView, toneOf, valueRow } from "./note";
+import { formulaRow, noteView, reviewNote, toneOf, valueRow } from "./note";
+
+describe("reviewNote", () => {
+  test("resume la fase revisada con su explicación y el resultado", async () => {
+    const { final } = await playAct("login");
+
+    expect(reviewNote(final, 2, 3)).toMatchObject({
+      who: "Revisando el paso 3 del diagrama",
+      title: "Viaja el compromiso t",
+      text: expect.stringContaining("reto c = 3"),
+    });
+  });
+});
 
 const actInfo = (id: string) => SCRIPTED_ACTS.find((a) => a.info.id === id)?.info ?? null;
 
