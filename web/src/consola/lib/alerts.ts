@@ -1,5 +1,5 @@
 /** Alertas: agrupación de repeticiones, conteo por severidad y texto con `código`. Funciones puras. */
-import type { Alert } from "../../shared/types";
+import type { Alert, BankEvent } from "../../shared/types";
 
 export interface AlertGroup {
   alert: Alert;
@@ -32,6 +32,24 @@ export function severityCounts(alerts: readonly Alert[]): Record<Alert["severity
 export function defaultOpenAlert(groups: readonly AlertGroup[]): number | null {
   const high = groups.find((g) => g.alert.severity === "alta");
   return (high ?? groups[0])?.alert.id ?? null;
+}
+
+const SEVERITIES = new Set<string>(["alta", "media", "baja"]);
+
+/** Un evento «alerta» del flujo en vivo trae la alerta en data; se valida antes de usarla. */
+export function alertFromEvent(event: BankEvent): Alert | null {
+  const d = event.data;
+  if (event.kind !== "alerta" || typeof d.id !== "number" || typeof d.severity !== "string" || !SEVERITIES.has(d.severity)) return null;
+  return {
+    id: d.id,
+    timestamp: typeof d.timestamp === "number" ? d.timestamp : event.timestamp,
+    severity: d.severity as Alert["severity"],
+    kind: typeof d.kind === "string" ? d.kind : "desconocida",
+    title: typeof d.title === "string" ? d.title : event.title,
+    detail: typeof d.detail === "string" ? d.detail : "",
+    user_id: typeof d.user_id === "string" ? d.user_id : null,
+    evidence: Array.isArray(d.evidence) ? d.evidence.filter((id): id is number => typeof id === "number") : [],
+  };
 }
 
 /** Parte un texto en tramos normales y `código` (entre comillas invertidas). */
