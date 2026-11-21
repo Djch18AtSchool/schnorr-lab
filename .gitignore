@@ -18,6 +18,10 @@ results/*
 !results/bsgs.csv
 !results/bsgs.json
 !results/bsgs.png
+# Comparación con otros mecanismos (C5): python -m benchmark.compare
+!results/comparacion.csv
+!results/comparacion.json
+!results/comparacion_*.png
 
 # Editor / sistema
 .vscode/
