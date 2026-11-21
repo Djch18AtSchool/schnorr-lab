@@ -52,7 +52,7 @@ def test_flujo_completo_con_el_ejemplo_del_escrito(api):
 @pytest.mark.req("R11")
 def test_banco_solo_guarda_y(api):
     _register(api)
-    assert api.get("/bank/users").json() == {"zkp": {USER: {"y": "8"}}}
+    assert api.get("/bank/users").json()["zkp"] == {USER: {"y": "8"}}  # los demás mecanismos, aparte
 
 
 @pytest.mark.req("R11")
@@ -181,7 +181,7 @@ def test_cliente_de_demostracion_devuelve_x_pero_no_entra_al_banco_ni_a_la_audit
     response = api.post("/zkp/demo/client", json={"user_id": USER, "x": "7"})
     assert response.status_code == 201
     assert response.json()["x"] == "7" and response.json()["y"] == "8"
-    assert api.get("/bank/users").json() == {"zkp": {}}
+    assert api.get("/bank/users").json()["zkp"] == {}
     assert api.get("/audit/log").json() == []
 
 

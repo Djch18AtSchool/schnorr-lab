@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from protocol.bank import USER_ID_PATTERN
+from protocol.bank import DEFAULT_MAX_ATTEMPTS, USER_ID_PATTERN
 
 MAX_INT_DIGITS = 1000                      # un primo de 3072 bits tiene unos 925 dígitos
 INT_PATTERN = rf"^-?[0-9]{{1,{MAX_INT_DIGITS}}}$"
@@ -27,6 +27,38 @@ class StrictRequest(BaseModel):
 
 class ErrorResponse(BaseModel):
     reason: str
+
+
+class AttemptLimiter:
+    """Fallos consecutivos por usuario y bloqueo al llegar al máximo, igual que el ZKP (R9).
+
+    Es genérico: lo usan los mecanismos que no envuelven protocol.Bank (contraseña, TOTP, SRP)
+    para que todos bloqueen con la misma regla y la comparación sea justa.
+    """
+
+    def __init__(self, max_attempts: int = DEFAULT_MAX_ATTEMPTS) -> None:
+        if max_attempts < 1:
+            raise ValueError("max_attempts debe ser al menos 1.")
+        self.max_attempts = max_attempts
+        self._failures: dict[str, int] = {}
+
+    def is_locked(self, user_id: str) -> bool:
+        """True si el usuario acumuló max_attempts fallos seguidos. Cubre R9."""
+        return self._failures.get(user_id, 0) >= self.max_attempts
+
+    def attempts_left(self, user_id: str) -> int:
+        """Intentos que le quedan antes del bloqueo. Cubre R9."""
+        return max(0, self.max_attempts - self._failures.get(user_id, 0))
+
+    def fail(self, user_id: str) -> int:
+        """Suma un fallo y devuelve los intentos restantes. Cubre R9."""
+        self._failures = {**self._failures, user_id: self._failures.get(user_id, 0) + 1}
+        return self.attempts_left(user_id)
+
+    def succeed(self, user_id: str) -> int:
+        """Un acceso correcto reinicia el contador; devuelve los intentos disponibles. Cubre R9."""
+        self._failures = {key: value for key, value in self._failures.items() if key != user_id}
+        return self.max_attempts
 
 
 def error_response(code: int, reason: str) -> JSONResponse:
