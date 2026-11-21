@@ -50,6 +50,11 @@ DEMO_WARNING = ("Solo para demostración: este cliente vive en el servidor y por
 ERRORS = {400: {"model": ErrorResponse}, 422: {"model": ErrorResponse}}
 
 
+def _attempts(attempts_left: int | None) -> dict[str, str]:
+    """El campo attempts_left del log solo cuando el banco lo conoce (nunca «None» como texto)."""
+    return {} if attempts_left is None else {"attempts_left": str(attempts_left)}
+
+
 def verify_payload(result: VerifyResult) -> VerifyResponse:
     """Traduce un VerifyResult a la respuesta HTTP (enteros como cadenas). Cubre R6 y R11."""
     transcript = result.transcript
@@ -190,7 +195,7 @@ class ZkpServer:
         math = observe.subgroup_math("t", t, self.gp)
         if isinstance(outcome, VerifyResult):
             self._event("error", f"Compromiso rechazado: {outcome.reason}", event="challenge", level="WARN",
-                        data={**fields, "reason": str(outcome.reason), "attempts_left": str(outcome.attempts_left)},
+                        data={**fields, "reason": str(outcome.reason), **_attempts(outcome.attempts_left)},
                         span=observe.challenge_span(outcome.reason), math=math,
                         signals=observe.verdict_signals(outcome, replayed=False), user_id=body.user_id)
             code = COMMIT_ERROR_STATUS.get(outcome.reason, status.HTTP_400_BAD_REQUEST)
@@ -242,7 +247,7 @@ class ZkpServer:
         fields = {"session": body.session_id[:8] + "…", "user": user_id or "?", "s": observe.short(body.s),
                   **{key: observe.short(value) for key, value in payload.details.items()},
                   "accepted": str(result.accepted).lower(), "reason": str(result.reason),
-                  "attempts_left": str(result.attempts_left)}
+                  **_attempts(result.attempts_left)}
         self._event("verificacion", verdict, {**fields, "trace": "\n".join(trace or [])}, event="verify",
                     level="INFO" if result.accepted else "WARN",
                     span=observe.verify_span(result),
@@ -271,7 +276,7 @@ class ZkpServer:
         fields = {"user": body.user_id, "t": observe.short(body.t), "s": observe.short(body.s), "m": body.m,
                   **challenge, **{key: observe.short(value) for key, value in payload.details.items()},
                   "accepted": str(result.accepted).lower(), "reason": str(result.reason),
-                  "attempts_left": str(result.attempts_left)}
+                  **_attempts(result.attempts_left)}
         math = ["c = SHA-256(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q" + (f" = {observe.short(challenge['c'])}" if challenge else "")]
         self._event("verificacion", verdict, fields, event="verify_nizk", level="INFO" if result.accepted else "WARN",
                     span=observe.nizk_span(result),

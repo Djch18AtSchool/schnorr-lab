@@ -5,11 +5,12 @@ misma bitácora de eventos y en la misma auditoría sin conocerse entre sí.
 """
 
 import threading
+import time
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
-from infra.events import EventLog
+from infra.events import EventLog, current_request_id
 from infra.telemetry import Telemetry
 
 MAX_AUDIT_ENTRIES = 10_000
@@ -23,6 +24,8 @@ class AuditEntry:
     mechanism: str | None
     valid: bool
     body: dict[str, Any] = field(default_factory=dict)
+    timestamp: float = 0.0
+    request_id: int | None = None           # petición de la telemetría que trajo este cuerpo
 
 
 class ServerContext:
@@ -38,7 +41,8 @@ class ServerContext:
     def audit(self, endpoint: str, body: dict[str, Any], mechanism: str | None = None, valid: bool = True) -> None:
         """Registra un cuerpo recibido en la auditoría. Cubre R11."""
         with self._audit_lock:
-            self._audit.append(AuditEntry(endpoint=endpoint, mechanism=mechanism, valid=valid, body=dict(body)))
+            self._audit.append(AuditEntry(endpoint=endpoint, mechanism=mechanism, valid=valid, body=dict(body),
+                                          timestamp=time.time(), request_id=current_request_id.get()))
 
     def audit_entries(self) -> list[AuditEntry]:
         """Copia de la auditoría, en orden de llegada. Cubre R11."""

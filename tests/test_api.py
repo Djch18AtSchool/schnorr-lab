@@ -162,8 +162,10 @@ def test_cuerpo_rechazado_queda_en_la_auditoria_y_la_respuesta_no_repite_la_entr
     response = api.post("/zkp/register", json=leaky)
     assert response.status_code == 422
     assert response.json() == {"reason": "Cuerpo inválido: x: campo no permitido (solo viajan valores públicos)"}
-    assert api.get("/audit/log").json() == [{"endpoint": "/zkp/register", "mechanism": "zkp", "valid": False,
-                                         "body": leaky}]
+    [entry] = api.get("/audit/log").json()
+    assert {k: entry[k] for k in ("endpoint", "mechanism", "valid", "body")} == {
+        "endpoint": "/zkp/register", "mechanism": "zkp", "valid": False, "body": leaky}
+    assert entry["request_id"] is not None and entry["timestamp"] > 0     # enlazado con la telemetría
     leaks, _ = http_client.find_secret_leaks(x=7, gp=TOY_GROUP, bodies=[leaky])
     assert leaks  # el campo «x» se detecta aunque el banco lo haya rechazado
 

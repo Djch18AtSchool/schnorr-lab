@@ -113,8 +113,9 @@ def test_registro_repetido_se_rechaza(api):
 def test_cuerpos_invalidos_se_rechazan_y_quedan_auditados(api, body):
     response = api.post("/password/register", json=body)
     assert response.status_code == 422
-    assert api.get("/audit/log").json()[-1] == {"endpoint": "/password/register", "mechanism": "password",
-                                                "valid": False, "body": body}
+    entry = api.get("/audit/log").json()[-1]
+    assert {k: entry[k] for k in ("endpoint", "mechanism", "valid", "body")} == {
+        "endpoint": "/password/register", "mechanism": "password", "valid": False, "body": body}
 
 
 @pytest.mark.req("C3")

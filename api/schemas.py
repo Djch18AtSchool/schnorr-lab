@@ -12,6 +12,8 @@ class AuditEntryOut(BaseModel):
     mechanism: str | None
     valid: bool = Field(description="False si el cuerpo se rechazó por mal formado (422)")
     body: dict[str, Any] = Field(description="Cuerpo tal como llegó al banco")
+    timestamp: float = Field(0.0, description="Hora de llegada (epoch, segundos)")
+    request_id: int | None = Field(None, description="Petición de /telemetry/requests que trajo el cuerpo")
 
 
 class EventOut(BaseModel):

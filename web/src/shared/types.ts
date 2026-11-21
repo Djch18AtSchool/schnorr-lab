@@ -274,6 +274,8 @@ export interface AuditEntry {
   mechanism: string | null;
   valid: boolean;
   body: unknown;
+  timestamp: number;
+  request_id: number | null;
 }
 
 export interface TestReport {

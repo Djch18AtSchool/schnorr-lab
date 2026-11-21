@@ -26,9 +26,9 @@ describe("alertas", () => {
 
 describe("auditoría", () => {
   const entries: AuditEntry[] = [
-    { endpoint: "/zkp/register", mechanism: "zkp", valid: true, body: { user_id: "ana", y: "8" } },
-    { endpoint: "/zkp/login/commit", mechanism: "zkp", valid: false, body: { user_id: "ana", t: 12 } },
-    { endpoint: "/zkp/login/respond", mechanism: "zkp", valid: true, body: { session_id: "s", s: "4" } },
+    { endpoint: "/zkp/register", mechanism: "zkp", valid: true, body: { user_id: "ana", y: "8" }, timestamp: 1, request_id: 1 },
+    { endpoint: "/zkp/login/commit", mechanism: "zkp", valid: false, body: { user_id: "ana", t: 12 }, timestamp: 2, request_id: 2 },
+    { endpoint: "/zkp/login/respond", mechanism: "zkp", valid: true, body: { session_id: "s", s: "4" }, timestamp: 3, request_id: 3 },
   ];
 
   it("detecta x a cualquier profundidad", () => {

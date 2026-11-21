@@ -68,7 +68,7 @@ export class SimEngine {
       signal: result.signals[result.signals.length - 1] ?? null, tags: result.tags,
     };
     keep(this.requests, record);
-    if (isAuditedPath(send.method, send.path)) this.audit.push({ endpoint: send.path, mechanism: "zkp", valid: true, body: send.body });
+    if (isAuditedPath(send.method, send.path)) this.audit.push({ endpoint: send.path, mechanism: "zkp", valid: true, body: send.body, timestamp: record.timestamp, request_id: record.id });
     result.logs.forEach((l) => this.publish(record, l.kind, l.title, l.data));
     this.publish(record, "acceso", `"${record.method} ${record.path} HTTP/1.1" ${record.status}`, {
       method: record.method, path: record.path, status: record.status, duration_ms: record.duration_ms, client: record.client,
