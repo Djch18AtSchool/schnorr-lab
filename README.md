@@ -57,7 +57,7 @@ El selector de grupo en la barra superior reinicia el laboratorio con otro tama�
 | R7 | Distintos tamaños de p y su latencia | `core/params.py`, `benchmark/latency.py` | `test_params.py`, `test_latency.py`, `test_protocol.py` |
 | R8 | Variante no interactiva (Fiat-Shamir) | `protocol/fiat_shamir.py` | `test_fiat_shamir.py` |
 | R9 | Validación de entradas y bloqueo al tercer fallo | `protocol/bank.py`, `api/validation.py` | `test_protocol.py`, `test_api.py` |
-| R10 | Laboratorio de ataques | `attacks/`, `client_app/lab.py` | `test_attacks.py`, `test_bsgs.py`, `test_replay.py`, `test_contracts.py` |
+| R10 | Laboratorio de ataques | `attacks/`, `client_app/acts/` | `test_attacks.py`, `test_bsgs.py`, `test_replay.py`, `test_contracts.py` |
 | R11 | Interfaz de revisión | `client_app/`, `api/`, `demo.py`, `http_client.py` | `test_client_app.py`, `test_api.py`, `test_demo.py`, `test_infra.py` |
 
 Para la comparación con otros mecanismos se agregan los identificadores C1–C5 (se listan después de los R en la trazabilidad):
