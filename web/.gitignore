@@ -1,4 +1,2 @@
 node_modules/
 *.tsbuildinfo
-# dist se versiona solo al publicar la versión final (ver plan)
-dist/
