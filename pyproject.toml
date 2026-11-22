@@ -1,6 +1,6 @@
 [project]
 name = "schnorr-lab"
-version = "0.3.0"            # 0.3 = entrega final
+version = "0.4.0"            # 0.4 = Escenario y Consola del banco
 description = "Laboratorio de autenticación sin contraseñas: protocolo de Schnorr desde cero, banco y app del celular en vivo, ataques y mediciones."
 readme = "README.md"
 requires-python = ">=3.12"

@@ -4,7 +4,12 @@
 
 Laboratorio de **autenticación bancaria sin contraseñas** con una prueba de conocimiento cero: el **protocolo de identificación de Schnorr**, implementado desde cero en Python. El cliente demuestra al banco que conoce una clave secreta *x* sin enviarla nunca; el banco guarda solo la clave pública *y = g<sup>x</sup> mod p*.
 
-El entregable es el propio sistema funcionando en tiempo real. Una app bancaria simulada en el celular y un banco corren como procesos separados. La interfaz permite recorrer cada paso del protocolo, ver qué viaja por la red y qué guarda el banco, lanzar ataques en vivo y consultar las mediciones del laboratorio.
+El entregable es el propio sistema funcionando en tiempo real, con dos aplicaciones web:
+
+- **Escenario** (lo que se proyecta): los actores en escena, Ana con su celular y Eve con su laptop. Cada acto (inicio de sesión, espía, robo de la base, impostor…) se ejecuta de verdad contra el banco, paso a paso, con un diagrama de secuencia vivo y la terminal del banco que muestra el log y la línea de código que decidió.
+- **Consola del banco**: lo que ve el servidor, que no sabe qué acto se representa. Actividad en vivo, alertas deducidas de las peticiones, lo que guarda de cada cliente y los resultados de todos los experimentos.
+
+El banco y el proceso del celular (que guarda *x*) corren como procesos separados y hablan solo por HTTP.
 
 > Proyecto del curso **Matemática Discreta 2** (FUN-03), Universidad CENFOTEC, C3-2026. Docente: Rebeca Paola Chaves Morales.
 > Integrantes: Maximiliano Badilla Cerdas, Braden Lee Knuter Cordoba, Dylan Josue Chaves Hernández y Dylan Gabriel Piña Moya.
@@ -13,7 +18,7 @@ El entregable es el propio sistema funcionando en tiempo real. Una app bancaria 
 
 ## Cómo ejecutarlo
 
-Requiere **Python 3.12**. Desde la raíz del repositorio:
+Requiere **Python 3.12**. La web ya viene compilada en `web/dist`, así que no hace falta Node para usarla. Desde la raíz del repositorio:
 
 ```bash
 python -m venv .venv
@@ -23,26 +28,35 @@ pip install -e ".[dev,bench]"      # bench agrega gmpy2, solo para comparar impl
 
 | Comando | Qué hace |
 | --- | --- |
-| `python lab.py` | Arranca el banco (puerto 8000) y la app del celular (8001). Abrir **http://127.0.0.1:8001** |
-| `pytest` | 360 pruebas y la tabla de trazabilidad requerimiento → prueba → resultado |
+| `python lab.py` | Arranca el banco (8000) y el celular (8001). **Escenario:** http://127.0.0.1:8001/ · **Consola:** http://127.0.0.1:8000/consola/ · **Swagger:** http://127.0.0.1:8000/docs |
+| `pytest` | 376 pruebas y la tabla de trazabilidad requerimiento → prueba → resultado (también la guarda en `results/tests.json`) |
 | `python -m benchmark.compare` | Compara el ZKP con contraseña, TOTP y SRP (unos 20 s) |
-| `python demo.py --verbose --option 1` | El ejemplo del escrito (p = 23) paso a paso en la consola |
+| `python -m benchmark.experiments` | Impostor, simulador, r repetido, repetición, aleatoriedad y aritmética (unos 7 s) |
 | `python -m benchmark.latency` | Vuelve a medir la latencia según los bits de p (unos 30 s) |
+| `python demo.py --verbose --option 1` | El ejemplo del escrito (p = 23) paso a paso en la consola |
+
+Para modificar la web: `cd web && npm ci && npm run dev` (con el banco y el celular corriendo) y, al terminar, `npm test` y `npm run build`.
 
 Otras formas de usarlo: `uvicorn api.app:app` levanta solo el banco (Swagger en http://127.0.0.1:8000/docs); `python http_client.py` inicia sesión por HTTP mostrando lo que viaja; `python lab.py --group rfc-2048` arranca con un grupo de 2048 bits.
 
 ## Qué se ve en la demostración
 
-- **Celular (izquierda):** la app del banco. Se crea una cuenta y se inicia sesión con el ZKP interactivo o con la variante no interactiva (Fiat-Shamir). Con «Paso a paso», cada cálculo y cada mensaje se ejecuta cuando se pide, para explicarlo.
-- **Flujo:** diagrama de secuencia celular ↔ red ↔ banco que se anima con cada paso. Para el paso elegido muestra la explicación, la fórmula, los valores (incluida la traza bit a bit de la exponenciación con p pequeño), el mensaje HTTP y lo que hizo el banco al recibirlo.
-- **Red:** cada mensaje tal como viajó. Una verificación automática confirma que solo viajaron campos públicos (`user_id, y, t, session_id, s, m`).
-- **Banco:** lo que guarda (solo *y*), los parámetros públicos, la auditoría de todo cuerpo recibido (también los rechazados) y, aparte, lo que guarda el celular.
-- **Laboratorio:** ataques en vivo contra el banco que está corriendo (repetir mensajes capturados, robar la base de datos, suplantar sin *x*) y los experimentos de `attacks/`.
-- **Resultados:** gráficas y tablas de latencia y de BSGS, generadas de antemano.
-- **Consola del banco (`/consola/`):** lo que ve el banco en tiempo real. Resumen (indicadores y cada petición en el tiempo), Actividad (cada intento params → commit → respond con el log, la función y los cálculos del banco), Seguridad (alertas por dispositivo de origen con su evidencia), Clientes (lo único que guarda: *y*), Laboratorio, Pruebas y Sistema.
-- **Swagger:** la API del banco; lo que entre por ahí también aparece en la auditoría y en la consola.
+**Escenario** (http://127.0.0.1:8001/). El panel «Dirección» (tecla `D`) elige el acto, el grupo, la velocidad y las animaciones; `→` o `Espacio` avanzan, `C` muestra el plano general. La cámara enfoca a quien actúa: el celular de Ana (una app bancaria realista, sin nada técnico), el mensaje que viaja, la terminal del banco o la laptop de Eve. La tarjeta lateral explica cada paso con sus números.
 
-El selector de grupo en la barra superior reinicia el laboratorio con otro tamaño de p (de p = 23 hasta 3072 bits) para mostrar en vivo cómo cambia la latencia.
+| Acto | Qué muestra |
+| --- | --- |
+| Registro | Ana crea su cuenta: el celular genera x y el banco guarda solo y |
+| Inicio de sesión | Compromiso, reto y respuesta; el banco verifica g^s ≡ t·y^c |
+| Inicio sin interacción | Fiat-Shamir: un solo mensaje con c = SHA-256(…) |
+| Espía repite la respuesta | Eve copia el inicio de sesión de Ana y reenvía s: la sesión ya se usó |
+| Robo de la base de datos | Eve obtiene solo claves públicas; con p = 23 despeja x con BSGS y entra, con 2048 bits no |
+| Impostor | Eve adivina retos sin x; al tercer fallo la cuenta se bloquea, también para Ana |
+| Espía repite la prueba | El banco recuerda las pruebas no interactivas usadas |
+| Celular que repite r | Un celular defectuoso repite r: Eve despeja x con Euclides y entra |
+
+**Consola del banco** (http://127.0.0.1:8000/consola/): Resumen (indicadores y cada petición en el tiempo), Actividad (cada intento params → commit → respond con el log, la función y los cálculos del banco), Seguridad (alertas por dispositivo de origen con su evidencia), Clientes (lo único que guarda: *y*, y la prueba de que *x* nunca llegó), Laboratorio (los 16 experimentos y mediciones), Pruebas (trazabilidad R1–R11 y C1–C5) y Sistema (grupo, mecanismos y API).
+
+**Swagger** (http://127.0.0.1:8000/docs): la API del banco, sin internet; lo que entre por ahí también aparece en la Consola.
 
 ## Estado: todos los requerimientos implementados
 
@@ -57,8 +71,8 @@ El selector de grupo en la barra superior reinicia el laboratorio con otro tama�
 | R7 | Distintos tamaños de p y su latencia | `core/params.py`, `benchmark/latency.py` | `test_params.py`, `test_latency.py`, `test_protocol.py` |
 | R8 | Variante no interactiva (Fiat-Shamir) | `protocol/fiat_shamir.py` | `test_fiat_shamir.py` |
 | R9 | Validación de entradas y bloqueo al tercer fallo | `protocol/bank.py`, `api/validation.py` | `test_protocol.py`, `test_api.py` |
-| R10 | Laboratorio de ataques | `attacks/`, `client_app/acts/` | `test_attacks.py`, `test_bsgs.py`, `test_replay.py`, `test_contracts.py` |
-| R11 | Interfaz de revisión | `client_app/`, `api/`, `demo.py`, `http_client.py` | `test_client_app.py`, `test_api.py`, `test_demo.py`, `test_infra.py` |
+| R10 | Laboratorio de ataques | `attacks/`, `client_app/acts/`, `benchmark/experiments.py` | `test_attacks.py`, `test_bsgs.py`, `test_replay.py`, `test_acts.py`, `test_experiments.py`, `test_contracts.py` |
+| R11 | Interfaz de revisión | `client_app/`, `api/`, `infra/`, `web/`, `demo.py`, `http_client.py` | `test_acts.py`, `test_observability.py`, `test_client_app.py`, `test_api.py`, `test_demo.py`, `test_infra.py` y las pruebas de `web/` (Vitest) |
 
 Para la comparación con otros mecanismos se agregan los identificadores C1–C5 (se listan después de los R en la trazabilidad):
 
@@ -74,7 +88,7 @@ Las pruebas que el segundo avance dejó escritas como contrato (`xfail` estricto
 
 ## Resultados del laboratorio
 
-Mediciones en `results/`, regenerables con `python -m benchmark.latency` y con el experimento de la base robada.
+Mediciones en `results/`, regenerables con `python -m benchmark.latency`, `python -m benchmark.experiments`, `python -m benchmark.compare` y el experimento de la base robada (`python demo.py --option 4`). La Consola las grafica en su sección Laboratorio.
 
 **Latencia de una autenticación completa** (mediana de 31 repeticiones; *propia* = nuestra `mod_pow`, *nativa* = `pow` de Python, *gmpy2* = GMP):
 
@@ -130,22 +144,24 @@ El código es **agnóstico al mecanismo de autenticación**. El ZKP es el primer
 ```mermaid
 flowchart LR
     subgraph Navegador
-        ui[client_app/static · interfaz]
+        esc[web · Escenario]
+        con[web · Consola del banco]
     end
-    subgraph Celular["Proceso: app del celular (8001)"]
-        flows[client_app · flujos paso a paso, wallet con x, laboratorio]
+    subgraph Celular["Proceso: celular de Ana y laptop de Eve (8001)"]
+        acts[client_app · actos, wallet con x, acciones de Eve]
     end
     subgraph Banco["Proceso: banco (8000)"]
-        api[api · banco genérico]
+        api[api · banco genérico, telemetría, soporte]
     end
-    mech[mechanisms · contrato + ZKP]
-    infra[infra · eventos, SSE, auditoría]
+    mech[mechanisms · contrato + ZKP + comparación]
+    infra[infra · eventos, SSE, telemetría, trazas de código]
     protocol[protocol · Client, Bank, Fiat-Shamir]
     core[core · aritmética modular y grupos]
-    ui -- "HTTP: siguiente paso" --> flows
-    ui -. "SSE: eventos y vistas del banco" .-> api
-    flows -- "HTTP: y, t, s, m (nunca x)" --> api
-    flows --> mech
+    esc -- "HTTP: siguiente paso" --> acts
+    esc -. "SSE: eventos del banco" .-> api
+    con -- "HTTP y SSE: telemetría, alertas, cuentas" --> api
+    acts -- "HTTP: y, t, s, m (nunca x)" --> api
+    acts --> mech
     api --> mech
     mech --> protocol
     mech --> infra
@@ -153,12 +169,13 @@ flowchart LR
     protocol --> core
 ```
 
-- **`core/`**: la matemática. Exponenciación rápida, Euclides extendido, grupos (primos seguros, RFC 3526, grupos de Schnorr) y aritmética intercambiable.
+- **`core/`**: la matemática. Exponenciación rápida, Euclides extendido, grupos (primos seguros, RFC 3526, RFC 7919, grupos de Schnorr) y aritmética intercambiable.
 - **`protocol/`**: el protocolo de Schnorr. `Client`, `Bank`, transcripciones y Fiat-Shamir. No sabe de HTTP.
-- **`mechanisms/`**: el contrato común (`MechanismInfo` con flujos y pasos explicados, la parte del banco y la parte del celular) y el registro. `mechanisms/zkp/` adapta el protocolo a HTTP y publica cada decisión.
-- **`infra/`**: la bitácora de eventos con correlación (el celular envía `X-Correlation-Id` y el banco la copia), la transmisión SSE y la auditoría.
-- **`api/`**: el banco. Monta las rutas de cada mecanismo y agrega `/mechanisms`, `/bank/users`, `/audit/log`, `/events`, `/events/stream` y `/lab/reset`.
-- **`client_app/`**: la app del celular. Guarda *x*, ejecuta los flujos paso a paso, lanza ataques y sirve la interfaz. Es otro proceso: habla con el banco solo por HTTP.
+- **`mechanisms/`**: el contrato común (`MechanismInfo` con flujos y pasos explicados, la parte del banco y la parte del celular) y el registro. `mechanisms/zkp/` adapta el protocolo a HTTP y publica cada decisión con su log, la función que la tomó y los cálculos.
+- **`infra/`**: la bitácora de eventos con correlación, la transmisión SSE, la telemetría (peticiones, métricas y alertas deducidas por reglas genéricas) y las trazas de código leídas del programa en ejecución.
+- **`api/`**: el banco. Monta las rutas de cada mecanismo, la telemetría, las acciones de soporte y sirve la Consola y Swagger.
+- **`client_app/`**: el celular de Ana y la laptop de Eve. Guarda *x*, ejecuta los actos paso a paso y sirve el Escenario. Es otro proceso: habla con el banco solo por HTTP, y cada dispositivo se identifica con su propia dirección y User-Agent.
+- **`web/`**: el Escenario y la Consola (React + TypeScript + Vite), con el contrato de la API en `web/src/shared/types.ts`.
 - **`attacks/` y `benchmark/`**: los experimentos.
 
 Además del ZKP hay tres mecanismos para comparar: `mechanisms/password/` (Argon2id), `mechanisms/totp/` (contraseña + TOTP del RFC 6238) y `mechanisms/srp/` (SRP-6a del RFC 5054, con nuestra `mod_pow`).
@@ -168,7 +185,7 @@ Además del ZKP hay tres mecanismos para comparar: `mechanisms/password/` (Argon
 1. Crear `mechanisms/<nombre>/` con su `MechanismInfo` (flujos y pasos explicados), su parte del banco (router y `stored_credentials`) y su parte del celular (una función por paso).
 2. Registrarlo en `mechanisms/registry.py`.
 
-La interfaz dibuja sus flujos y la auditoría lo registra automáticamente.
+La auditoría, la telemetría y la Consola lo registran automáticamente. Para mostrarlo en el Escenario, sus flujos se usan en un acto de `client_app/acts/catalog.py`.
 
 ### Del diagrama de flujo al código (Tabla 6 del escrito)
 
@@ -217,10 +234,15 @@ Todos los enteros viajan como **cadenas decimales**, porque JavaScript pierde pr
 | `POST /srp/login/start` | `{user_id, A}` | `{session_id, salt, B}`; 400 si A ≡ 0 (mod N), 404, 423 |
 | `POST /srp/login/verify` | `{session_id, M1}` | `{accepted, reason, M2, attempts_left}` |
 | `GET /mechanisms` | — | Mecanismos, flujos y pasos, y el grupo en uso |
-| `GET /bank/users` | — | Lo que guarda el banco, por mecanismo |
-| `GET /audit/log` | — | Todo cuerpo recibido, en orden (`valid: false` si se rechazó) |
+| `GET /bank/users`, `GET /bank/accounts` | — | Lo que guarda el banco; las cuentas con estado, intentos y dispositivos vistos |
+| `GET /audit/log` | — | Todo cuerpo recibido, en orden (`valid: false` si se rechazó), con su hora y petición |
 | `GET /events`, `GET /events/stream` | — | Eventos del banco (JSON o en vivo por SSE) |
+| `GET /telemetry/summary`, `/telemetry/requests`, `/telemetry/requests/{id}`, `/telemetry/alerts` | — | Métricas, peticiones (una con su log, código y cálculos) y alertas deducidas |
+| `POST /admin/accounts/{m}/{u}/unlock`, `DELETE /admin/accounts/{m}/{u}` | — | Soporte: desbloquear o dar de baja una cuenta (sin autenticación: es un laboratorio) |
+| `GET /lab/tests`, `GET /lab/results` | — | Resultado de las pruebas y archivos de `results/` |
 | `POST /lab/reset` | `{group?}` | Reinicia el banco, opcionalmente con otro grupo (solo laboratorio) |
+
+El proceso del celular (8001) expone `GET /api/config`, `GET|POST /api/acts`, `POST /api/acts/{id}/next`, `POST /api/acts/{id}/run`, `POST /api/lab/reset`, `GET /api/wallet` y `GET /api/events[/stream]`.
 
 ## Decisiones de implementación
 
@@ -228,7 +250,9 @@ Todos los enteros viajan como **cadenas decimales**, porque JavaScript pierde pr
 - **Intentos abandonados.** Cada usuario tiene a lo sumo una sesión pendiente. Pedir un reto nuevo sin responder el anterior cuenta como intento fallido, así el bloqueo limita de verdad al impostor: 1 − (1 − 1/q)³.
 - **Fiat-Shamir.** c = SHA-256(p ‖ g ‖ y ‖ t ‖ id ‖ m) mod q con codificación de longitud fija (RFC 8235). Una prueba repetida o con m fuera de la ventana de 30 s se rechaza, y esos rechazos no cuentan como fallos, para que un espía no pueda bloquear a la víctima. Con p = 23 solo existen 110 pares (t, s): tras varios inicios de sesión aparece «Prueba ya utilizada» incluso para el cliente honesto, otra razón por la que el grupo de ejemplo solo sirve para aprender.
 - **Grupos RFC 3526.** Los primos se copiaron del texto del RFC y una prueba los verifica contra la fórmula con π de cada sección.
-- **Proceso del celular aparte.** La app del celular guarda *x* y habla con el banco por HTTP, como en la realidad. La interfaz solo lee las vistas del banco (CORS limitado al origen del celular) y nunca envía secretos.
+- **Proceso del celular aparte.** La app del celular guarda *x* y habla con el banco por HTTP, como en la realidad. El Escenario solo lee las vistas del banco (CORS limitado al origen del celular) y nunca envía secretos.
+- **El banco no se reinicia entre actos.** Conserva cuentas, auditoría e historial como un servicio real. Si un acto lo necesita, soporte desbloquea la cuenta de Ana o la da de baja, y esa acción se ve en la Consola. Solo cambiar de grupo reinicia el banco, porque equivale a desplegar uno nuevo.
+- **El banco no sabe qué acto ocurre.** Las alertas se deducen de las peticiones con reglas genéricas; los mecanismos solo informan señales (`auth.ok`, `auth.replay`, `auth.lockout`…).
 - **Mecanismos de comparación.** La auditoría y los eventos de `password` y `totp` muestran la contraseña tal como llegó, y los de SRP muestran S y K: es a propósito, para ver en el laboratorio qué recibe el banco; un sistema real no los registraría. Contraseña y TOTP responden igual a usuario inexistente y a contraseña incorrecta; SRP y el ZKP responden 404. El intento se cuenta antes de verificar, así las peticiones en paralelo no esquivan el bloqueo.
 
 ## Convenciones del código
@@ -236,7 +260,7 @@ Todos los enteros viajan como **cadenas decimales**, porque JavaScript pierde pr
 - Identificadores en inglés; comentarios, docstrings y mensajes en español. Cada función pública indica el requerimiento que cubre («Cubre R4.») y la definición del escrito que implementa.
 - Dentro de `core/`, `protocol/` y `attacks/` no se usa `pow(a, b, n)`: siempre `mod_pow` y `mod_inverse`. La única excepción es el despacho de la aritmética intercambiable.
 - Aleatoriedad solo con `secrets`. Tipos en todas las firmas públicas y `dataclass(frozen=True)` para los valores.
-- `main` protegida: cada cambio entra por *pull request* y debe pasar las pruebas de GitHub Actions.
+- GitHub Actions corre las pruebas de Python y de la web (typecheck, Vitest y build) en cada cambio.
 
 ## Referencias
 
