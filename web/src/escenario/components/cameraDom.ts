@@ -2,8 +2,7 @@
  * Medición del mundo en el DOM (coordenadas de layout, sin transformaciones) para la cámara:
  * qué rectángulo encuadrar en cada toma y dónde anclar el celular.
  */
-import type { CardPos, Rect, Shot } from "../model/camera";
-import { pad, union } from "../model/camera";
+import { cardFor, pad, union, type CardPos, type Rect, type Shot } from "../model/camera";
 import type { DiagramRow } from "../model/types";
 import { HEADS_H, LANE_X, LAPTOP, PHONE, PHONE_BOTTOM_GAP, rightColumn, TERM } from "./layout";
 
@@ -84,7 +83,7 @@ export function anchorPhone(els: WorldEls, shot: Shot, previous: number): number
 
 export interface ShotGeometry {
   rect: Rect;
-  cards: CardPos[];
+  card: CardPos;
   max: number;
   frame: Rect | null;
 }
@@ -94,29 +93,29 @@ export function shotGeometry(els: WorldEls, shot: Shot, rows: ReadonlyMap<string
   const term = termRect(els, hasEve);
   const lap = hasEve ? laptopRect() : null;
   if (shot.kind === "wide") {
-    return { rect: pad(union([box, phoneRect(phoneY), term, lap]) ?? box, 24), cards: ["left", "top"], max: 1, frame: null };
+    return { rect: pad(union([box, phoneRect(phoneY), term, lap]) ?? box, 24), card: cardFor(shot), max: 1, frame: null };
   }
-  if (shot.kind === "summary") return { rect: pad(union([box, term, lap]) ?? box, 24), cards: ["top", "left"], max: 1.05, frame: null };
+  if (shot.kind === "summary") return { rect: pad(union([box, term, lap]) ?? box, 24), card: cardFor(shot), max: 1.05, frame: null };
   if (shot.kind === "review") {
     const phase = els.phases?.querySelector<HTMLElement>(`[data-step="${shot.stepIndex}"]`);
     const r = phase ? rectIn(phase, els.world) : box;
     const band = { x: box.x, y: r.y, w: box.w, h: r.h };
-    return { rect: pad(band, 20), cards: ["left"], max: 1.1, frame: pad(band, 8) };
+    return { rect: pad(band, 20), card: cardFor(shot), max: 1.1, frame: pad(band, 8) };
   }
   const el = rowEl(els, shot.rowId);
   const row = shot.rowId ? rows.get(shot.rowId) : undefined;
   const rowBox = el && row ? rowRect(el, row, els.world) : null;
   if (shot.focus === "bank") {
     const laneBox = el ? { x: LANE_X.bank - 14, y: rectIn(el, els.world).y, w: 28, h: el.offsetHeight } : null;
-    return { rect: pad(union([term, laneBox]) ?? term, 26), cards: ["left"], max: 1.1, frame: pad({ ...term, h: term.h - 40 }, 12) };
+    return { rect: pad(union([term, laneBox]) ?? term, 26), card: cardFor(shot), max: 1.1, frame: pad({ ...term, h: term.h - 40 }, 12) };
   }
-  if (shot.focus === "ana") return focusGeometry(union([phoneRect(phoneY), rowBox]), ["right"], 1.05);
-  if (shot.focus === "eve") return focusGeometry(union([laptopRect(), rowBox]), ["left"], 1.12);
+  if (shot.focus === "ana") return focusGeometry(union([phoneRect(phoneY), rowBox]), cardFor(shot), 1.05);
+  if (shot.focus === "eve") return focusGeometry(union([laptopRect(), rowBox]), cardFor(shot), 1.12);
   const target = union([rowBox ?? box, shot.withLaptop ? laptopRect() : null]) ?? box;
-  return focusGeometry(target, ["top", "left"], 1.15);
+  return focusGeometry(target, cardFor(shot), 1.15);
 }
 
-function focusGeometry(target: Rect | null, cards: CardPos[], max: number): ShotGeometry {
+function focusGeometry(target: Rect | null, card: CardPos, max: number): ShotGeometry {
   const t = target ?? { x: 0, y: 0, w: 100, h: 100 };
-  return { rect: pad(t, 26), cards, max, frame: pad(t, 10) };
+  return { rect: pad(t, 26), card, max, frame: pad(t, 10) };
 }

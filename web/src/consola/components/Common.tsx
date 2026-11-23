@@ -6,10 +6,10 @@ import { codeSpans, supSpans } from "../lib/alerts";
 import { durationParts, sciParts } from "../lib/format";
 import type { Tone } from "../lib/requests";
 
-export function ViewHead({ title, children, tools }: { title: string; children: ReactNode; tools?: ReactNode }) {
+export function ViewHead({ title, tools }: { title: string; tools?: ReactNode }) {
   return (
     <header className="vhead">
-      <div><h1>{title}</h1><p>{children}</p></div>
+      <h1>{title}</h1>
       {tools ? <div className="tools">{tools}</div> : null}
     </header>
   );

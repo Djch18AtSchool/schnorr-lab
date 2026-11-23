@@ -70,9 +70,7 @@ export function Pruebas({ tests, testsError }: PruebasProps) {
   const others = tests?.requirements.filter((r) => !GROUPS.some((g) => r.id.startsWith(g.prefix))) ?? [];
   return (
     <>
-      <ViewHead title="Pruebas">
-        Pruebas automatizadas (pytest) y trazabilidad: qué prueba cubre cada requerimiento del protocolo y de la comparación, y si pasó en la última ejecución.
-      </ViewHead>
+      <ViewHead title="Pruebas" />
       {tests ? (
         <>
           <div className="panel">

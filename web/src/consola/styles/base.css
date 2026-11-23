@@ -9,6 +9,8 @@
   --warn-soft: color-mix(in srgb, var(--warn) 14%, var(--surface));
   --support: var(--ink-3);
   --support-soft: var(--surface-2);
+  /* Escala de espaciado común: entre bloques hermanos, entre secciones y dentro de tarjetas. */
+  --gap-1: 8px; --gap-2: 12px; --gap-3: 16px; --gap-4: 24px; --gap-5: 32px;
   --r: 8px;
   --r-lg: 14px;
   /* Series de las gráficas del laboratorio (independientes de los actores). */

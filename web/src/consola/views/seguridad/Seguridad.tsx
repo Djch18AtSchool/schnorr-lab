@@ -46,9 +46,7 @@ export function Seguridad({ state, derived, nav }: SeguridadProps) {
   const users = [...new Set(groups.flatMap((g) => g.users))];
   return (
     <>
-      <ViewHead title="Seguridad">
-        ¿Quién está atacando y cómo? Las alertas del banco agrupadas por el dispositivo que las provocó, con las peticiones que las prueban.
-      </ViewHead>
+      <ViewHead title="Seguridad" />
       {groups.length ? (
         <p className="lede">
           {plural(state.alerts.length, "alerta", "alertas")} de {plural(groups.length, "origen", "orígenes")}

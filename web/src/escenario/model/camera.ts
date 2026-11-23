@@ -9,10 +9,11 @@ import { eveOnStage } from "./eveTerminal";
 import type { Beat, Focus } from "./types";
 
 export type CamMode = "follow" | "wide";
-export type CardPos = "right" | "left" | "top";
+/** «none»: sin ficha (plano inicial y resumen final), el lienzo entero es del panorama. */
+export type CardPos = "right" | "left" | "top" | "none";
 
 export type Shot =
-  | { kind: "wide" }
+  | { kind: "wide"; bare?: boolean }
   | { kind: "summary" }
   | { kind: "review"; stepIndex: number }
   | { kind: "focus"; focus: "ana" | "eve" | "bank" | "net"; rowId: string | null; withLaptop: boolean; linkRowId: string | null };
@@ -50,8 +51,9 @@ function copiesToEve(run: ActRun, beat: Beat): boolean {
 export function shotFor(run: ActRun, beat: Beat, cam: CamMode, review: number | null): Shot {
   if (review !== null) return { kind: "review", stepIndex: review };
   const focus = beatFocus(run, beat);
-  if (cam === "wide" || focus === "wide") return { kind: "wide" };
-  if (focus === "summary") return { kind: "summary" };
+  if (focus === "wide") return { kind: "wide", bare: true };
+  if (focus === "summary") return cam === "wide" ? { kind: "wide", bare: true } : { kind: "summary" };
+  if (cam === "wide") return { kind: "wide" };
   const rowId = ROW_KINDS.includes(beat.kind) ? beat.id : null;
   return {
     kind: "focus",
@@ -108,6 +110,17 @@ export function fitRect(target: Rect, region: Rect, max: number): Fit {
 
 export const NARROW_MAX_WIDTH = 760;
 const NOTE_MAX_W = 440;
+/** Distancia de la tarjeta de anotación a los bordes, igual en las tres posiciones. */
+export const NOTE_MARGIN = 32;
+const REGION_GAP = 28;
+
+/** Posición fija de la tarjeta según quién actúa: Ana a la derecha, Eve a la izquierda y el resto arriba; sin ficha al inicio y al final. */
+export function cardFor(shot: Shot): CardPos {
+  if (shot.kind === "summary" || (shot.kind === "wide" && shot.bare)) return "none";
+  if (shot.kind !== "focus") return "top";
+  if (shot.focus === "ana") return "right";
+  return shot.focus === "eve" ? "left" : "top";
+}
 
 export interface Viewport {
   vw: number;
@@ -117,21 +130,20 @@ export interface Viewport {
 
 /** Región libre de la pantalla según dónde va la tarjeta de anotación. */
 export function regionFor(card: CardPos, { vw, vh, noteH }: Viewport): Rect {
+  if (card === "none") return { x: REGION_GAP, y: REGION_GAP, w: vw - REGION_GAP * 2, h: vh - REGION_GAP * 2 };
   if (vw <= NARROW_MAX_WIDTH) return { x: 8, y: 8, w: vw - 16, h: vh * 0.54 - 8 };
-  const noteW = Math.min(NOTE_MAX_W, vw - 32);
-  if (card === "right") return { x: 24, y: 44, w: vw * 0.55 - 36, h: vh - 76 };
+  const noteW = Math.min(NOTE_MAX_W, vw - NOTE_MARGIN * 2);
+  const side = { y: REGION_GAP, h: vh - REGION_GAP * 2 };
+  if (card === "right") return { x: REGION_GAP, w: vw - noteW - NOTE_MARGIN - REGION_GAP * 2, ...side };
   if (card === "left") {
-    const x = 32 + noteW + 28;
-    return { x, y: 44, w: vw - x - 28, h: vh - 76 };
+    const x = NOTE_MARGIN + noteW + REGION_GAP;
+    return { x, w: vw - x - REGION_GAP, ...side };
   }
-  const top = Math.min(24 + noteH + 34, vh * 0.46);
-  return { x: 24, y: top, w: vw - 48, h: vh - top - 20 };
+  const top = Math.min(NOTE_MARGIN + noteH + REGION_GAP, vh * 0.46);
+  return { x: REGION_GAP, y: top, w: vw - REGION_GAP * 2, h: vh - top - REGION_GAP };
 }
 
-const PREFERENCE_MARGIN = 0.02;
-
-/** Elige, entre las posiciones de tarjeta posibles, la que deja ver el objetivo más grande. */
-export function bestFit(target: Rect, cards: readonly CardPos[], viewport: Viewport, max: number): Fit & { card: CardPos } {
-  const fits = cards.map((card) => ({ card, ...fitRect(target, regionFor(card, viewport), max) }));
-  return fits.reduce((a, b) => (b.s > a.s + PREFERENCE_MARGIN ? b : a));
+/** Encuadra el objetivo en la región que deja libre la tarjeta de esa posición. */
+export function fitFor(target: Rect, card: CardPos, viewport: Viewport, max: number): Fit {
+  return fitRect(target, regionFor(card, viewport), max);
 }

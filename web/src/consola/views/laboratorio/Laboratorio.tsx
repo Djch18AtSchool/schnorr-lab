@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Unavailable, ViewHead } from "../../components/Common";
 import type { LabResults } from "../../data/source";
 import { labFile } from "../../lib/labFiles";
-import { EXPERIMENTS, experimentById, groupTitle, LAB_GROUPS, type ExperimentMeta } from "./catalog";
+import { EXPERIMENTS, experimentById, LAB_GROUPS, type ExperimentMeta } from "./catalog";
 import { ExperimentView } from "./registry";
 
 interface LaboratorioProps {
@@ -107,14 +107,10 @@ export function Laboratorio({ results, resultsError, simulated }: LaboratorioPro
     if (next) go(next.id);
   }, [index, go]);
   useArrowKeys(step);
-  const groupIndex = EXPERIMENTS.filter((e) => e.group === meta.group).findIndex((e) => e.id === meta.id) + 1;
-  const ctx = { meta, eyebrow: `${groupTitle(meta.group)} · ${groupIndex} de ${EXPERIMENTS.filter((e) => e.group === meta.group).length}`, file: labFile(meta.file), simulated };
+  const ctx = { meta, file: labFile(meta.file), simulated };
   return (
     <>
-      <ViewHead title="Laboratorio" tools={<LabSelect current={id} onGo={go} />}>
-        Resultados de las mediciones y los experimentos del proyecto: la comparación con otros mecanismos, el rendimiento según el tamaño de p, los ataques y las
-        verificaciones. Cada uno con la pregunta que responde, sus datos reales y la conclusión. Use ← y → para recorrerlos.
-      </ViewHead>
+      <ViewHead title="Laboratorio" tools={<LabSelect current={id} onGo={go} />} />
       <div className="labx">
         <LabIndex current={id} onGo={go} />
         <div className="labmain">

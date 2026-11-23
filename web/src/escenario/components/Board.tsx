@@ -37,20 +37,17 @@ export function Board(props: BoardProps) {
   }, [index, frames.length, reduced]);
   return (
     <footer className="board">
-      <div className="transport">
-        <div className="act">{actTitle}<small>Paso {index + 1} de {frames.length}</small></div>
-        <div className="tbtns">
-          <button type="button" className="tbtn" onClick={onPrev} disabled={index === 0} aria-label="Paso anterior (←)">
-            <ChevronLeft />
-          </button>
-          <button type="button" className="tbtn primary" onClick={onPlay} disabled={pending} aria-keyshortcuts="ArrowRight Space">
-            {auto && playing ? <Pause fill="currentColor" /> : <Play fill="currentColor" />}
-            <span>{playLabel({ auto, playing, atEnd, pending })}</span>
-          </button>
-          <button type="button" className="tbtn" onClick={onRestart} aria-label="Reiniciar acto (R)">
-            <RotateCcw />
-          </button>
-        </div>
+      <div className="transport" role="group" aria-label={`${actTitle}: paso ${index + 1} de ${frames.length}`}>
+        <button type="button" className="tbtn" onClick={onPrev} disabled={index === 0} aria-label="Paso anterior (←)" title="Paso anterior (←)">
+          <ChevronLeft />
+        </button>
+        <button type="button" className="tbtn primary" onClick={onPlay} disabled={pending} aria-keyshortcuts="ArrowRight Space"
+          aria-label={playLabel({ auto, playing, atEnd, pending })} title={playLabel({ auto, playing, atEnd, pending })}>
+          {auto && playing ? <Pause fill="currentColor" /> : <Play fill="currentColor" />}
+        </button>
+        <button type="button" className="tbtn" onClick={onRestart} aria-label="Reiniciar acto (R)" title="Reiniciar acto (R)">
+          <RotateCcw />
+        </button>
       </div>
       <nav className="strip" ref={strip} aria-label="Pasos del acto">
         {frames.map((frame, i) => (

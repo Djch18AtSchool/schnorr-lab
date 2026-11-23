@@ -12,7 +12,6 @@ import type { ExperimentMeta } from "./catalog";
 /** Lo que todo experimento necesita saber de sí mismo: su ficha, su archivo y la fuente de datos. */
 export interface ExpContext {
   meta: ExperimentMeta;
-  eyebrow: string;
   file: LabFileInfo;
   simulated: boolean;
 }
@@ -21,7 +20,7 @@ export interface ExperimentText {
   conclusion: ReactNode;
   /** Tabla con los datos que dibuja la gráfica (se abre con «Ver datos»). */
   data?: ReactNode;
-  /** Nota de método bajo la conclusión (repeticiones, equipo, advertencias). */
+  /** Nota de método al abrir «Ver datos» (repeticiones, equipo, advertencias). */
   method?: ReactNode;
 }
 
@@ -43,18 +42,17 @@ interface FrameProps extends ExperimentText {
   children: ReactNode;
 }
 
-function ExpHeader({ eyebrow, title, question }: { eyebrow: string; title: string; question: ReactNode }) {
+function ExpHeader({ title, question }: { title: string; question: ReactNode }) {
   return (
     <header className="exp-h">
-      <span className="eyebrow">{eyebrow}</span>
       <h2 id="exp-title">{title}</h2>
-      <p className="q"><b>Pregunta.</b> {question}</p>
+      <p className="q">{question}</p>
     </header>
   );
 }
 
 function RawLink({ file, simulated }: { file: LabFileInfo; simulated: boolean }) {
-  if (simulated) return <span className="muted">Datos simulados: copia empaquetada de <span className="mono">results/{file.file}</span>.</span>;
+  if (simulated) return <span className="muted">Datos simulados: copia empaquetada de <span className="mono">results/{file.file}</span></span>;
   return <a href={`/results/${file.file}`} target="_blank" rel="noopener">Abrir <span className="mono">results/{file.file}</span><ExternalLink className="i" aria-hidden="true" /></a>;
 }
 
@@ -62,17 +60,16 @@ export function ExperimentFrame({ ctx, conclusion, data, method, source, legend,
   const { file, simulated } = ctx;
   return (
     <article className="panel exp" aria-labelledby="exp-title">
-      <ExpHeader eyebrow={ctx.eyebrow} title={ctx.meta.title} question={ctx.meta.question} />
+      <ExpHeader title={ctx.meta.title} question={ctx.meta.question} />
       {legend || tools ? <div className="exp-tools">{legend}{tools}</div> : null}
       <div className="exp-b">{children}</div>
       <div className="concl"><Lightbulb className="i" aria-hidden="true" /><div><b>Conclusión.</b> {conclusion}</div></div>
-      {method ? <p className="method">{method}</p> : null}
       <details className="dt exp-data">
         <summary>Ver datos</summary>
+        {method ? <p className="method">{method}</p> : null}
         {data}
-        <p className="rawlink"><RawLink file={file} simulated={simulated} /></p>
+        <p className="rawlink"><RawLink file={file} simulated={simulated} />{source ? <span className="muted"> · {source}</span> : null}</p>
       </details>
-      <footer className="exp-f mono">results/{file.file}{source ? ` · ${source}` : ""}</footer>
     </article>
   );
 }
@@ -83,7 +80,7 @@ export function MissingFile({ ctx, state }: { ctx: ExpContext; state: LabFileSta
   const { file } = ctx;
   return (
     <article className="panel exp" aria-labelledby="exp-title">
-      <ExpHeader eyebrow={ctx.eyebrow} title={ctx.meta.title} question={ctx.meta.question} />
+      <ExpHeader title={ctx.meta.title} question={ctx.meta.question} />
       <div className="missing">
         <CircleAlert className="i" aria-hidden="true" />
         <div>
@@ -101,7 +98,7 @@ export function MissingFile({ ctx, state }: { ctx: ExpContext; state: LabFileSta
 export function ExperimentBlockMissing({ ctx, what }: { ctx: ExpContext; what: string }) {
   return (
     <article className="panel exp" aria-labelledby="exp-title">
-      <ExpHeader eyebrow={ctx.eyebrow} title={ctx.meta.title} question={ctx.meta.question} />
+      <ExpHeader title={ctx.meta.title} question={ctx.meta.question} />
       <div className="missing">
         <CircleAlert className="i" aria-hidden="true" />
         <div><b>{`results/${ctx.file.file} no trae «${what}».`}</b><p>Vuelva a generarlo desde la raíz del repositorio:</p><pre className="cmd">{ctx.file.command}</pre></div>

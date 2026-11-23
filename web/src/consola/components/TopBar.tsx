@@ -1,4 +1,4 @@
-/** Barra superior sobria, como la del Escenario: nombre, estado del servicio, En vivo/Pausado y tema. */
+/** Barra superior sobria: nombre, estado del servicio, En vivo/Pausado y tema. */
 import { Moon, Pause, Play } from "lucide-react";
 
 interface TopBarProps {

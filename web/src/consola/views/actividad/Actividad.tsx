@@ -73,7 +73,7 @@ export function Actividad({ state, derived, nav, query, selected, source }: Acti
   const tabs = <Seg label="Vista" value={tab} onChange={setTab} options={[{ value: "intentos", label: "Intentos" }, { value: "registro", label: "Registro" }]} />;
   return (
     <>
-      <ViewHead title="Actividad" tools={tabs}>¿Qué pasó con cada petición? Cada fila es un intento completo; elija una petición para ver lo que hizo el banco.</ViewHead>
+      <ViewHead title="Actividad" tools={tabs} />
       <Filters query={query} onQuery={nav.setQuery} devices={devices} users={users} shown={filtered.length} total={derived.attempts.length} />
       <div className="activity">
         <div className="panel activity-list">
