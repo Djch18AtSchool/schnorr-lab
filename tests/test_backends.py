@@ -98,6 +98,6 @@ def test_backend_desconocido_lanza_error_en_espanol():
 def test_gmpy2_sin_instalar_lanza_error_claro(monkeypatch):
     monkeypatch.delenv(BACKEND_ENV_VAR, raising=False)
     monkeypatch.setitem(sys.modules, "gmpy2", None)  # import gmpy2 → ImportError
-    with pytest.raises(ValueError, match="pip install gmpy2"), use_backend("gmpy2"):
+    with pytest.raises(ValueError, match="uv sync --group bench"), use_backend("gmpy2"):
         pass
     assert get_backend() == "propia"  # el error ocurre antes de cambiar el backend

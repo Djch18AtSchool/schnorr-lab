@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["sympy", "matplotlib", "fastapi", "uvicorn", "httpx", "argon2-cffi", "pyotp"]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = ["pytest"]
 bench = ["gmpy2"]   # solo para comparar backends aritméticos en benchmark/latency.py (R7)
 
@@ -14,7 +14,7 @@ bench = ["gmpy2"]   # solo para comparar backends aritméticos en benchmark/late
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
-# Distribución plana: se declaran los paquetes para que `pip install -e ".[dev]"` funcione.
+# Distribución plana: se declaran los paquetes para que la instalación editable (`uv sync` o `pip install -e .`) funcione.
 [tool.setuptools]
 packages = ["core", "protocol", "attacks", "benchmark", "api", "infra", "mechanisms", "mechanisms.zkp",
             "mechanisms.password", "mechanisms.totp", "mechanisms.srp", "client_app",

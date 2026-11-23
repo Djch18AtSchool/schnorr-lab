@@ -21,9 +21,8 @@ El banco y el proceso del celular (que guarda *x*) corren como procesos separado
 Requiere **Python 3.12**. La web ya viene compilada en `web/dist`, así que no hace falta Node para usarla. Desde la raíz del repositorio:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -e ".[dev,bench]"      # bench agrega gmpy2, solo para comparar implementaciones
+uv sync --all-groups               # crea .venv con Python 3.12 e instala todo; bench agrega gmpy2, solo para comparar implementaciones
+source .venv/bin/activate          # Windows: .venv\Scripts\activate (o antepone `uv run` a cada comando)
 ```
 
 | Comando | Qué hace |
