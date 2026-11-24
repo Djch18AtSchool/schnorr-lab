@@ -37,8 +37,9 @@ def test_formato_sse_y_flujo_de_eventos():
     log = EventLog()
     log.publish("cliente", "paso", "Paso 1", data={"t": "12"})
     text = format_sse(log.since(0)[0])
-    assert text.startswith("id: 1\nevent: paso\ndata: ") and text.endswith("\n\n")
-    assert json.loads(text.split("data: ", 1)[1])["data"] == {"t": "12"}
+    assert text.startswith("id: 1\ndata: ") and text.endswith("\n\n")
+    payload = json.loads(text.split("data: ", 1)[1])
+    assert payload["kind"] == "paso" and payload["data"] == {"t": "12"}
 
     async def collect() -> list[str]:
         async def connected() -> bool:
@@ -46,6 +47,16 @@ def test_formato_sse_y_flujo_de_eventos():
         return [chunk async for chunk in stream_events(log, 0, connected, max_polls=2)]
 
     assert asyncio.run(collect()) == [": conectado\n\n", text]   # comentario inicial: cabeceras de inmediato
+
+
+@pytest.mark.req("R11")
+def test_formato_sse_no_usa_nombres_de_evento_reservados_por_el_navegador():
+    # Un «event: error» llega también a EventSource.onerror y la interfaz marcaba el banco como desconectado.
+    log = EventLog()
+    log.publish("banco", "error", "Compromiso rechazado: cuenta bloqueada")
+    text = format_sse(log.since(0)[0])
+    assert "event:" not in text
+    assert json.loads(text.split("data: ", 1)[1])["kind"] == "error"
 
 
 @pytest.mark.req("R11")

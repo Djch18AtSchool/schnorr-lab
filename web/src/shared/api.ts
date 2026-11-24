@@ -31,14 +31,13 @@ export async function api<T>(url: string, init: { method?: "GET" | "POST"; body?
 /**
  * Escucha un flujo SSE y entrega cada evento ya parseado. Reconecta solo (EventSource) y
  * reanuda desde el último id. Devuelve la función para cerrar la conexión.
+ *
+ * El servidor manda todos los eventos sin nombre (el tipo va en el JSON): así onerror solo
+ * se dispara cuando de verdad se corta la conexión, y no con un evento de tipo «error».
  */
 export function listen<T>(url: string, onEvent: (event: T) => void, onStatus?: (online: boolean) => void): () => void {
   const source = new EventSource(url);
-  const handler = (message: MessageEvent<string>): void => onEvent(JSON.parse(message.data) as T);
-  source.onmessage = handler;
-  for (const kind of ["acceso", "registro", "paso", "verificacion", "error", "alerta", "log", "http", "acto"]) {
-    source.addEventListener(kind, handler as EventListener);
-  }
+  source.onmessage = (message: MessageEvent<string>) => onEvent(JSON.parse(message.data) as T);
   source.onopen = () => onStatus?.(true);
   source.onerror = () => onStatus?.(false);
   return () => source.close();

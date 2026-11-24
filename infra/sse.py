@@ -20,9 +20,13 @@ SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
 
 
 def format_sse(event: Event) -> str:
-    """Un evento en el formato de texto de SSE (id, tipo y datos JSON). Cubre R11."""
+    """Un evento en el formato de texto de SSE (id y datos JSON). Cubre R11.
+
+    El tipo viaja dentro del JSON («kind») y no en el campo «event:» de SSE: el navegador entrega
+    un evento llamado «error» también a EventSource.onerror, como si se hubiera caído la conexión.
+    """
     payload = json.dumps(event.to_json(), ensure_ascii=False)
-    return f"id: {event.id}\nevent: {event.kind}\ndata: {payload}\n\n"
+    return f"id: {event.id}\ndata: {payload}\n\n"
 
 
 async def stream_events(
