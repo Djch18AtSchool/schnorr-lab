@@ -164,5 +164,4 @@ export interface NoteView {
   title: string;
   text: string;
   math: MathRow[];
-  hint: boolean;
 }

@@ -30,7 +30,7 @@ MINUS_SIGN = "−"  # signo menos tipográfico, igual al del escrito
 ARITHMETIC_BACKENDS = ("propia", "nativa", "gmpy2")
 DEFAULT_BACKEND = "propia"
 BACKEND_ENV_VAR = "SCHNORR_ARITHMETIC"
-GMPY2_INSTALL_HINT = 'pip install gmpy2 (o pip install -e ".[bench]")'
+GMPY2_INSTALL_HINT = "uv sync --group bench (o pip install gmpy2)"
 
 # Backend fijado por use_backend; None = usar SCHNORR_ARITHMETIC o el valor por defecto.
 _backend_override: ContextVar[str | None] = ContextVar("schnorr_arithmetic", default=None)

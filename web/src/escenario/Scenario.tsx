@@ -2,10 +2,10 @@
 import { useState } from "react";
 import { Banner } from "./components/Banner";
 import { Board } from "./components/Board";
+import { DirectionButton } from "./components/DirectionButton";
 import { Drawer } from "./components/Drawer";
 import { MotionContext } from "./components/motion";
 import { Stage } from "./components/Stage";
-import { TopBar } from "./components/TopBar";
 import type { ScenarioSource, SourceKind } from "./data/source";
 import { phaseNumbers } from "./model/diagram";
 import { usePrefs } from "./state/prefs";
@@ -37,7 +37,7 @@ export function Scenario({ source, onSource, onRetry }: ScenarioProps) {
   return (
     <MotionContext.Provider value={motion}>
       <div className={appClass}>
-        <TopBar cast={state.run?.cast ?? []} hasEve={scene?.hasEve ?? false} focus={scene?.focus ?? "wide"} simulated={source.kind === "simulada"} drawerOpen={drawerOpen} onDirection={keys.toggleDrawer} />
+        <DirectionButton simulated={source.kind === "simulada"} drawerOpen={drawerOpen} onDirection={keys.toggleDrawer} />
         {scene ? (
           <Stage scene={scene} group={state.run?.group ?? ""} bankOnline={feed.online} wide={prefs.cam === "wide"} speed={prefs.speed} reviewN={reviewN} animate={state.animate} onReview={ctl.review} onBack={() => ctl.review(null)} />
         ) : (

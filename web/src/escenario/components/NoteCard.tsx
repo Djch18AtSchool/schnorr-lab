@@ -39,9 +39,6 @@ export function NoteCard({ note, pos, counter, reviewing, onBack, noteRef }: Not
       <h2><MathText text={note.title} /></h2>
       {note.text && <p>{note.text}</p>}
       <MathRows rows={note.math} />
-      {note.hint && (
-        <div className="hint">Presione <kbd>→</kbd> o <kbd>Espacio</kbd> para avanzar</div>
-      )}
       {reviewing && (
         <div className="hint">
           <button type="button" className="back" onClick={onBack}>Volver al paso actual <kbd>Esc</kbd></button>

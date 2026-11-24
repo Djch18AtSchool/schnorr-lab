@@ -47,7 +47,7 @@ export function formulaRow(line: string): MathRow {
 }
 
 function base(focus: Focus, title: string, text: string): NoteView {
-  return { focus, who: FOCUS_WHO[focus], title, text, math: [], hint: false };
+  return { focus, who: FOCUS_WHO[focus], title, text, math: [] };
 }
 
 function stepNote(run: ActRun, beat: Beat): NoteView {
@@ -143,7 +143,7 @@ const BIOMETRIC_TEXT = "La huella no viaja a ningún lado: solo desbloquea el ch
 export function noteView(run: ActRun, act: ActInfo | null, beat: Beat, store: EventStore): NoteView {
   switch (beat.kind) {
     case "intro":
-      return { ...base("wide", run.title, act?.summary ?? ""), hint: true };
+      return base("wide", run.title, act?.summary ?? "");
     case "biometric":
       return base("ana", "Ana confirma con su huella", BIOMETRIC_TEXT);
     case "request":

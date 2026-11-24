@@ -2,8 +2,8 @@
  * Cámara: tras cada render mide el mundo, ancla el celular junto a la fila actual, encuadra
  * la toma (zoom/pan sobrio), coloca los corchetes «En foco» y la línea banco → terminal.
  */
-import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react";
-import { bestFit, type CardPos, type Fit, type Rect, type Shot } from "../model/camera";
+import { useCallback, useLayoutEffect, useRef, type RefObject } from "react";
+import { fitFor, type Fit, type Rect, type Shot } from "../model/camera";
 import { cameraMs } from "../model/motion";
 import type { DiagramRow, Focus } from "../model/types";
 import { anchorPhone, rectIn, rowEl, shotGeometry, type WorldEls } from "./cameraDom";
@@ -93,9 +93,9 @@ function placeLink(svg: SVGSVGElement | null, els: WorldEls, input: CameraInput)
 
 /**
  * Encuadra una toma: ancla el celular, mueve el mundo, coloca corchetes y enlace.
- * Devuelve la posición elegida para la tarjeta y la nueva altura del celular.
+ * Devuelve la nueva altura del celular.
  */
-function frameShot(refs: CameraRefs, input: CameraInput, phoneY: number, instant: boolean): { card: CardPos; phoneY: number } | null {
+function frameShot(refs: CameraRefs, input: CameraInput, phoneY: number, instant: boolean): number | null {
   const els = worldEls(refs);
   const stage = refs.stage.current;
   if (!els || !stage) return null;
@@ -107,27 +107,24 @@ function frameShot(refs: CameraRefs, input: CameraInput, phoneY: number, instant
   if (refs.phone.current) refs.phone.current.style.top = `${y}px`;
   const geo = shotGeometry(els, input.shot, input.rows, input.hasEve, y);
   const viewport = { vw: stage.clientWidth, vh: stage.clientHeight, noteH: refs.note.current?.offsetHeight ?? 160 };
-  const fit = bestFit(geo.rect, geo.cards, viewport, geo.max);
+  const fit = fitFor(geo.rect, geo.card, viewport, geo.max);
   els.world.style.transform = `translate(${fit.tx}px, ${fit.ty}px) scale(${fit.s})`;
   placeBrackets(refs.brackets.current, geo.frame, fit, input);
   placeLink(refs.link.current, els, input);
   if (quick) requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.remove("no-anim")));
-  return { card: fit.card, phoneY: y };
+  return y;
 }
 
-/** Devuelve la posición de la tarjeta elegida por el encuadre. */
-export function useCamera(refs: CameraRefs, input: CameraInput): CardPos {
-  const [notePos, setNotePos] = useState<CardPos>("top");
+/** Encuadra la toma tras cada render y ante cambios de tamaño. */
+export function useCamera(refs: CameraRefs, input: CameraInput): void {
   const phoneY = useRef(0);
   const inputRef = useRef(input);
   const firstRun = useRef(true);
 
   const apply = useCallback(
     (instant: boolean) => {
-      const result = frameShot(refs, inputRef.current, phoneY.current, instant);
-      if (!result) return;
-      phoneY.current = result.phoneY;
-      setNotePos(result.card);
+      const y = frameShot(refs, inputRef.current, phoneY.current, instant);
+      if (y !== null) phoneY.current = y;
     },
     [refs],
   );
@@ -152,6 +149,4 @@ export function useCamera(refs: CameraRefs, input: CameraInput): CardPos {
       onTerm.disconnect();
     };
   }, [apply, refs]);
-
-  return notePos;
 }

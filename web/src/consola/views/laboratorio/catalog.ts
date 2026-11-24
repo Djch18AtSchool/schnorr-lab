@@ -55,4 +55,3 @@ export const EXPERIMENTS: readonly ExperimentMeta[] = [
 
 export const experimentById = (id: string): ExperimentMeta | undefined => EXPERIMENTS.find((e) => e.id === id);
 
-export const groupTitle = (group: LabGroup): string => LAB_GROUPS.find((g) => g.id === group)?.title ?? "";

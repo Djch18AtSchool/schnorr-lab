@@ -45,7 +45,7 @@ export function Clientes({ state, derived, now, nav }: ClientesProps) {
   }, [derived.attempts]);
   return (
     <>
-      <ViewHead title="Clientes">¿Qué sabe el banco de cada cliente? Solo su clave pública y, los dispositivos desde los que actuó y lo que hizo.</ViewHead>
+      <ViewHead title="Clientes" />
       <AuditCheck audit={state.audit} error={state.errors.audit} />
       {!state.accounts ? <Unavailable what="Las cuentas (GET /bank/accounts)" error={state.errors.accounts} /> : null}
       {state.accounts && !state.accounts.length ? (

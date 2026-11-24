@@ -86,7 +86,7 @@ export function Sistema({ state, simulated }: { state: ConsoleState; simulated: 
   const group = groupOf(state.mechanisms ?? []);
   return (
     <>
-      <ViewHead title="Sistema">¿Con qué parámetros y rutas funciona el banco? El grupo activo, los mecanismos registrados y la API.</ViewHead>
+      <ViewHead title="Sistema" />
       <div className="two">
         {group ? <GroupPanel group={group} /> : <Unavailable what="El grupo activo (GET /mechanisms)" error={state.errors.mechanisms} />}
         {state.mechanisms ? <Mechanisms mechanisms={state.mechanisms} /> : null}

@@ -40,10 +40,10 @@ describe("filas de matemáticas", () => {
 });
 
 describe("noteView", () => {
-  test("el plano general presenta el acto e invita a avanzar", async () => {
+  test("el plano general presenta el acto", async () => {
     const note = await notes("login");
 
-    expect(note("intro")).toMatchObject({ focus: "wide", who: "Plano general", title: "Inicio de sesión", hint: true });
+    expect(note("intro")).toMatchObject({ focus: "wide", who: "Plano general", title: "Inicio de sesión" });
   });
 
   test("un cálculo muestra valores y cuentas del paso", async () => {

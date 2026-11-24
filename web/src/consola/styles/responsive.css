@@ -27,9 +27,8 @@
   .side-group { display: flex; gap: 2px; }
   .side-title { display: none; }
   .side a.nav { flex: none; height: 34px; }
-  .view { padding: 16px 16px 32px; gap: 14px; }
+  .view { padding: 20px 16px 40px; gap: var(--gap-3); }
   .vhead h1 { font-size: 21px; }
-  .vhead p { font-size: 14px; }
   .search { max-width: none; }
   .attempt-sum { padding: 10px 12px; }
   .attempt-l1 { flex-wrap: wrap; }

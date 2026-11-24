@@ -39,7 +39,7 @@ export function Resumen({ state, derived, now, nav, range, onRange }: ResumenPro
   const rangeSeg = <Seg label="Rango de tiempo" value={range} onChange={onRange} options={RANGES.map((r) => ({ value: r.key, label: r.label }))} />;
   return (
     <>
-      <ViewHead title="Resumen" tools={rangeSeg}>¿Qué está pasando ahora? Cada número y cada punto llevan a las peticiones que lo forman.</ViewHead>
+      <ViewHead title="Resumen" tools={rangeSeg} />
       <Kpis stats={trafficStats(visible)} accounts={accounts} alerts={severityCounts(alerts)} since={since} rangeLabel={rangeLabel} nav={nav} />
       <div className="resumen-grid">
         <div className="panel">
