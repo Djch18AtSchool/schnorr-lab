@@ -211,7 +211,9 @@ def option_latency(_verbose: bool) -> None:
           f"Python {data['python']}). Razón = tiempo / tiempo del tamaño anterior.")
     for line in format_table(data["rows"]):
         print(line)
-    print("Predicción del escrito al duplicar k: k³ → 8; con Karatsuba (k^2.585) → ≈ 6. "
+    print("Predicción del escrito al duplicar k: k³ → 8; Karatsuba (k^2.585) daría ≈ 6, pero CPython "
+          "multiplica con el método escolar hasta unos 2100 bits (4200 en los cuadrados): la razón queda "
+          "bajo 8 por costos que crecen más despacio que k³. "
           "Gráficas en results/latency.png y results/backends.png.")
 
 

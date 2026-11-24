@@ -449,14 +449,14 @@
       "online_why": "Además de la contraseña hay que acertar un código de 10^6 (3 aceptados por la ventana ±1): con 3 intentos antes del bloqueo, probabilidad ≈ 9·10^-6."
     },
     "srp": {
-      "phishing": "Resistente si el cliente hace SRP",
-      "phishing_why": "La contraseña no viaja y un banco falso que no conoce v no puede producir M2: el celular lo detecta. Solo puede probar una contraseña por sesión. Si la persona escribe la contraseña en un formulario web falso, se pierde igual.",
+      "phishing": "Parcial (cae ante un relevo en tiempo real)",
+      "phishing_why": "La contraseña no viaja y un banco falso que no conoce v no puede producir M2: si el sitio falso responde por su cuenta, el celular lo detecta. Pero si reenvía A, B, M1 y M2 entre el celular y el banco real en el momento (adversario en el medio), M2 sale del banco verdadero y el banco acepta esa sesión: el sitio falso no conoce la clave K, pero aquí el acceso no depende de K. Si la persona escribe la contraseña en un formulario web falso, se pierde igual.",
       "online_bruteforce": "Limitado por el bloqueo",
       "online_why": "Cada candidata exige una sesión completa con el banco (no hay prueba fuera de línea con lo que viaja) y tres M1 incorrectos bloquean la cuenta."
     },
     "zkp": {
-      "phishing": "Resistente (no hay secreto que escribir)",
-      "phishing_why": "x nunca sale del celular ni la persona la conoce; las transcripciones no revelan nada (conocimiento cero). El protocolo no autentica al banco: un relevo en tiempo real se evita con TLS y ligando la prueba al canal o al origen (como hace WebAuthn).",
+      "phishing": "Parcial (cae ante un relevo en tiempo real)",
+      "phishing_why": "El sitio falso no se lleva nada que le sirva después: x nunca sale del celular ni la persona la conoce, y las transcripciones no revelan nada (conocimiento cero). Pero la prueba no identifica al banco: si el sitio falso reenvía t, c y s entre el celular y el banco en el momento (adversario en el medio), entra en esa sesión; con Fiat-Shamir, si reenvía la prueba dentro de la ventana de 30 s. Para resistir el phishing habría que ligar la prueba al dominio del banco o al canal (como hace WebAuthn).",
       "online_bruteforce": "Despreciable",
       "online_why": "Un impostor acierta el reto con probabilidad 1/q por intento (2^-224 con schnorr-2048) y el bloqueo deja tres intentos."
     }

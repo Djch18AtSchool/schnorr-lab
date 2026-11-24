@@ -2,9 +2,11 @@
 
 Hipótesis del escrito: cada potencia modular cuesta del orden de k³ operaciones de bits
 (definición 8; Menezes et al., 1996), así que duplicar k multiplica el tiempo por cerca de
-2³ = 8. Como CPython multiplica enteros grandes con Karatsuba, también se compara con
-k^(1 + log₂3) ≈ k^2.585, que predice una razón cercana a 6. El nivel de seguridad de cada
-tamaño sigue la definición 10 (Barker, 2020).
+2³ = 8. Como referencia también se compara con Karatsuba, k^(1 + log₂3) ≈ k^2.585, que
+predice una razón cercana a 6; pero CPython 3.12 multiplica con el método escolar hasta 70
+dígitos de 30 bits (unos 2100 bits) y, en los cuadrados, hasta 140 dígitos (unos 4200 bits),
+así que en este rango una razón menor que 8 viene de costos que crecen más despacio que k³,
+no de Karatsuba. El nivel de seguridad de cada tamaño sigue la definición 10 (Barker, 2020).
 
 Diseño de la medición:
 - Una autenticación = commit + challenge (que valida t con t^q) + respond + verify (g^s, y^c e

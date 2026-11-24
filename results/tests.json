@@ -1,8 +1,8 @@
 {
- "generated_at": 1795311378.4922194,
- "duration_s": 31.74,
- "total": 375,
- "passed": 375,
+ "generated_at": 1795550506.848256,
+ "duration_s": 28.8,
+ "total": 376,
+ "passed": 376,
  "failed": 0,
  "skipped": 0,
  "requirements": [
@@ -1453,6 +1453,11 @@
     {
      "name": "test_flujo_completo_con_el_ejemplo_del_escrito",
      "file": "tests/test_api.py",
+     "outcome": "passed"
+    },
+    {
+     "name": "test_formato_sse_no_usa_nombres_de_evento_reservados_por_el_navegador",
+     "file": "tests/test_infra.py",
      "outcome": "passed"
     },
     {

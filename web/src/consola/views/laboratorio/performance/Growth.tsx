@@ -75,15 +75,25 @@ function ratioDots(rows: readonly RatioRow[]): DotRow[] {
   }));
 }
 
+/** CPython 3.12 (longobject.c): KARATSUBA_CUTOFF = 70 dígitos y el doble para los cuadrados. */
+const CPYTHON_NOTE = "Aun así, CPython no usa Karatsuba en este rango: multiplica con el método escolar hasta 70 dígitos de 30 bits (unos 2100 bits) y, en los cuadrados, hasta unos 4200 bits. La razón queda bajo k³ por costos que crecen más despacio, como el trabajo fijo de cada operación.";
+
+/** Qué algoritmo de multiplicación usa cada aritmética, para no atribuirle a Karatsuba lo que no hace. */
+const MULTIPLICATION_NOTE: Readonly<Record<Backend, string>> = {
+  propia: CPYTHON_NOTE,
+  nativa: CPYTHON_NOTE,
+  gmpy2: "GMP elige el algoritmo de multiplicación según el tamaño de los números, así que ningún exponente único describe todo el rango.",
+};
+
 function RatioConclusion({ rows, backend }: { rows: readonly RatioRow[]; backend: Backend }) {
   const errors = meanErrors(rows);
   if (!errors) return <>No hay pasos con razón en el archivo para esta aritmética.</>;
-  const better = errors.karatsuba <= errors.k3 ? "k^2.585 (Karatsuba)" : "k³";
+  const closer = errors.karatsuba <= errors.k3 ? "k^2.585" : "k³";
   const below = rows.filter((r) => r.measured < Math.min(r.predK3, r.predKaratsuba)).map((r) => r.label);
   return (
     <>
       Con la aritmética {backend}, la razón medida se aleja en promedio <b>{(errors.k3 * 100).toFixed(0)} %</b> de k³ y <b>{(errors.karatsuba * 100).toFixed(0)} %</b> de
-      k^2.585: <b>{better}</b> describe mejor el crecimiento.{below.length ? <> En {below.join(", ")} crece menos que ambas predicciones: pesan los costos fijos y, en Schnorr, q crece menos que p.</> : null}
+      k^2.585: queda más cerca de <b>{closer}</b>. {MULTIPLICATION_NOTE[backend]}{below.length ? <> En {below.join(", ")} crece menos que ambas predicciones: pesan los costos fijos y, en Schnorr, q crece menos que p.</> : null}
     </>
   );
 }

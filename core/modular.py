@@ -11,8 +11,9 @@ Los otros dos backends existen únicamente para que el experimento de latencia c
 costo de la implementación en igualdad de condiciones (mismos operandos, mismo flujo):
 «nativa» delega en ``pow`` de Python y «gmpy2» en ``gmpy2.powmod`` (GMP). Los enteros de
 Python ya están implementados en C, así que la diferencia entre «propia» y «nativa» es solo
-el bucle de bits interpretado: medido, la propia tarda ≈ 1.6 veces lo que tarda pow nativo,
-y gmpy2 es ≈ 7–8 veces más rápido que pow nativo. Separar ese factor constante evita
+el bucle de bits interpretado: medido en una autenticación completa (results/latency.json), la
+propia tarda 1.21–1.47 veces lo que tarda pow nativo, y gmpy2 es 2.8–8.3 veces más rápido que
+pow nativo. Separar ese factor constante evita
 confundirlo con el efecto del tamaño k de p. Este despacho es la única excepción a la regla
 de no llamar a pow. El backend se elige con la variable de entorno ``SCHNORR_ARITHMETIC``
 (por defecto «propia») o temporalmente con ``with use_backend("nativa"):``.

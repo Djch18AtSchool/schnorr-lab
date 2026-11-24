@@ -36,7 +36,7 @@ export const EXPERIMENTS: readonly ExperimentMeta[] = [
   { id: "latencia-aritmeticas", group: "rendimiento", title: "Aritmética propia, nativa y gmpy2", file: "latency",
     question: "¿Cuánto cambia la latencia según la implementación de la potencia modular?" },
   { id: "latencia-razon", group: "rendimiento", title: "Crecimiento medido frente al predicho", file: "latency",
-    question: "Al agrandar p, ¿el tiempo crece como k³ (multiplicación escolar) o como k^2.585 (Karatsuba)?" },
+    question: "Al agrandar p, ¿el tiempo crece como k³, como predice el escrito para la multiplicación escolar?" },
   { id: "bsgs", group: "ataques", title: "BSGS: despejar x de la base robada", file: "bsgs",
     question: "Con y robada, ¿cuánto tarda baby-step giant-step en recuperar x según el tamaño de q?" },
   { id: "impostor", group: "ataques", title: "Impostor sin x", file: "experimentos",
